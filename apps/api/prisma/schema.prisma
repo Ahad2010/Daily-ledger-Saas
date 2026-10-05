@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+}
+model User {
+  id String @id @default(uuid())
+  googleId String? @unique
+  email String
+  name String
+  currency String @default("USD")
+  timezone String @default("UTC")
+  plan String @default("Free")
+  role String @default("user")
+  optionalEmails Boolean @default(false)
+  productUpdates Boolean @default(false)
+  status String @default("active")
+  lastActiveAt DateTime?
+  entitlementSource String @default("free")
+  createdAt DateTime @default(now())
+  records Record[]
+  jobs Job[]
+  dismissals AnnouncementDismissal[]
+  credential PasswordCredential?
+  passwordResets PasswordReset[]
+  adminAccess AdminAccess?
+  entitlementOverride EntitlementOverride?
+  aiMessages AiMessage[]
+  aiUsage AiUsage[]
+}
+model PasswordCredential {
+  id String @id @default(uuid())
+  userId String @unique
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  email String @unique
+  passwordHash String
+  updatedAt DateTime @updatedAt
+}
+model PasswordReset {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  tokenHash String
+  expiresAt DateTime
+  usedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId,expiresAt])
+}
+// Validated discriminated contracts live in @ledger/shared. JSONB stores kind-specific
+// fields; money is bounded integer minor units. Ownership and schedule keys are relational.
+model Record {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  kind String
+  data Json
+  recordDate String?
+  status String?
+  uniqueKey String?
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([userId,uniqueKey])
+  @@index([userId,kind,recordDate])
+  @@index([userId,kind,status])
+}
+model Announcement {
+  id String @id @default(uuid())
+  data Json
+  version Int
+  publishAt DateTime
+  expiresAt DateTime
+  priority Int
+  audience String
+  status String @default("published")
+  dismissals AnnouncementDismissal[]
+  @@index([publishAt,expiresAt])
+}
+model AdminAccess {
+ id Int @id @default(1)
+ userId String @unique
+ user User @relation(fields:[userId],references:[id],onDelete:Restrict)
+ version Int @default(1)
+ active Boolean @default(true)
+ updatedAt DateTime @updatedAt
+}
+model EntitlementOverride {
+ id String @id @default(uuid())
+ userId String @unique
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ plan String
+ reason String
+ expiresAt DateTime
+ grantedBy String
+ createdAt DateTime @default(now())
+}
+model PlatformConfig {
+ id Int @id @default(1)
+ data Json
+ version Int @default(1)
+ updatedAt DateTime @updatedAt
+}
+model PolicyVersion {
+ id String @id @default(uuid())
+ plan String
+ data Json
+ scope String
+ effectiveAt DateTime
+ actorId String
+ createdAt DateTime @default(now())
+ @@index([plan,effectiveAt])
+}
+model AdminAudit {
+ id String @id @default(uuid())
+ actorId String
+ action String
+ target String
+ reason String?
+ changes Json
+ createdAt DateTime @default(now())
+ @@index([createdAt])
+}
+model BillingRecord {
+ id String @id @default(uuid())
+ userId String
+ provider String
+ reference String @unique
+ subscriptionReference String?
+ kind String
+ currency String
+ amount BigInt
+ status String
+ verified Boolean @default(false)
+ createdAt DateTime @default(now())
+ @@index([userId,status])
+}
+model AnnouncementRead {
+ id String @id @default(uuid())
+ userId String
+ announcementId String
+ version Int
+ readAt DateTime @default(now())
+ @@unique([userId,announcementId,version])
+}
+model AiMessage {
+ id String @id @default(uuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ month String
+ intent String
+ question String
+ answer String
+ createdAt DateTime @default(now())
+ @@index([userId,createdAt])
+}
+model AiUsage {
+ id String @id @default(uuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ status String
+ model String
+ reservedTokens Int
+ inputTokens Int @default(0)
+ outputTokens Int @default(0)
+ estimatedCost Float?
+ createdAt DateTime @default(now())
+ @@index([userId,createdAt])
+}
+model AnnouncementDismissal {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  announcementId String
+  announcement Announcement @relation(fields:[announcementId],references:[id],onDelete:Cascade)
+  version Int
+  createdAt DateTime @default(now())
+  @@unique([userId,announcementId,version])
+}
+model Job {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  key String @unique
+  type String
+  recordId String
+  expectedVersion Int
+  status String @default("pending")
+  dueAt DateTime
+  leaseUntil DateTime?
+  attempts Int @default(0)
+  maxAttempts Int @default(5)
+  deliveredAt DateTime?
+  lastError String?
+  createdAt DateTime @default(now())
+  deliveries DeliveryAttempt[]
+  @@index([status,dueAt,leaseUntil])
+  @@index([userId,deliveredAt])
+}
+model DeliveryAttempt {
+  id String @id @default(uuid())
+  jobId String
+  job Job @relation(fields:[jobId],references:[id],onDelete:Cascade)
+  attempt Int
+  status String
+  providerId String?
+  error String?
+  createdAt DateTime @default(now())
+  @@unique([jobId,attempt])
+}

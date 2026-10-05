@@ -1,0 +1,18 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+const file='apps/web/components/ledger-app.tsx';let src=readFileSync(file,'utf8');
+src=src.replace("import { FeatureInsights,FinanceGuidance } from './feature-insights';","import { FeatureInsights } from './feature-insights';\nimport { FinanceWorkspace,FinanceNavigation,financePages } from './finance-workspace';");
+src=src.replace("const path=usePathname().split('/')[1]||'';","const fullPath=usePathname();const path=fullPath.split('/')[1]||'';const section=path==='finance'?fullPath.split('/').slice(2).join('/'):'';");
+src=src.replace("},[path]);","},[fullPath]);");
+src=src.replace("const title=path===''?'Your life at a glance':route[1];","const title=path===''?'Your life at a glance':path==='finance'?(financePages.find(p=>p.slug===section.split('/')[0])?.title||'Financial Planner'):route[1];");
+src=src.replace('<Interactions route={path}>','<Interactions route={fullPath}>');
+src=src.replace("<main className={path?'feature-main':''}>","<main className={path==='finance'?'feature-main finance-main':path?'feature-main':''}>{path==='finance'?<FinanceNavigation section={section} month={month}/>:path&&<Link href=\"/\" className=\"feature-back\"><ArrowRight size={14} style={{transform:'rotate(180deg)'}}/>Back to Dashboard</Link>}");
+src=src.replace('<FeatureInsights path={path} s={s} m={m} today={today}/>','<FeatureInsights path={path===\'finance\'?\'\':path} s={s} m={m} today={today}/>');
+src=src.replace("router.push('/finance?category='", "router.push('/finance/transactions?category='");
+src=src.replace("path==='finance'?<Finance s={s} m={m} month={month} category={category} setCategory={setCategory} tools={tools}/>","path==='finance'?<FinanceWorkspace s={s} m={m} section={section|| (category?'transactions':'')} month={month} today={today} tools={tools} charts={<><CashFlow m={m}/><Spending m={m} onCategory={name=>router.push('/finance/transactions?category='+encodeURIComponent(name)+'&month='+month)}/></>} transactions={<FinanceTransactions s={s} m={m} month={month} category={category} setCategory={setCategory} tools={tools}/>}/>");
+src=src.replace("title={`${form?.record?'Edit':'New'} ${form?.kind||'record'}`}","title={`${form?.record?'Edit':'New'} ${form?.kind==='cashPlan'?((form.record?.data||form.initial)?.type==='expense'?'bill':'income source'):form?.kind==='financeCategory'?'category':form?.kind||'record'}`}");
+const start=src.indexOf('function Finance(');const end=src.indexOf('function Tasks(',start);if(start<0||end<0)throw new Error('Finance boundaries missing');let finance=src.slice(start,end).replace('function Finance(','function FinanceTransactions(');
+finance=finance.replace("const spendingPlan=recordsOf(s.records,'budget').find(r=>r.data.month===month&&r.data.currency===s.profile.currency);",'');
+finance=finance.replace('return <><FinanceGuidance m={m}/><div className="chart-grid"><CashFlow m={m}/><Spending m={m} onCategory={setCategory}/></div>','return ');
+const cut=finance.indexOf('</Panel><div className="two-grid">');if(cut<0)throw new Error('Finance panel boundary missing');finance=finance.slice(0,cut)+'</Panel>;}\n';
+finance=finance.replaceAll("r.data.type==='income'?'mint':''","r.data.type==='income'?'positive':r.data.type==='expense'?'negative':''");
+src=src.slice(0,start)+finance+src.slice(end);writeFileSync(file,src);

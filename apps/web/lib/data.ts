@@ -1,0 +1,24 @@
+import { demoSnapshot, kindSchema, preferenceSchema, schemas, planTransaction, settledTransaction, type Snapshot, type Kind, type LedgerRecord } from '@ledger/shared';
+export let demoMode=process.env.NEXT_PUBLIC_DATA_MODE!=='api';
+export const apiBase=process.env.NEXT_PUBLIC_API_URL || '/backend';
+const key='daily-ledger-demo-v1';
+let csrf='';
+export class ApiError extends Error {constructor(message:string,public status:number){super(message);}}
+async function request(path:string,options:RequestInit={}) {
+  const response=await fetch(`${apiBase}${path}`,{...options,credentials:'include',headers:{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf}:{}),...options.headers}});
+  if(!response.ok){const body=await response.json().catch(()=>({error:'Unable to connect to the API'}));throw new ApiError(body.error||'Request failed',response.status);}
+  return response.status===204?null:response.json();
+}
+function readDemo():Snapshot{const stored=localStorage.getItem(key);if(stored){try{const s=JSON.parse(stored) as Snapshot;preferenceSchema.parse(s.profile);s.records.forEach(r=>schemas[kindSchema.parse(r.kind)].parse(r.data));return s;}catch{throw new Error('The saved demo could not be read. Export or clear this browser’s demo storage before continuing.');}}return demoSnapshot();}
+export const adapter={
+  async settle(plan:LedgerRecord<'cashPlan'>,month:string,date:string){if(!demoMode)return request(`/api/finance/plans/${plan.id}/settle`,{method:'POST',body:JSON.stringify({month,date,version:plan.version})});const s=readDemo();const current=s.records.find(r=>r.id===plan.id&&r.kind==='cashPlan') as LedgerRecord<'cashPlan'>|undefined;if(!current)throw new Error('This plan was removed. Reload and retry.');const existing=settledTransaction(s.records,plan.id,month);if(existing)return existing;if(current.version!==plan.version||!current.data.active)throw new Error('This plan changed or is paused. Reload and retry.');if(!date.startsWith(month)||date>'2026-09-30')throw new Error('Choose an actual payment date in the selected month, no later than today.');const saved={id:crypto.randomUUID(),kind:'transaction' as const,data:planTransaction(current,month,date),version:1};s.records.push(saved);localStorage.setItem(key,JSON.stringify(s));return saved;},
+  async load():Promise<Snapshot>{if(demoMode){let me;try{me=await request('/auth/me');}catch{return readDemo();}demoMode=false;csrf=me.csrf;return request('/api/snapshot');}const me=await request('/auth/me');csrf=me.csrf;return request('/api/snapshot');},
+  async save(record:{id?:string;kind:Kind;data:unknown;version?:number}){if(!demoMode)return request(`/api/records${record.id?`/${record.id}`:''}`,{method:record.id?'PATCH':'POST',body:JSON.stringify(record)});const s=readDemo();const data=schemas[record.kind].parse(record.data);const saved={...record,id:record.id||crypto.randomUUID(),data,version:(record.version||0)+1} as LedgerRecord;const index=s.records.findIndex(r=>r.id===saved.id);if(index<0)s.records.push(saved);else s.records[index]=saved;localStorage.setItem(key,JSON.stringify(s));return saved;},
+  async remove(id:string,version:number){if(!demoMode)return request(`/api/records/${id}`,{method:'DELETE',body:JSON.stringify({version})});const s=readDemo();s.records=s.records.filter(r=>r.id!==id&&!(r.kind==='completion'&&r.data.habitId===id)&&!(r.kind==='milestone'&&r.data.goalId===id));localStorage.setItem(key,JSON.stringify(s));},
+  async profile(data:unknown){const parsed=preferenceSchema.parse(data);if(!demoMode)return request('/api/preferences',{method:'PATCH',body:JSON.stringify(parsed)});const s=readDemo();s.profile={...s.profile,...parsed};localStorage.setItem(key,JSON.stringify(s));},
+  async dismiss(id:string,version:number){if(!demoMode)return request(`/api/announcements/${id}/dismiss`,{method:'POST',body:JSON.stringify({version})});const s=readDemo();s.dismissed.push(`${id}:${version}`);localStorage.setItem(key,JSON.stringify(s));},
+  async logout(){if(!demoMode)await request('/auth/logout',{method:'POST'});},
+  async pdf(month:string){const response=await fetch(`${apiBase}/api/reports/${month}.pdf`,{credentials:'include'});if(!response.ok){const body=await response.json();throw new Error(body.error);}return response.blob();},
+  async billing(plan:string){return request('/api/billing/checkout',{method:'POST',body:JSON.stringify({plan})});}
+};
+export function download(content:string|Blob,name:string,type='text/csv;charset=utf-8'){const url=URL.createObjectURL(content instanceof Blob?content:new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}

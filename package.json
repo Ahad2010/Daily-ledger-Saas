@@ -1,0 +1,7 @@
+{
+  "name": "daily-ledger", "private": true, "workspaces": ["apps/*", "packages/*"],
+  "scripts": {"dev": "npm run dev -w @ledger/web", "dev:api": "npm run dev -w @ledger/api", "build": "npm run build -w @ledger/web && npm run build -w @ledger/api", "typecheck": "npm run typecheck --workspaces --if-present", "lint": "eslint apps packages tests", "test": "tsx --test --test-concurrency=1 tests/*.test.ts", "db:generate": "npm run db:generate -w @ledger/api", "db:migrate": "npm run db:migrate -w @ledger/api", "worker": "npm run worker -w @ledger/api", "admin": "npm run admin -w @ledger/api --"},
+  "devDependencies": {"typescript": "^5.9.3", "tsx": "^4.20.6", "@types/node": "^24.10.0", "eslint": "^9.39.0", "typescript-eslint": "^8.46.0", "@playwright/test": "^1.56.0"}
+}
+
+

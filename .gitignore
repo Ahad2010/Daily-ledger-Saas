@@ -1,0 +1,12 @@
+node_modules/
+node_modules-incomplete/
+package-lock.incomplete.json
+.next/
+dist/
+.env
+.env.local
+*.tsbuildinfo
+apps/api/src/generated/
+test-results/
+playwright-report/
+artifacts/
