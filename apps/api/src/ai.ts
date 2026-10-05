@@ -1,7 +1,7 @@
 import {Router} from 'express';
 import rateLimit from 'express-rate-limit';
 import {z} from 'zod';
-import {metrics,recordsOf,localDate,type Snapshot} from '@ledger/shared';
+import {metrics,recordsOf,localDate,goalProgress,type Snapshot} from '@ledger/shared';
 import type {User} from '@prisma/client';
 import {db} from './db.js';
 import {snapshot,HttpError} from './service.js';
@@ -11,7 +11,7 @@ export function aiContext(s:Snapshot,month:string,intent:z.infer<typeof aiInput>
  const m=metrics(s.records,month,s.profile.currency,s.profile.timezone,asOf);const today=localDate(asOf,s.profile.timezone);const context:Record<string,unknown>={month,currency:s.profile.currency,through:m.end};
  if(intent==='summary'||intent==='spending')Object.assign(context,{incomeMinor:m.income,expensesMinor:m.expenses,netSavingsMinor:m.saved,budgetMinor:m.budget,savingsRate:m.savingsRate,categories:m.categories.map(c=>({name:c.name.slice(0,160),amountMinor:c.amount,percent:c.percentage}))});
  if(intent==='tasks'||intent==='weekly'){context.today=today;context.timezone=s.profile.timezone;context.tasks=recordsOf(s.records,'task').filter(r=>!r.data.done).sort((a,b)=>a.data.due.localeCompare(b.data.due)).slice(0,20).map(r=>({title:r.data.title,due:r.data.due,priority:r.data.priority,overdue:new Date(r.data.due)<asOf}));if(intent==='weekly')context.habits=recordsOf(s.records,'habit').filter(r=>r.data.active).slice(0,10).map(r=>({title:r.data.title,scheduledWeekdays:r.data.days}));}
- if(intent==='goals')context.goals=recordsOf(s.records,'goal').slice(0,15).map(r=>({title:r.data.title,current:r.data.current,target:r.data.target,unit:r.data.unit,deadline:r.data.deadline,active:r.data.active}));
+ if(intent==='goals')context.goals=recordsOf(s.records,'goal').slice(0,15).map(r=>{const progress=goalProgress(r,s.records);return {title:r.data.title,current:progress.current,target:progress.target,unit:r.data.tracking==='steps'?'steps':r.data.unit,deadline:r.data.deadline,active:r.data.active};});
  return context;
 }
 function configured(){return process.env.AI_PROVIDER==='openai-compatible'&&!!(process.env.AI_BASE_URL&&process.env.AI_API_KEY&&process.env.AI_MODEL);}

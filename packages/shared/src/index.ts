@@ -3,6 +3,11 @@ import {monthBudgets} from './finance';
 export * from './finance';
 export * from './trends';
 
+export const currencyOptions=Intl.supportedValuesOf('currency');
+export const currencySchema=z.string().refine(value=>currencyOptions.includes(value),'Choose a supported currency');
+const currencyNames=new Intl.DisplayNames(['en'],{type:'currency'});
+export function currencyLabel(code:string){return currencyNames.of(code)||code;}
+
 export const kinds = ['transaction','budget','cashPlan','financeCategory','recurring','task','habit','completion','workout','meal','grocery','goal','milestone','notification','announcement','automation'] as const;
 export const kindSchema = z.enum(kinds);
 export type Kind = z.infer<typeof kindSchema>;
@@ -12,18 +17,18 @@ const cents = z.number().int().min(0).max(1_000_000_000_000);
 const title = z.string().trim().min(1).max(160);
 const note = z.string().max(2000).default('');
 export const schemas = {
-  transaction: z.object({title, date, amount:cents, currency:z.string().regex(/^[A-Z]{3}$/), type:z.enum(['income','expense','transfer']),category:title,account:title,notes:note,sourceId:z.string().optional(),sourceMonth:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional()}),
-  budget: z.object({title, month:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),amount:cents,currency:z.string().regex(/^[A-Z]{3}$/),category:z.string().trim().max(160).optional(),repeats:z.boolean().optional()}),
-  cashPlan:z.object({title,amount:cents.refine(v=>v>0,'Enter an amount above zero'),currency:z.string().regex(/^[A-Z]{3}$/),type:z.enum(['income','expense']),category:title,account:title,day:z.number().int().min(1).max(31),active:z.boolean().default(true),notes:note}),
+  transaction: z.object({title, date, amount:cents, currency:currencySchema, type:z.enum(['income','expense','transfer']),category:title,account:title,notes:note,sourceId:z.string().optional(),sourceMonth:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional()}),
+  budget: z.object({title, month:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),amount:cents,currency:currencySchema,category:z.string().trim().max(160).optional(),repeats:z.boolean().optional()}),
+  cashPlan:z.object({title,amount:cents.refine(v=>v>0,'Enter an amount above zero'),currency:currencySchema,type:z.enum(['income','expense']),category:title,account:title,day:z.number().int().min(1).max(31),active:z.boolean().default(true),notes:note}),
   financeCategory:z.object({title,type:z.enum(['income','expense'])}),
-  recurring: z.object({title, amount:cents, currency:z.string().regex(/^[A-Z]{3}$/),type:z.enum(['income','expense']),category:title,account:title,nextDate:date,frequency:z.enum(['weekly','monthly']),enabled:z.boolean().default(true),notes:note}),
+  recurring: z.object({title, amount:cents, currency:currencySchema,type:z.enum(['income','expense']),category:title,account:title,nextDate:date,frequency:z.enum(['weekly','monthly']),enabled:z.boolean().default(true),notes:note}),
   task: z.object({title,description:note,due:z.string().datetime({offset:true}).transform(v=>new Date(v).toISOString()),priority:z.enum(['low','medium','high']),done:z.boolean().default(false),completedAt:z.string().datetime().nullable().optional(),reminder:z.boolean().default(true),recurrence:z.enum(['none','weekly','monthly']).default('none')}),
-  habit: z.object({title,days:z.array(z.number().int().min(0).max(6)).min(1).max(7),active:z.boolean().default(true),startDate:date}),
+  habit: z.object({title,days:z.array(z.number().int().min(0).max(6)).min(1).max(7),active:z.boolean().default(true),startDate:date,exerciseSlug:z.string().max(160).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),exerciseMuscle:z.enum(['Full body','Chest','Back','Shoulders','Biceps','Triceps','Forearms','Core','Glutes','Quads','Hamstrings','Calves']).optional(),notes:note.optional()}),
   completion: z.object({habitId:title,date}),
-  workout: z.object({title,date,type:title,duration:z.number().int().min(1).max(1440),notes:note}),
-  meal: z.object({title,date,slot:z.enum(['Breakfast','Lunch','Dinner']),notes:note}),
-  grocery: z.object({title,quantity:z.string().max(80).default(''),cost:cents,currency:z.string().regex(/^[A-Z]{3}$/),done:z.boolean().default(false),mealId:z.string().optional()}),
-  goal: z.object({title,description:note,current:z.number().min(0).max(1e12),target:z.number().positive().max(1e12),unit:z.string().max(30),deadline:date,active:z.boolean().default(true)}),
+  workout: z.object({title,date,type:title,done:z.boolean().optional(),duration:z.number().int().min(1).max(1440),notes:note}),
+  meal: z.object({title,date,slot:z.enum(['Breakfast','Lunch','Dinner','Snack']),notes:note,ingredients:z.string().max(1000).optional(),servings:z.number().int().min(1).max(20).optional(),generatedPlanId:date.optional(),eaten:z.boolean().optional(),nutrition:z.object({calories:z.number().min(0).max(20000).optional(),protein:z.number().min(0).max(1000).optional(),carbs:z.number().min(0).max(2000).optional(),fat:z.number().min(0).max(1000).optional()}).optional()}),
+  grocery: z.object({title,quantity:z.string().max(80).default(''),cost:cents,currency:currencySchema,done:z.boolean().default(false),mealId:z.string().optional()}),
+  goal: z.object({title,description:note,current:z.number().min(0).max(1e12),target:z.number().positive().max(1e12),unit:z.string().max(30),deadline:date,active:z.boolean().default(true),tracking:z.enum(['manual','steps']).optional()}),
   milestone: z.object({title,goalId:title,done:z.boolean().default(false)}),
   notification: z.object({title,read:z.boolean().default(false),date}),
   announcement: z.object({title,description:note,audience:z.enum(['Everyone','Free','Pro','Lifetime']),version:z.number().int().positive(),priority:z.number().int().min(0).max(10),publishAt:z.string().datetime(),expiresAt:z.string().datetime(),followup:z.boolean().default(false),ctaLabel:z.string().max(80).optional(),ctaUrl:z.string().max(2048).refine(v=>{if(!v)return true;if(/[\\\x00-\x20]/.test(v))return false;if(v.startsWith('/')&&!v.startsWith('//'))return true;try{return new URL(v).protocol==='https:';}catch{return false;}},'Use an internal path or HTTPS URL').optional()}),
@@ -33,19 +38,20 @@ export type RecordData = { [K in Kind]: z.infer<typeof schemas[K]> };
 export type LedgerRecord<K extends Kind = Kind> = K extends Kind ? {id:string;kind:K;data:RecordData[K];version:number} : never;
 export interface Profile {name:string;email:string;currency:string;timezone:string;plan:Plan;optionalEmails:boolean;productUpdates:boolean;role?:string;allowances?:Record<string,number|null>;onboardingCompletedAt?:string|null;persona?:string|null;focusAreas?:string[]}
 export interface Snapshot {profile:Profile;records:LedgerRecord[];dismissed:string[]}
-export const preferenceSchema = z.object({name:title,currency:z.enum(['USD','PKR','EUR','GBP']),timezone:z.string().refine(v=>{try { new Intl.DateTimeFormat('en',{timeZone:v}); return true; } catch { return false; }},'Use an IANA timezone'),optionalEmails:z.boolean(),productUpdates:z.boolean()});
+export const preferenceSchema = z.object({name:title,currency:currencySchema,timezone:z.string().refine(v=>{try { new Intl.DateTimeFormat('en',{timeZone:v}); return true; } catch { return false; }},'Use an IANA timezone'),optionalEmails:z.boolean(),productUpdates:z.boolean()});
 export const personas=['Developer','Designer','Freelancer','Business Owner','Student','Other'] as const;
 export const focusAreas=['finance','tasks','fitness','meals','goals'] as const;
-export const currencyOptions=['USD','PKR','EUR','GBP'] as const;
+
 export function timezoneOptions(current='UTC'){return Array.from(new Set([current,...(Intl.supportedValuesOf?Intl.supportedValuesOf('timeZone'):[]),'UTC','Asia/Karachi','Europe/London','America/New_York'])).sort();}
 export const onboardingSchema=preferenceSchema.pick({name:true,currency:true,timezone:true}).extend({persona:z.enum(personas).nullable().default(null),focusAreas:z.array(z.enum(focusAreas)).max(5).refine(v=>new Set(v).size===v.length,'Choose each focus only once').default([]),referralSource:z.string().trim().max(120).optional()});
 export type OnboardingInput=z.infer<typeof onboardingSchema>;
 export type Plan = 'Free'|'Pro'|'Lifetime';
 export const plans = {Free:{price:0,tasks:30,habits:3,goals:3,transactions:100,automations:0,emails:0,pdf:false,history:false,recurring:false},Pro:{price:20,tasks:Infinity,habits:Infinity,goals:Infinity,transactions:Infinity,automations:10,emails:150,pdf:true,history:true,recurring:true},Lifetime:{price:100,tasks:Infinity,habits:Infinity,goals:Infinity,transactions:Infinity,automations:5,emails:60,pdf:true,history:true,recurring:true}};
 export function recordsOf<K extends Kind>(records:LedgerRecord[],kind:K):LedgerRecord<K>[] {return records.filter(r=>r.kind===kind) as LedgerRecord<K>[];}
+export function goalProgress(goal:LedgerRecord<'goal'>,records:LedgerRecord[]){const steps=recordsOf(records,'milestone').filter(r=>r.data.goalId===goal.id);const current=goal.data.tracking==='steps'?steps.filter(r=>r.data.done).length:goal.data.current;const target=goal.data.tracking==='steps'?steps.length:goal.data.target;return {current,target,percentage:target?Math.min(100,current/target*100):0,done:target>0&&current>=target,steps};}
 export function localDate(instant:Date|string,timezone:string):string { const parts=new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(instant)); return ['year','month','day'].map(k=>parts.find(p=>p.type===k)!.value).join('-'); }
 export function monthDates(month:string){const [y,m]=month.split('-').map(Number);return Array.from({length:new Date(Date.UTC(y,m,0)).getUTCDate()},(_,i)=>`${month}-${String(i+1).padStart(2,'0')}`);}
-export function money(cents:number,currency='USD'){return new Intl.NumberFormat('en-US',{style:'currency',currency,maximumFractionDigits:cents%100?2:0}).format(cents/100);}
+export function money(cents:number,currency='USD'){return new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:0,maximumFractionDigits:cents%100?2:0}).format(cents/100);}
 export function metrics(records:LedgerRecord[],month:string,currency:string,timezone:string,asOf=new Date()) {
   const dates=monthDates(month); const today=localDate(asOf,timezone); const end=month===today.slice(0,7)?today:dates.at(-1)!;
   const tx=recordsOf(records,'transaction').filter(r=>r.data.currency===currency&&r.data.date.startsWith(month)&&r.data.date<=end);
@@ -67,8 +73,15 @@ export function metrics(records:LedgerRecord[],month:string,currency:string,time
   return {month,currency,end,partial:month===today.slice(0,7),income,expenses,saved:income-expenses,savingsRate:income?100*(income-expenses)/income:null,budget,budgetUsage:budget?expenses/budget*100:null,tasks,completed:tasks.filter(r=>r.data.done).length,categories,cash,habitDone,habitScheduled:scheduled.length,habitRate:scheduled.length?habitDone/scheduled.length*100:null,incomeChange:previous?(income-previous)/previous*100:null};
 }
 export function habitStreak(habit:LedgerRecord<'habit'>,records:LedgerRecord[],today:string) {const done=new Set(recordsOf(records,'completion').filter(r=>r.data.habitId===habit.id).map(r=>r.data.date));let count=0;const cursor=new Date(`${today}T12:00:00Z`);for(let i=0;i<3660;i++){const date=cursor.toISOString().slice(0,10);if(date<habit.data.startDate)break;if(habit.data.days.includes(cursor.getUTCDay())){if(done.has(date))count++;else if(date!==today)break;}cursor.setUTCDate(cursor.getUTCDate()-1);}return count;}
+export function habitStats(habit:LedgerRecord<'habit'>,records:LedgerRecord[],today:string){
+ const dates=Array.from(new Set(recordsOf(records,'completion').filter(r=>r.data.habitId===habit.id&&r.data.date>=habit.data.startDate&&r.data.date<=today&&habit.data.days.includes(new Date(r.data.date+'T12:00:00Z').getUTCDay())).map(r=>r.data.date))).sort();
+ let best=0,run=0,previous='';
+ for(const date of dates){const next=new Date((previous||date)+'T12:00:00Z');do{next.setUTCDate(next.getUTCDate()+1);}while(!habit.data.days.includes(next.getUTCDay()));run=previous&&next.toISOString().slice(0,10)===date?run+1:1;best=Math.max(best,run);previous=date;}
+ return {current:habitStreak(habit,records,today),best,total:dates.length};
+}
+
 export function csv(rows:(string|number)[][]) {return '\ufeff'+rows.map(row=>row.map(v=>{const s=String(v);const safe=/^[=+@\-\t\r]/.test(s)?`'${s}`:s;return `"${safe.replaceAll('"','""')}"`;}).join(',')).join('\r\n');}
-export function reportRows(s:Snapshot,month:string,now=new Date()) {const m=metrics(s.records,month,s.profile.currency,s.profile.timezone,now);return [['Daily Ledger report',month],['Currency',m.currency],['Through',m.end],['Income',m.income/100],['Expenses',m.expenses/100],['Net savings',m.saved/100],['Budget',m.budget/100],['Tasks completed',m.completed],['Tasks due',m.tasks.length],['Habit completions',m.habitDone],['Habit scheduled',m.habitScheduled],['Workout minutes',recordsOf(s.records,'workout').filter(r=>r.data.date.startsWith(month)&&r.data.date<=m.end).reduce((n,r)=>n+r.data.duration,0)],...recordsOf(s.records,'goal').map(r=>['Goal: '+r.data.title,`${r.data.current} / ${r.data.target} ${r.data.unit}`])];}
+export function reportRows(s:Snapshot,month:string,now=new Date()) {const m=metrics(s.records,month,s.profile.currency,s.profile.timezone,now);return [['Daily Ledger report',month],['Currency',m.currency],['Through',m.end],['Income',m.income/100],['Expenses',m.expenses/100],['Net savings',m.saved/100],['Budget',m.budget/100],['Tasks completed',m.completed],['Tasks due',m.tasks.length],['Habit completions',m.habitDone],['Habit scheduled',m.habitScheduled],['Workout minutes',recordsOf(s.records,'workout').filter(r=>r.data.done&&r.data.date.startsWith(month)&&r.data.date<=m.end).reduce((n,r)=>n+r.data.duration,0)],...recordsOf(s.records,'goal').map(r=>['Goal: '+r.data.title,`${r.data.current} / ${r.data.target} ${r.data.unit}`])];}
 export function reminderEligible(task:LedgerRecord<'task'>|undefined,now:Date){return !!task&&!task.data.done&&task.data.reminder&&new Date(task.data.due).getTime()+86400000<=now.getTime();}
 export function quotaAllowed(plan:Plan,kind:Kind,data:RecordData[Kind],records:LedgerRecord[],timezone:string,allowances=plans[plan]){const p=allowances;if(kind==='recurring')return p.recurring;if(kind==='task'&&!(data as RecordData['task']).done)return recordsOf(records,'task').filter(r=>!r.data.done).length<p.tasks;if(kind==='habit'&&(data as RecordData['habit']).active)return recordsOf(records,'habit').filter(r=>r.data.active).length<p.habits;if(kind==='goal'&&(data as RecordData['goal']).active)return recordsOf(records,'goal').filter(r=>r.data.active).length<p.goals;if(kind==='automation'&&(data as RecordData['automation']).enabled)return recordsOf(records,'automation').filter(r=>r.data.enabled).length<p.automations;if(kind==='transaction')return recordsOf(records,'transaction').filter(r=>r.data.date.slice(0,7)===(data as RecordData['transaction']).date.slice(0,7)).length<p.transactions;void timezone;return true;}
 export function nextOccurrence(date:string,frequency:'weekly'|'monthly'){const d=new Date(`${date}T12:00:00Z`);if(frequency==='weekly')d.setUTCDate(d.getUTCDate()+7);else{const day=d.getUTCDate();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()+1);d.setUTCDate(Math.min(day,new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0)).getUTCDate()));}return d.toISOString().slice(0,10);}
@@ -85,7 +98,7 @@ export function demoSnapshot():Snapshot {
   const reading=add('habit',{title:'Reading',days:[1,2,3,4,5],active:true,startDate:'2026-09-01'});const walk=add('habit',{title:'Evening walk',days:[0,1,2,3,4,5,6],active:true,startDate:'2026-09-01'});
   monthDates('2026-09').forEach((date,i)=>{const day=new Date(`${date}T12:00:00Z`).getUTCDay();if(day>=1&&day<=5&&i%6!==0)add('completion',{habitId:reading,date});if(i%5!==0)add('completion',{habitId:walk,date});});
   add('goal',{title:'Emergency fund',description:'Build a comfortable financial cushion.',current:3000,target:5000,unit:'USD',deadline:'2026-12-31',active:true});add('goal',{title:'Portfolio launch',description:'Publish four polished case studies.',current:3,target:4,unit:'case studies',deadline:'2026-10-31',active:true});
-  for(const day of [2,5,9,12,16,19,23,26,30])add('workout',{title:day%2?'Strength training':'Morning run',date:`2026-09-${String(day).padStart(2,'0')}`,type:day%2?'Strength':'Running',duration:day%2?45:30,notes:''});
+  for(const day of [2,5,9,12,16,19,23,26,30])add('workout',{done:true,title:day%2?'Strength training':'Morning run',date:`2026-09-${String(day).padStart(2,'0')}`,type:day%2?'Strength':'Running',duration:day%2?45:30,notes:''});
   add('meal',{title:'Grilled chicken & vegetables',date:'2026-09-30',slot:'Dinner',notes:'Prep vegetables ahead'});add('grocery',{title:'Fresh vegetables',quantity:'1 basket',cost:1500,currency:'USD',done:false});add('grocery',{title:'Chicken breast',quantity:'500 g',cost:900,currency:'USD',done:false});
   add('notification',{title:'Your September report is ready to explore.',read:false,date:'2026-09-30'});
   add('announcement',{title:'Weekly planning is now available',description:'Plan your week, set priorities and stay on track with less effort.',audience:'Everyone',version:1,priority:1,publishAt:'2026-09-01T00:00:00Z',expiresAt:'2027-01-01T00:00:00Z',followup:false});

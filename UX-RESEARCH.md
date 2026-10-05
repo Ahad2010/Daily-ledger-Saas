@@ -27,3 +27,17 @@ The interface uses restrained GSAP entrances, real pending skeletons, reduced-mo
 ## Practical finance tools
 
 Dedicated option pages reduce nested navigation. Planned income and bills stay separate from received/paid transactions; confirmation creates one linked transaction per month. Category budgets can repeat, and savings goals show a manual contribution rather than silently reducing spendable cash. Calculators show assumptions and handle zero interest, insufficient repayment and negative profit. Compound growth follows starting principal, monthly contributions, return and term ([Investor.gov](https://www.investor.gov/financial-tools-calculators/calculators/compound-interest-calculator)); loan estimates distinguish interest and principal and explicitly exclude fees, taxes and insurance ([CFPB](https://www.consumerfinance.gov/ask-cfpb/how-does-paying-down-a-mortgage-work-en-1943/)). Poppins is locally bundled with its OFL license.
+# Exercise and planning references — 5 October 2026
+
+The exercise detail text is an original concise summary, with its ACE source linked on each page. It includes setup, three movement steps, common mistakes, easier variations, equipment and primary/secondary muscle targets. The generated training illustration is approximate and does not claim clinical anatomy precision.
+
+- [ACE exercise library](https://www.acefitness.org/resources/everyone/exercise-library/) — body-part/equipment filtering and sourced movement instructions.
+- [ACE hamstring study](https://contentcdn.eacefitness.com/February2018/ACE_HamstringsStudy.pdf) — Romanian deadlift and seated leg curl context.
+- [Hevy routines](https://www.hevyapp.com/features/gym-routines/) — reusable routines with editable sets/repetitions and workout logging.
+- [Eat This Much](https://www.eatthismuch.com/how-to/) — editable weekly meal planning.
+- [Canada healthy plate](https://www.canada.ca/en/health-canada/services/food-guide/eating-support/cooking/make-healthy-meals-plate.html) — produce, whole grains and protein-food proportions.
+- [National Academies protein reference](https://www.ncbi.nlm.nih.gov/books/NBK610205/) — general healthy-adult 0.8 g/kg reference, not an athlete or measured meal target.
+- [NIH Body Weight Planner](https://www.niddk.nih.gov/bwp) — calorie planning needs more than weight alone.
+
+- [MyPlate weekly planning](https://www.myplate.gov/eathealthy/budget/budget-weekly-meals) — breakfast, lunch, dinner and snacks, kitchen inventory and connected shopping.
+- [CDC meals and snacks](https://www.cdc.gov/healthy-weight-growth/healthy-eating/meals-snacks.html) — editable meal ideas, portions and planning. Optional nutrition is entered from labels/recipes; the application does not estimate intake from dish names.

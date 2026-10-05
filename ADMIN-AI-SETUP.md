@@ -49,3 +49,14 @@ The server computes ledger totals deterministically and supplies only the select
 ## Remaining external setup
 
 Select the real administrator; configure Google, Railway/Vercel deployment, Resend sender/key and scheduled worker; choose and configure an AI provider if desired. Production billing and provider bounce webhooks remain unavailable. There is no production credential or provider call in the local test fixtures.
+
+
+### Support center and plan administration
+
+Run `npm run db:generate` and `npm run db:migrate` to install migration `20261005120000_support`. No third-party support service or email credential is required: customer tickets persist in PostgreSQL and reach the selected administrator at `/admin/support`. Users submit and track replies at `/help`; the page refreshes its inbox every 30 seconds and an open conversation every 15 seconds while visible. Email notifications are not implemented.
+
+Users can search the worldwide currency catalog in Settings/onboarding/finance forms; historical values are never converted. The existing two-decimal amount entry/storage behavior is preserved. All native dropdowns use explicit dark option styles.
+
+Admin → Users → account → Change plan assigns Free/Pro/Lifetime immediately, records an audit event, and removes any prior temporary override. Temporary access still supports an expiry. Advanced tools/allowance settings are collapsed rather than deleted. Manual entitlements do not record paid revenue. Live checkout, signed provider webhooks, purchase reconciliation and automatic subscription activation remain unconfigured pending the user's payment-provider choice and credentials.
+
+Validation: `tests/currency.test.ts` covers supported-code validation/formatting and existing storage; `tests/browser/support.spec.ts` exercises actual PostgreSQL ticket creation/admin reply/status, tenant isolation, CSRF/stale-version rejection, manual plan assignment and responsive currency/support UI. The support browser test uses isolated fixture users and signed test sessions without changing the selected administrator, and removes its own records afterwards. It requires `TEST_DATABASE_URL` and a local configured API environment with an existing selected administrator; use a development/test database only.

@@ -1,5 +1,5 @@
 import { BrandMark } from './brand-mark';
-export function AccountLoading(){return <div className="account-loading" role="status" aria-label="Opening your workspace"><BrandMark/><p>Opening your workspace…</p><Skeleton className="account-loading-bar"/></div>;}
+export function AccountLoading({message='Opening your workspace…'}:{message?:string}){return <div className="account-loading" role="status" aria-label={message}><BrandMark/><p>{message}</p><Skeleton className="account-loading-bar"/></div>;}
 function InsightSkeleton(){return <div className="insight-grid">{[0,1,2,3].map(i=><div className="insight-card" key={i}><Skeleton className="skeleton-short"/><Skeleton className="skeleton-value"/><Skeleton className="skeleton-text"/></div>)}</div>;}
 export function Skeleton({className=''}:{className?:string}){return <div className={`skeleton ${className}`} aria-hidden="true"/>;}
 export function ProfileSkeleton(){return <div className="profile-skeleton"><Skeleton className="skeleton-avatar"/><div><Skeleton className="skeleton-text"/><Skeleton className="skeleton-short"/></div></div>;}

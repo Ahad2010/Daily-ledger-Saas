@@ -452,3 +452,20 @@ The sidebar displays the Daily Ledger mark and name on the left, with black/char
 Empty charts and record lists share a local metallic illustration, restrained silver glow and contextual create action. Creating a relevant record replaces the empty content with actual records/charts. The ring rotates slowly with scoped GSAP, pauses offscreen or in hidden tabs, and is static under reduced motion. Center glyphs remain stationary and bold for readability.
 
 Initial account/session resolution uses a neutral branded pending screen. Do not render the dashboard shell or dashboard skeleton before the snapshot establishes whether first-login onboarding is required. Subsequent snapshot refreshes reuse the session CSRF token instead of repeating the identity request; authorization remains enforced by every backend request.
+
+### Habit checklist and record feedback
+
+Use colored line/area charts for task workload and habit consistency, with local custom tooltips and unique gradient IDs; no shared hover state or broad bar cursor overlay. Habits live in a full-width Monday–Sunday weekly checklist beneath the task list. Show current and best scheduled-day streaks, weekly done/scheduled progress, rest/missed/upcoming states and week navigation. Only the current scheduled day is interactive; past days remain visible history. Rest days do not break a streak, missed scheduled days do, and future/duplicate/unscheduled completions do not increase best streaks.
+
+Use scoped GSAP for newly inserted record rows, record exits and remaining-row movement across Tasks, Finance, goals and activity lists; do not replay dashboard/chart entrances after snapshot refreshes. Habit check feedback should grow the circle and draw its checkmark after the mutation succeeds, animate progress and streak values, disable repeated clicks while saving, and remain static under reduced motion. Keep semantic checkbox/button controls and visible focus states.
+
+
+## Customer support and worldwide currencies (October 5, 2026)
+
+- `/help` is a premium black/charcoal support center with getting-started guides, honest product FAQs, and private customer tickets. Signed-in users create tickets with a subject, topic, priority, and detailed issue; track open/in-progress/resolved status; and reply in the same conversation. Demo mode explains that sign-in is required and never claims a ticket was delivered.
+- `/admin/support` receives actual database-backed customer tickets. Only the selected authenticated administrator can read the inbox, reply, or change status. Administrative replies/status changes are audited; customer tickets are scoped to their owner. CSRF, message validation, rate limits, pagination, and optimistic version checks apply. Customer replies reopen resolved tickets. Replies appear in-app; email notifications are not configured or promised.
+- Help uses existing BrandMark, GSAP entrances, scoped dialog animations, reduced-motion behavior, real loading skeletons, retry/error/saving states, and responsive layouts.
+- Settings, onboarding, record forms, and platform defaults share a searchable dark currency picker for all currencies supported by the runtime's internationalization catalog. Currency codes are validated consistently. Existing historical values retain their original currency and amount; there is no automatic exchange-rate conversion. The existing amount entry/storage contract supports up to two decimal places, including currencies whose standard cash precision differs.
+- Native select options throughout customer/admin pages explicitly use dark backgrounds and readable foregrounds.
+- Admin navigation prioritizes everyday customer operations; diagnostic tools and plan allowance configuration remain available under Advanced sections.
+- Admin user details provide audited permanent manual Free/Pro/Lifetime assignment plus existing temporary grants. Manual assignments are not purchases and create no revenue. Live paid checkout and automatic provider-confirmed plan activation require selection/configuration of a payment provider; a checkout success URL alone must never grant paid access.

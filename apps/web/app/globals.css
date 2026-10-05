@@ -33,3 +33,5 @@
 .password-requirements{list-style:none;padding:0;margin:-8px 0 0;display:grid;gap:7px;font-size:12px;color:#969696}.password-requirements li{display:flex;align-items:center;gap:8px}.password-requirements li>span:first-child{width:10px;height:10px;flex-shrink:0;display:grid;place-items:center;border:1px solid #38413f;border-radius:50%}.password-requirements .met{color:#9ac9b5}.password-requirements .met>span:first-child{border-color:#80b49d;background:#16241d}.password-requirements+.auth-submit{margin-top:0}
 
 .auth-brand .project-brand-mark{position:relative;display:block;width:46px;height:46px;overflow:hidden;border-radius:0;background:none;border:0}.project-brand-mark img{position:absolute;width:160px;height:auto;max-width:none;left:-53px;top:-38px}
+
+@media(prefers-reduced-motion:no-preference){.auth-art .fold-top{background-image:url('/fold-top-wave.svg')}.auth-art .fold-bottom{background-image:url('/fold-bottom-wave.svg')}}

@@ -32,6 +32,7 @@ model User {
   entitlementOverride EntitlementOverride?
   aiMessages AiMessage[]
   aiUsage AiUsage[]
+  supportTickets SupportTicket[]
 }
 model PasswordCredential {
   id String @id @default(uuid())
@@ -211,4 +212,30 @@ model DeliveryAttempt {
   error String?
   createdAt DateTime @default(now())
   @@unique([jobId,attempt])
+}
+
+model SupportTicket {
+ id String @id @default(uuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ subject String
+ category String
+ priority String @default("normal")
+ status String @default("open")
+ version Int @default(1)
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ messages SupportMessage[]
+ @@index([userId,updatedAt])
+ @@index([status,updatedAt])
+}
+model SupportMessage {
+ id String @id @default(uuid())
+ ticketId String
+ ticket SupportTicket @relation(fields:[ticketId],references:[id],onDelete:Cascade)
+ role String
+ authorName String
+ body String
+ createdAt DateTime @default(now())
+ @@index([ticketId,createdAt])
 }

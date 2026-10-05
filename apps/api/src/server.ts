@@ -16,6 +16,7 @@ import { db,pool } from './db.js';
 import { snapshot,saveRecord,deleteRecord,markNotification,settlePlan,HttpError,dto } from './service.js';
 import { passwordAuth } from './password-auth.js';
 import {adminAuthentication,adminRoutes} from './admin.js';
+import {supportRoutes} from './support.js';
 import {aiRoutes} from './ai.js';
 import {policy,platformSettings} from './platform.js';
 import {savePreferences} from './preferences.js';
@@ -36,12 +37,14 @@ if(googleReady)passport.use(new GoogleStrategy({clientID:process.env.GOOGLE_CLIE
 app.get('/health',(_req,res)=>res.json({status:'ok',googleConfigured:googleReady,passwordConfigured:true,resetConfigured:!!(process.env.RESEND_API_KEY&&process.env.EMAIL_FROM),billing:'development-stub'}));
 app.get('/auth/google',rateLimit({windowMs:60000,limit:20,message:{error:"Too many Google sign-in attempts. Please try again shortly."}}), (req,res,next)=>{if(!googleReady)return res.status(503).json({error:'Google sign-in is not configured. Set the backend OAuth environment variables.'});req.session.returnTo=safeReturnTo(req.query.returnTo);passport.authenticate('google',{scope:['profile','email']})(req,res,next);});
 app.get('/auth/google/callback',(req,res,next)=>{if(!googleReady)return res.status(503).json({error:'Google sign-in is not configured.'});const returnTo=safeReturnTo(req.session.returnTo);passport.authenticate('google',(error:Error,user:Express.User|false)=>{if(error||!user)return res.redirect(`${origin}/login?auth=failed&returnTo=${encodeURIComponent(returnTo)}`);req.session.regenerate(err=>{if(err)return next(err);req.logIn(user,e=>{if(e)return next(e);req.session.csrf=randomBytes(32).toString('hex');req.session.save(saveError=>saveError?next(saveError):res.redirect(origin+returnTo));});});})(req,res,next);});
+function identity(req:Request,res:Response,next:NextFunction){if(!req.isAuthenticated())return res.status(401).json({error:'Sign in to access your workspace.'});next();}
 async function auth(req:Request,res:Response,next:NextFunction){if(!req.isAuthenticated())return res.status(401).json({error:'Sign in to access your workspace.'});const u=req.user as User;if(u.status!=='active')return res.status(403).json({error:'This account is suspended. Contact support.'});if(!u.lastActiveAt||u.lastActiveAt.getTime()<Date.now()-300000)await db.user.update({where:{id:u.id},data:{lastActiveAt:new Date()}});next();}
 function csrf(req:Request,res:Response,next:NextFunction){const supplied=req.get('X-CSRF-Token')||'';const expected=req.session.csrf||'';const requestOrigin=req.get('Origin');if(!requestOrigin||requestOrigin!==origin||!expected||supplied.length!==expected.length||!timingSafeEqual(Buffer.from(supplied),Buffer.from(expected)))return res.status(403).json({error:'Invalid request origin or CSRF token. Reload and try again.'});next();}
 app.use('/auth',passwordAuth(csrf));
 app.use('/auth/admin',adminAuthentication(csrf));
-app.get('/auth/me',auth,(req,res)=>{req.session.csrf ||= randomBytes(32).toString('hex');const u=req.user as User;res.json({user:{name:u.name,email:u.email},csrf:req.session.csrf});});
-app.post('/auth/logout',auth,csrf,(req,res,next)=>req.logout(e=>{if(e)return next(e);req.session.destroy(err=>{if(err)return next(err);res.clearCookie('ledger.sid',{httpOnly:true,secure:production,sameSite:'lax',path:'/'}).status(204).end();});}));
+app.get('/auth/me',identity,(req,res)=>{req.session.csrf ||= randomBytes(32).toString('hex');const u=req.user as User;res.json({user:{name:u.name,email:u.email,status:u.status},csrf:req.session.csrf});});
+app.post('/auth/logout',identity,csrf,(req,res,next)=>req.logout(e=>{if(e)return next(e);req.session.destroy(err=>{if(err)return next(err);res.clearCookie('ledger.sid',{httpOnly:true,secure:production,sameSite:'lax',path:'/'}).status(204).end();});}));
+app.use('/api/support',identity,(req,res,next)=>['GET','HEAD','OPTIONS'].includes(req.method)?next():csrf(req,res,next),supportRoutes());
 app.use('/api',auth);app.use('/api',(req,res,next)=>['GET','HEAD','OPTIONS'].includes(req.method)?next():csrf(req,res,next));
 app.use('/api/admin',adminRoutes());
 app.use('/api/ai',aiRoutes());
