@@ -23,3 +23,7 @@ The user's latest direction keeps the dashboard composition, applies the login/s
 | Branding | Supplied Daily Ledger logo on dashboard, loading/error states, login/signup, recovery, and legal pages |
 
 The interface uses restrained GSAP entrances, real pending skeletons, reduced-motion support, and touch-sized mobile controls. No banking balances, exchange conversions, calorie data, financial advice, or forecasts are fabricated from records that do not contain them.
+
+## Practical finance tools
+
+Dedicated option pages reduce nested navigation. Planned income and bills stay separate from received/paid transactions; confirmation creates one linked transaction per month. Category budgets can repeat, and savings goals show a manual contribution rather than silently reducing spendable cash. Calculators show assumptions and handle zero interest, insufficient repayment and negative profit. Compound growth follows starting principal, monthly contributions, return and term ([Investor.gov](https://www.investor.gov/financial-tools-calculators/calculators/compound-interest-calculator)); loan estimates distinguish interest and principal and explicitly exclude fees, taxes and insurance ([CFPB](https://www.consumerfinance.gov/ask-cfpb/how-does-paying-down-a-mortgage-work-en-1943/)). Poppins is locally bundled with its OFL license.

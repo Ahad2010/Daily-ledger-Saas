@@ -24,7 +24,7 @@ async function schedules(){
   const user=await tx.user.findUniqueOrThrow({where:{id:definition.userId}});const task=await tx.record.findUnique({where:{id:definition.id}});if(!task||user.status!=='active'||(await policy(user,tx)).plan==='Free')return;const data=task.data as RecordData['task'];if(!data.done||data.recurrence==='none')return;
   const key=`task-repeat:${task.id}`;if(await tx.record.findUnique({where:{userId_uniqueKey:{userId:user.id,uniqueKey:key}}}))return;
   const due=new Date(data.due);if(data.recurrence==='weekly')due.setUTCDate(due.getUTCDate()+7);else {const day=due.getUTCDate();due.setUTCDate(1);due.setUTCMonth(due.getUTCMonth()+1);due.setUTCDate(Math.min(day,new Date(Date.UTC(due.getUTCFullYear(),due.getUTCMonth()+1,0)).getUTCDate()));}
-  const next={...data,done:false,due:due.toISOString()};const all=await tx.record.findMany({where:{userId:user.id}});if(!await allowed(user,'task',next,all.map(dto),tx))return;
+  const next={...data,done:false,completedAt:null,due:due.toISOString()};const all=await tx.record.findMany({where:{userId:user.id}});if(!await allowed(user,'task',next,all.map(dto),tx))return;
   const r=await tx.record.create({data:{userId:user.id,kind:'task',data:next,...metadata('task',next),uniqueKey:key}});if(next.reminder)await tx.job.create({data:{userId:user.id,type:'task-overdue',recordId:r.id,expectedVersion:r.version,key:`task:${r.id}:1:${next.due}`,dueAt:new Date(due.getTime()+86400000)}});
  });
  const announcements=await db.announcement.findMany({where:{status:'published',publishAt:{lte:new Date(Date.now()-86400000)},expiresAt:{gt:new Date()}},take:100});

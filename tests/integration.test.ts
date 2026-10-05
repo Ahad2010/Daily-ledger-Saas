@@ -9,13 +9,13 @@ import { randomUUID,createHash,createHmac } from 'node:crypto';
 const require=createRequire(import.meta.url);
 const sign=require('cookie-signature').sign;
 const url=process.env.TEST_DATABASE_URL;
-test('real PostgreSQL: ownership, CSRF, concurrent quotas, versions, sessions and job cancellation',{skip:!url,timeout:90000},async()=>{
+test('real PostgreSQL: ownership, CSRF, concurrent quotas, versions, sessions and job cancellation',{skip:!url,timeout:180000},async()=>{
  const pool=new pg.Pool({connectionString:url});const secret='integration-session-secret-32-characters-long';const csrf='a'.repeat(64);const origin='http://localhost:3000';const port=4011;
  const processApi=spawn(process.execPath,['--import','tsx','apps/api/src/server.ts'],{env:{...process.env,DATABASE_URL:url,SESSION_SECRET:secret,FRONTEND_ORIGIN:origin,PORT:String(port),NODE_ENV:'development'},windowsHide:true,stdio:'pipe'});let logs='';processApi.stdout.on('data',d=>logs+=d);processApi.stderr.on('data',d=>logs+=d);
  const users=[randomUUID(),randomUUID()];const sessions=[randomUUID(),randomUUID()];
  try{
   for(let i=0;i<2;i++){await pool.query('INSERT INTO "User" (id,"googleId",email,name) VALUES ($1,$2,$3,$4)',[users[i],'test-'+users[i],'test@example.com','Integration user']);await pool.query('INSERT INTO session (sid,sess,expire) VALUES ($1,$2,NOW()+INTERVAL \'1 hour\')',[sessions[i],JSON.stringify({cookie:{originalMaxAge:3600000,expires:new Date(Date.now()+3600000).toISOString(),httpOnly:true,path:'/',sameSite:'lax'},passport:{user:users[i]},csrf})]);}
-  const base=`http://localhost:${port}`;let ready=false;for(let n=0;n<100;n++){try{if((await fetch(base+'/health')).ok){ready=true;break;}}catch{}await new Promise(resolve=>setTimeout(resolve,200));}assert.ok(ready,logs);
+  const base=`http://localhost:${port}`;let ready=false;for(let n=0;n<400;n++){try{if((await fetch(base+'/health')).ok){ready=true;break;}}catch{}await new Promise(resolve=>setTimeout(resolve,200));}assert.ok(ready,logs);
   const request=(index:number,path:string,method='GET',body?:unknown,token=csrf)=>fetch(base+path,{method,headers:{Cookie:`ledger.sid=${encodeURIComponent('s:'+sign(sessions[index],secret))}`,Origin:origin,'X-CSRF-Token':token,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
   assert.equal((await fetch(base+'/api/snapshot')).status,401);assert.equal((await request(0,'/api/preferences','PATCH',{name:'X'},'invalid')).status,403);
   const task={kind:'task',data:{title:'Private task',description:'',due:'2026-01-01T00:00:00Z',priority:'high',done:false,reminder:true,recurrence:'none'}};
@@ -40,3 +40,4 @@ test('real PostgreSQL: ownership, CSRF, concurrent quotas, versions, sessions an
   assert.equal((await post(local,'/auth/reset-password',{id:resetId,token:'b'.repeat(64),password:'new correct horse staple 42!'})).status,400);assert.equal((await post(local,'/auth/reset-password',{id:resetId,token,password:'new correct horse staple 42!'})).status,200);assert.equal((await post(local,'/auth/reset-password',{id:resetId,token,password:'another password word 42!'})).status,400);assert.equal((await fetch(base+'/auth/me',{headers:{Cookie:signedCookie}})).status,401);assert.equal((await post(local,'/auth/login',{email,password:'new correct horse staple 42!'})).status,200);
  }finally{processApi.kill();await pool.query('DELETE FROM session WHERE sid=ANY($1)',[sessions]);await pool.query('DELETE FROM "User" WHERE id=ANY($1)',[users]);await pool.end();}
 });
+

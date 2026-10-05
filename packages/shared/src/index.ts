@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {monthBudgets} from './finance';
 export * from './finance';
+export * from './trends';
 
 export const kinds = ['transaction','budget','cashPlan','financeCategory','recurring','task','habit','completion','workout','meal','grocery','goal','milestone','notification','announcement','automation'] as const;
 export const kindSchema = z.enum(kinds);
@@ -16,7 +17,7 @@ export const schemas = {
   cashPlan:z.object({title,amount:cents.refine(v=>v>0,'Enter an amount above zero'),currency:z.string().regex(/^[A-Z]{3}$/),type:z.enum(['income','expense']),category:title,account:title,day:z.number().int().min(1).max(31),active:z.boolean().default(true),notes:note}),
   financeCategory:z.object({title,type:z.enum(['income','expense'])}),
   recurring: z.object({title, amount:cents, currency:z.string().regex(/^[A-Z]{3}$/),type:z.enum(['income','expense']),category:title,account:title,nextDate:date,frequency:z.enum(['weekly','monthly']),enabled:z.boolean().default(true),notes:note}),
-  task: z.object({title,description:note,due:z.string().datetime({offset:true}).transform(v=>new Date(v).toISOString()),priority:z.enum(['low','medium','high']),done:z.boolean().default(false),reminder:z.boolean().default(true),recurrence:z.enum(['none','weekly','monthly']).default('none')}),
+  task: z.object({title,description:note,due:z.string().datetime({offset:true}).transform(v=>new Date(v).toISOString()),priority:z.enum(['low','medium','high']),done:z.boolean().default(false),completedAt:z.string().datetime().nullable().optional(),reminder:z.boolean().default(true),recurrence:z.enum(['none','weekly','monthly']).default('none')}),
   habit: z.object({title,days:z.array(z.number().int().min(0).max(6)).min(1).max(7),active:z.boolean().default(true),startDate:date}),
   completion: z.object({habitId:title,date}),
   workout: z.object({title,date,type:title,duration:z.number().int().min(1).max(1440),notes:note}),
@@ -30,9 +31,15 @@ export const schemas = {
 };
 export type RecordData = { [K in Kind]: z.infer<typeof schemas[K]> };
 export type LedgerRecord<K extends Kind = Kind> = K extends Kind ? {id:string;kind:K;data:RecordData[K];version:number} : never;
-export interface Profile {name:string;email:string;currency:string;timezone:string;plan:Plan;optionalEmails:boolean;productUpdates:boolean;role?:string;allowances?:Record<string,number|null>}
+export interface Profile {name:string;email:string;currency:string;timezone:string;plan:Plan;optionalEmails:boolean;productUpdates:boolean;role?:string;allowances?:Record<string,number|null>;onboardingCompletedAt?:string|null;persona?:string|null;focusAreas?:string[]}
 export interface Snapshot {profile:Profile;records:LedgerRecord[];dismissed:string[]}
 export const preferenceSchema = z.object({name:title,currency:z.enum(['USD','PKR','EUR','GBP']),timezone:z.string().refine(v=>{try { new Intl.DateTimeFormat('en',{timeZone:v}); return true; } catch { return false; }},'Use an IANA timezone'),optionalEmails:z.boolean(),productUpdates:z.boolean()});
+export const personas=['Developer','Designer','Freelancer','Business Owner','Student','Other'] as const;
+export const focusAreas=['finance','tasks','fitness','meals','goals'] as const;
+export const currencyOptions=['USD','PKR','EUR','GBP'] as const;
+export function timezoneOptions(current='UTC'){return Array.from(new Set([current,...(Intl.supportedValuesOf?Intl.supportedValuesOf('timeZone'):[]),'UTC','Asia/Karachi','Europe/London','America/New_York'])).sort();}
+export const onboardingSchema=preferenceSchema.pick({name:true,currency:true,timezone:true}).extend({persona:z.enum(personas).nullable().default(null),focusAreas:z.array(z.enum(focusAreas)).max(5).refine(v=>new Set(v).size===v.length,'Choose each focus only once').default([]),referralSource:z.string().trim().max(120).optional()});
+export type OnboardingInput=z.infer<typeof onboardingSchema>;
 export type Plan = 'Free'|'Pro'|'Lifetime';
 export const plans = {Free:{price:0,tasks:30,habits:3,goals:3,transactions:100,automations:0,emails:0,pdf:false,history:false,recurring:false},Pro:{price:20,tasks:Infinity,habits:Infinity,goals:Infinity,transactions:Infinity,automations:10,emails:150,pdf:true,history:true,recurring:true},Lifetime:{price:100,tasks:Infinity,habits:Infinity,goals:Infinity,transactions:Infinity,automations:5,emails:60,pdf:true,history:true,recurring:true}};
 export function recordsOf<K extends Kind>(records:LedgerRecord[],kind:K):LedgerRecord<K>[] {return records.filter(r=>r.kind===kind) as LedgerRecord<K>[];}
@@ -74,7 +81,7 @@ export function demoSnapshot():Snapshot {
   for(const [category,total,shift] of [['Essentials',64000,3],['Food',32000,8],['Transport',19200,15],['Other',12800,21]] as const){distribute(total,shift).forEach((amount,i)=>add('transaction',{title:category==='Essentials'?'Home & utilities':category==='Food'?'Groceries & dining':category==='Transport'?'Travel & transit':'Personal purchase',date:`2026-09-${String(i+1).padStart(2,'0')}`,amount,currency:'USD',type:'expense',category,account:'Checking',notes:''}));}
   add('transaction',{title:'August consulting',date:'2026-08-28',amount:357143,currency:'USD',type:'income',category:'Work',account:'Checking',notes:''});
   add('budget',{title:'Monthly spending budget',month:'2026-09',amount:200000,currency:'USD'});
-  for(let i=0;i<24;i++)add('task',{title:i===18?'Finish client proposal':i===19?'Review monthly budget':i===20?'Plan next week':i<18?['Review project brief','Morning planning','Send client update'][i%3]:['Schedule dentist','Organize documents','Book weekend trip'][i-21],description:'',due:`2026-09-${String(i<18?i+1:30).padStart(2,'0')}T${i===18?'05:00':i===19?'09:00':'15:00'}:00Z`,priority:i===18?'high':'medium',done:i<18,reminder:true,recurrence:'none'});
+  for(let i=0;i<24;i++)add('task',{title:i===18?'Finish client proposal':i===19?'Review monthly budget':i===20?'Plan next week':i<18?['Review project brief','Morning planning','Send client update'][i%3]:['Schedule dentist','Organize documents','Book weekend trip'][i-21],description:'',due:`2026-09-${String(i<18?i+1:30).padStart(2,'0')}T${i===18?'05:00':i===19?'09:00':'15:00'}:00Z`,priority:i===18?'high':'medium',done:i<18,completedAt:i<18?`2026-09-${String(i+1).padStart(2,'0')}T16:00:00.000Z`:null,reminder:true,recurrence:'none'});
   const reading=add('habit',{title:'Reading',days:[1,2,3,4,5],active:true,startDate:'2026-09-01'});const walk=add('habit',{title:'Evening walk',days:[0,1,2,3,4,5,6],active:true,startDate:'2026-09-01'});
   monthDates('2026-09').forEach((date,i)=>{const day=new Date(`${date}T12:00:00Z`).getUTCDay();if(day>=1&&day<=5&&i%6!==0)add('completion',{habitId:reading,date});if(i%5!==0)add('completion',{habitId:walk,date});});
   add('goal',{title:'Emergency fund',description:'Build a comfortable financial cushion.',current:3000,target:5000,unit:'USD',deadline:'2026-12-31',active:true});add('goal',{title:'Portfolio launch',description:'Publish four polished case studies.',current:3,target:4,unit:'case studies',deadline:'2026-10-31',active:true});

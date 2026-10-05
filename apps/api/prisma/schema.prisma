@@ -17,6 +17,10 @@ model User {
   productUpdates Boolean @default(false)
   status String @default("active")
   lastActiveAt DateTime?
+  onboardingCompletedAt DateTime?
+  persona String?
+  focusAreas Json @default("[]")
+  referralSource String?
   entitlementSource String @default("free")
   createdAt DateTime @default(now())
   records Record[]

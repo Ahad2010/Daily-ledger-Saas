@@ -1,8 +1,8 @@
 import { test,expect } from '@playwright/test';
 test('money entry uses normal currency amounts and links use names',async({page})=>{
  await page.goto('/finance');
- await expect(page.locator('.finance-guidance')).toContainText('$720');
- await expect(page.locator('.insight-card').last()).toContainText('$720');
+ await expect(page.locator('.finance-budget-row')).toContainText('$720');
+ await expect(page.locator('.finance-hero')).toContainText('$2,720');
  await page.goto('/goals');
  const goal=page.locator('.two-grid>.panel').filter({hasText:'Emergency fund'});
  await goal.getByRole('button',{name:'Add milestone'}).click();
@@ -31,7 +31,7 @@ test('money entry uses normal currency amounts and links use names',async({page}
  await expect(item).toContainText('$1.99');await expect(item).toContainText('October breakfast');
 });
 test('transaction paging and category drill-down preserve the selected month',async({page})=>{
- await page.goto('/finance');await expect(page.locator('tbody tr')).toHaveCount(12);
+ await page.goto('/finance/transactions');await expect(page.locator('tbody tr')).toHaveCount(12);
  await page.getByRole('button',{name:'Next transaction page'}).click();await expect(page.locator('.transaction-pagination')).toContainText('Showing 13–24');
  await page.getByLabel('Transaction category').selectOption('Food');await expect(page.locator('.transaction-pagination')).toContainText('Showing 1–12');
  await page.goto('/');await page.getByLabel('Selected month').fill('2026-08');
@@ -41,7 +41,7 @@ test('transaction paging and category drill-down preserve the selected month',as
  await expect(page.getByLabel('Selected month')).toHaveValue('2026-08');await expect(page.getByLabel('Transaction category')).toHaveValue('Essentials');
 });
 test('mobile transactions use readable rows with working edit controls',async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.goto('/finance');await page.getByLabel('Transaction category').selectOption('Food');
+ await page.setViewportSize({width:390,height:844});await page.goto('/finance/transactions');await page.getByLabel('Transaction category').selectOption('Food');
  await expect(page.locator('.records-panel .table-scroll')).toBeHidden();await expect(page.locator('.mobile-transaction-list')).toBeVisible();
  const first=page.locator('.mobile-transaction').first();await first.getByRole('button',{name:/^Edit /}).click();
  await page.getByRole('dialog').getByLabel('Amount',{exact:true}).fill('5.25');await page.getByRole('button',{name:'Save changes',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
