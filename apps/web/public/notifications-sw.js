@@ -1,0 +1,4 @@
+self.addEventListener('install',()=>self.skipWaiting());
+self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
+self.addEventListener('push',event=>{let data;try{data=event.data.json();}catch{return;}const path=typeof data.url==='string'&&data.url.startsWith('/')&&!data.url.startsWith('//')?data.url:'/';event.waitUntil(self.registration.showNotification(String(data.title||'Daily Ledger'),{body:String(data.body||''),tag:String(data.tag||'daily-ledger'),icon:'/daily-ledger-logo.png',data:{url:path}}));});
+self.addEventListener('notificationclick',event=>{event.notification.close();const url=new URL(event.notification.data?.url||'/',self.location.origin).href;event.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(async clients=>{const client=clients.find(c=>new URL(c.url).origin===self.location.origin);if(client){await client.navigate(url);return client.focus();}return self.clients.openWindow(url);}));});

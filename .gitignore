@@ -10,3 +10,4 @@ apps/api/src/generated/
 test-results/
 playwright-report/
 artifacts/
+.next-verify/

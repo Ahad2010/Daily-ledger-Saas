@@ -33,6 +33,19 @@ model User {
   aiMessages AiMessage[]
   aiUsage AiUsage[]
   supportTickets SupportTicket[]
+  pushSubscriptions PushSubscription[]
+}
+model PushSubscription {
+ id String @id @default(uuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ endpoint String @unique
+ p256dh String
+ auth String
+ reminders Boolean @default(true)
+ announcements Boolean @default(true)
+ createdAt DateTime @default(now())
+ @@index([userId])
 }
 model PasswordCredential {
   id String @id @default(uuid())
@@ -190,6 +203,7 @@ model Job {
   type String
   recordId String
   expectedVersion Int
+  payload Json @default("{}")
   status String @default("pending")
   dueAt DateTime
   leaseUntil DateTime?

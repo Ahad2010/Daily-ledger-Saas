@@ -11,7 +11,7 @@ function run(args){const child=spawn(process.execPath,args,{stdio:'inherit',wind
 const npm=process.env.npm_execpath;
 if(!npm)throw new Error('Start this script with npm run dev.');
 let stopping=false;
-function stop(){if(stopping)return;stopping=true;for(const child of children)if(child.pid&&!child.killed){if(process.platform==='win32')spawnSync('taskkill',['/pid',String(child.pid),'/t','/f'],{stdio:'ignore',windowsHide:true});else child.kill('SIGTERM');}process.exit();}
+function stop(){if(stopping)return;stopping=true;for(const child of children)if(child.pid&&!child.killed&&child.exitCode===null&&child.signalCode===null){if(process.platform==='win32')spawnSync('taskkill',['/pid',String(child.pid),'/t','/f'],{stdio:'ignore',windowsHide:true});else child.kill('SIGTERM');}process.exit();}
 process.on('SIGINT',stop);process.on('SIGTERM',stop);
 if(!(await listening(apiPort))){
  if(config.DATABASE_URL){const database=new URL(config.DATABASE_URL);if(['127.0.0.1','localhost'].includes(database.hostname)&&database.port==='5439'&&!(await listening(5439))&&existsSync('artifacts/pg-test/node_modules/@embedded-postgres/windows-x64/dist/index.js')){
@@ -19,7 +19,10 @@ if(!(await listening(apiPort))){
   for(let attempt=0;attempt<180&&!(await listening(5439));attempt++)await new Promise(resolve=>setTimeout(resolve,500));
  }}
  console.log('Starting Daily Ledger API…');run([npm,'run','dev','-w','@ledger/api']);
- for(let attempt=0;attempt<120&&!(await listening(apiPort));attempt++)await new Promise(resolve=>setTimeout(resolve,500));
- if(!(await listening(apiPort)))console.warn('API is not ready. Check apps/api/.env and PostgreSQL; login needs the API.');
 }else console.log('Using the existing local API.');
-const web=run([npm,'run','dev','-w','@ledger/web']);web.on('exit',()=>stop());
+if(await listening(3000))console.log('Using the existing frontend on http://localhost:3000.');
+else{const web=run([npm,'run','dev','-w','@ledger/web']);web.on('exit',()=>stop());}
+run(['scripts/dev-worker.mjs']);
+async function ready(url){const deadline=Date.now()+180000;while(Date.now()<deadline){try{const response=await fetch(url,{signal:AbortSignal.timeout(5000)});if(response.ok)return true;}catch{/* Startup/first route compilation can still be pending. */}await new Promise(resolve=>setTimeout(resolve,1000));}return false;}
+const [apiReady,webReady]=await Promise.all([ready(`http://127.0.0.1:${apiPort}/ready`),ready('http://127.0.0.1:3000/login')]);
+console.log(apiReady&&webReady?'Daily Ledger is ready: http://localhost:3000':`Startup needs attention: API ${apiReady?'ready':'unavailable'}, frontend ${webReady?'ready':'unavailable'}. Check the errors above.`);

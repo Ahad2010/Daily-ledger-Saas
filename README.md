@@ -52,22 +52,22 @@ Password hashes use native salted scrypt. Email sessions rotate on authenticatio
 1. In Google Cloud Console create a project, configure Google Auth Platform branding/audience and an OAuth web application client. During testing add your account as a test user.
 2. For local development authorize origin `http://localhost:3000` and the exact redirect URI `http://localhost:3000/backend/auth/google/callback`.
 3. Put client ID, client secret, and callback URL in the **API** environment. Requested scopes are only `profile` and `email`.
-4. Production: authorize origin `https://app.dailyledger.store` and callback `https://api.dailyledger.store/auth/google/callback`. These are proposed domains; DNS is not provisioned by this repository.
+4. Production: authorize origin `https://app.dailyledger.store` and callback `https://app.dailyledger.store/backend/auth/google/callback`. These are proposed domains; DNS is not provisioned by this repository.
 5. Set `FRONTEND_ORIGIN` to the exact browser origin. Login uses provider ID, OAuth state validation, session rotation, HttpOnly host-only cookies, and a per-session CSRF token. Logout destroys the persisted session.
 
 ## Deploy frontend to Vercel
 
 - Import this repository; set root directory to `apps/web`. Enable access to files outside the root for workspace dependencies. Use the npm lockfile at the workspace root.
 - Build command: `npm run build -w @ledger/web` from repository root (or `npm run build` from the web directory). Install command: `npm ci` from workspace root.
-- Set `NEXT_PUBLIC_DATA_MODE=api`, `NEXT_PUBLIC_API_URL=https://api.dailyledger.store`, and `API_INTERNAL_URL=https://api.dailyledger.store`. Only public URLs/mode belong in public env vars.
+- Set `NEXT_PUBLIC_DATA_MODE=api`, `NEXT_PUBLIC_API_URL=/backend`, and `API_INTERNAL_URL=https://api.dailyledger.store`. Only public URLs/mode belong in public env vars.
 - Add `app.dailyledger.store` as a Vercel domain and configure the DNS records Vercel provides.
-- Alternatively deploy the demo with `NEXT_PUBLIC_DATA_MODE=demo`; it must remain labeled.
+- Production deploys require API mode and the same-origin `/backend` proxy. See [deployment setup](DEPLOYMENT.md).
 
 ## Deploy Express and PostgreSQL to Railway
 
 - Create a project with PostgreSQL and a repository-backed API service. Use repository root as service root so shared contracts and lockfile are available.
 - Install/build: `npm ci && npm run db:generate && npm run build -w @ledger/api`.
-- Pre-deploy migration: `npm run db:migrate`. Start: `npm run start -w @ledger/api`. Health check: `/health`. Railway supplies `PORT`.
+- Pre-deploy migration: `npm run db:migrate`. Start: `npm run start -w @ledger/api`. Health check: `/ready`. Railway supplies `PORT`.
 - Set `NODE_ENV=production`, `DATABASE_URL` from Railway PostgreSQL's private connection, a strong `SESSION_SECRET`, exact `FRONTEND_ORIGIN=https://app.dailyledger.store`, Google variables, `EMAIL_FROM`, and optionally `RESEND_API_KEY`.
 - Add `api.dailyledger.store` to the API service, configure Railway's supplied DNS records, and wait for TLS before testing secure cookies. Express trusts one proxy hop. Cookies use `SameSite=Lax`, Secure in production, and no `Domain` attribute. Sibling HTTPS custom domains allow credentialed API requests without weakening cookie protection.
 - Frontend and API may not share session secrets or database credentials. Migrations are committed. Never run `prisma db push` against production as a deployment shortcut.

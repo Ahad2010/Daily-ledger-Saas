@@ -4,8 +4,8 @@ test('money entry uses normal currency amounts and links use names',async({page}
  await expect(page.locator('.finance-budget-row')).toContainText('$720');
  await expect(page.locator('.finance-hero')).toContainText('$2,720');
  await page.goto('/goals');
- const goal=page.locator('.two-grid>.panel').filter({hasText:'Emergency fund'});
- await goal.getByRole('button',{name:'Add milestone'}).click();
+ await page.getByRole('link',{name:'Emergency fund',exact:true}).click();await expect(page).toHaveURL(/\/goals\/.+/);const goal=page.locator('.actionable-goal').filter({hasText:'Emergency fund'});
+ await goal.getByRole('button',{name:'Add step'}).click();
  const dialog=page.getByRole('dialog');
  expect(await dialog.getByLabel('Goal',{exact:true}).evaluate((element:HTMLSelectElement)=>element.selectedOptions[0].textContent)).toBe('Emergency fund');
  await dialog.getByLabel('Milestone',{exact:true}).fill('Build first buffer');

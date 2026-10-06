@@ -35,3 +35,19 @@
 .auth-brand .project-brand-mark{position:relative;display:block;width:46px;height:46px;overflow:hidden;border-radius:0;background:none;border:0}.project-brand-mark img{position:absolute;width:160px;height:auto;max-width:none;left:-53px;top:-38px}
 
 @media(prefers-reduced-motion:no-preference){.auth-art .fold-top{background-image:url('/fold-top-wave.svg')}.auth-art .fold-bottom{background-image:url('/fold-bottom-wave.svg')}}
+/* Optional anatomy viewer: gestures are scoped to the canvas, never the page. */
+.dialog-content:has(.anatomy-3d-dialog){width:min(780px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:24px;padding-top:max(24px,env(safe-area-inset-top));overflow-y:auto}
+.anatomy-3d-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.anatomy-3d-toolbar button,.anatomy-3d-loading button{min-height:44px;padding:8px 13px;background:#1b2022;border:1px solid #343c40;border-radius:9px;color:#edf5f5;cursor:pointer}
+.anatomy-3d-toolbar button:last-child{margin-left:auto}
+.anatomy-3d-canvas,.anatomy-3d-loading{height:clamp(280px,52dvh,510px);position:relative;border:1px solid #283438;border-radius:18px;background:radial-gradient(ellipse at center,#19272c 0%,#0c1113 75%);overflow:hidden}
+.anatomy-3d-canvas canvas{touch-action:none;cursor:grab}.anatomy-3d-canvas canvas:active{cursor:grabbing}
+.anatomy-3d-label{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);max-width:90%;pointer-events:none;background:#0e191ddb;color:#b9efde;border:1px solid #34564e;padding:6px 15px;border-radius:30px;font-size:12px}
+.anatomy-3d-loading{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:20px;color:#aac2ca}
+.anatomy-skeleton{height:65%;width:30%;border-radius:45%;background:linear-gradient(120deg,#1a2428,#304147,#1a2428);animation:anatomy-loading 1.8s ease-in-out infinite alternate}
+@keyframes anatomy-loading{to{opacity:.45}}
+.anatomy-model-loading{white-space:nowrap;font-size:12px;color:#bdd2d8;padding:14px;border-radius:10px;background:#0c1113}
+.anatomy-3d-credit{display:block;color:#91a9b3;font-size:10px;margin:12px 0}.anatomy-3d-dialog .muscle-buttons button{min-height:44px}.anatomy-3d-dialog .muscle-buttons button[aria-pressed=true]{background:#25483d;border-color:#72c6a5;color:#b6f7df}
+.body-map>button{margin-top:8px}
+@media(max-width:600px){.dialog-content:has(.anatomy-3d-dialog){padding:18px 14px;max-height:calc(100dvh - 16px);width:calc(100vw - 16px)}.anatomy-3d-toolbar{padding-right:0}.anatomy-3d-toolbar button:last-child{margin-left:0}.anatomy-3d-canvas{height:clamp(240px,48dvh,450px)}}
+@media(prefers-reduced-motion:reduce){.anatomy-skeleton{animation:none}}
