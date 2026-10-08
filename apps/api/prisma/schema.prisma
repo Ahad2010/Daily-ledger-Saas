@@ -204,6 +204,7 @@ model AiMessage {
  intent String
  question String
  answer String
+ actions Json?
  createdAt DateTime @default(now())
  @@index([userId,createdAt])
 }

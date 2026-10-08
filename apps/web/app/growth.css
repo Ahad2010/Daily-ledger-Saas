@@ -49,3 +49,5 @@
 .avatar-upload>div{display:grid;gap:6px;min-width:0}.avatar-upload small{font-size:11px;color:var(--muted)}.avatar-upload p{margin:0;font-size:12px}
 @media(max-width:480px){.avatar-upload{flex-direction:column;align-items:flex-start}}
 .install-app .button{margin-top:6px}.install-app p{margin:8px 0 0;font-size:12px;line-height:1.7}
+.ai-actions{display:grid;gap:8px;margin-top:12px}.ai-action{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #2f4a40;background:#0f1713;border-radius:8px;padding:10px 12px}.ai-action span{font-size:12px;line-height:1.55;min-width:0}.ai-action .button{flex-shrink:0}.ai-action small{flex-basis:100%}.ai-actions>.button{justify-self:start}
+@media(max-width:560px){.ai-action{flex-direction:column;align-items:stretch}.ai-action .button{width:100%}}
