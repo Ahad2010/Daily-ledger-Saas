@@ -10,3 +10,4 @@
 .trial-status{display:flex;align-items:center;gap:8px;font-size:12px;color:#b8f6de;margin:10px 0 0}.trial-status[data-ending=true]{color:#f2908a}
 .plan-badge.trial-badge{border-color:#2f4a40;color:#b8f6de}
 @media(max-width:600px){.trial-offer{flex-direction:column;align-items:stretch}.trial-offer .button{width:100%}}
+.budget-hot{color:#f2908a}
