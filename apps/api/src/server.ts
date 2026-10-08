@@ -33,7 +33,9 @@ const origin=process.env.FRONTEND_ORIGIN||'http://localhost:3000';const secret=p
 if(!secret||secret.length<32)throw new Error('Set SESSION_SECRET to at least 32 random characters.');
 const origins=[origin,process.env.ADMIN_ORIGIN].filter((value):value is string=>!!value);
 for(const value of origins){const url=new URL(value);if(url.origin!==value||(production&&url.protocol!=='https:'))throw new Error('FRONTEND_ORIGIN and ADMIN_ORIGIN must be exact origins using HTTPS in production.');}
-export const app=express();app.set('trust proxy',1);app.use(helmet());app.use(cors({origin:origins,credentials:true}));app.use(express.json({limit:'128kb'}));app.use(rateLimit({windowMs:60000,limit:180,message:{error:"Too many requests. Please try again shortly."},standardHeaders:true,legacyHeaders:false}));
+// Proxy hops in front of the API: 1 = Railway only; 2 = Vercel /backend rewrite -> Railway (so rate limits key on the real client IP).
+const proxyHops=Number(process.env.TRUST_PROXY_HOPS??1);if(!Number.isInteger(proxyHops)||proxyHops<0||proxyHops>3)throw new Error('TRUST_PROXY_HOPS must be an integer from 0 to 3.');
+export const app=express();app.set('trust proxy',proxyHops);app.use(helmet());app.use(cors({origin:origins,credentials:true}));app.use(express.json({limit:'128kb'}));app.use((req,_res,next)=>{req.body??={};next();});app.use(rateLimit({windowMs:60000,limit:180,message:{error:"Too many requests. Please try again shortly."},standardHeaders:true,legacyHeaders:false}));
 const cookie={httpOnly:true,secure:production,sameSite:'lax' as const,maxAge:7*86400000,path:'/'};
 app.use(session({name:'ledger.sid',secret,resave:false,saveUninitialized:false,cookie,store:new (connectPg(session))({pool,tableName:'session',createTableIfMissing:false})}));app.use(passport.initialize());app.use(passport.session());
 passport.serializeUser((user,done)=>done(null,user.id));passport.deserializeUser(async(id:string,done)=>{try{const user=await db.user.findUnique({where:{id}});done(null,user||false);}catch(e){done(e);}});
