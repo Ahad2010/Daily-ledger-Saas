@@ -14,12 +14,13 @@ export async function startApi(port:number,env:Record<string,string>={}){
  const base=`http://localhost:${port}`;let ready=false;
  for(let n=0;n<300&&!ready;n++){try{ready=(await fetch(base+'/health')).ok;}catch{/* starting */}if(!ready)await new Promise(r=>setTimeout(r,200));}
  if(!ready)throw new Error('API did not start: '+logs);
- async function user(fields:{plan?:string;timezone?:string;currency?:string;status?:string;name?:string}={}){
+ async function user(fields:{plan?:string;timezone?:string;currency?:string;status?:string;name?:string;source?:string;admin?:boolean}={}){
   const id=randomUUID(),sid=randomUUID();users.push(id);sessions.push(sid);
-  await pool.query('INSERT INTO "User" (id,"googleId",email,name,plan,timezone,currency,status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',[id,'g-'+id,`${id}@example.com`,fields.name||'Feature user',fields.plan||'Free',fields.timezone||'UTC',fields.currency||'USD',fields.status||'active']);
-  await pool.query("INSERT INTO session (sid,sess,expire) VALUES ($1,$2,NOW()+INTERVAL '1 hour')",[sid,JSON.stringify({cookie:{originalMaxAge:3600000,expires:new Date(Date.now()+3600000).toISOString(),httpOnly:true,path:'/',sameSite:'lax'},passport:{user:id},csrf})]);
+  await pool.query('INSERT INTO "User" (id,"googleId",email,name,plan,timezone,currency,status,"entitlementSource") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',[id,'g-'+id,`${id}@example.com`,fields.name||'Feature user',fields.plan||'Free',fields.timezone||'UTC',fields.currency||'USD',fields.status||'active',fields.source||'free']);
+  if(fields.admin)await pool.query('INSERT INTO "AdminAccess" (id,"userId",version,active,"updatedAt") VALUES (1,$1,1,true,NOW())',[id]);
+  await pool.query("INSERT INTO session (sid,sess,expire) VALUES ($1,$2,NOW()+INTERVAL '1 hour')",[sid,JSON.stringify({cookie:{originalMaxAge:3600000,expires:new Date(Date.now()+3600000).toISOString(),httpOnly:true,path:'/',sameSite:'lax'},passport:{user:id},csrf,...(fields.admin?{adminUserId:id,adminVersion:1}:{})})]);
   const request=(path:string,method='GET',body?:unknown)=>fetch(base+path,{method,headers:{Cookie:`ledger.sid=${encodeURIComponent('s:'+sign(sid,secret))}`,Origin:origin,'X-CSRF-Token':csrf,'Content-Type':'application/json'},signal:AbortSignal.timeout(45000),...(body===undefined?{}:{body:JSON.stringify(body)})});
   return {id,request,json:async<T=any>(path:string,method='GET',body?:unknown)=>(await request(path,method,body)).json() as Promise<T>};
  }
- return {user,pool,base,logs:()=>logs,async stop(){child.kill();await pool.query('DELETE FROM session WHERE sid=ANY($1)',[sessions]);await pool.query('DELETE FROM "User" WHERE id=ANY($1)',[users]);await pool.end();}};
+ return {user,pool,base,logs:()=>logs,async stop(){child.kill();await pool.query('DELETE FROM session WHERE sid=ANY($1)',[sessions]);await pool.query('DELETE FROM "AdminAccess" WHERE "userId"=ANY($1)',[users]);await pool.query('DELETE FROM "BillingRecord" WHERE "userId"=ANY($1)',[users]);await pool.query('DELETE FROM "User" WHERE id=ANY($1)',[users]);await pool.end();}};
 }

@@ -1,9 +1,12 @@
 'use client';
+import {useId} from 'react';
 import Link from 'next/link';
-import {BarChart,Bar,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer} from 'recharts';
+import {useRouter} from 'next/navigation';
+import {BarChart,Bar,AreaChart,Area,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer} from 'recharts';
 import {Download,ArrowUpRight,ArrowDownRight,CircleCheck,TriangleAlert,Target,Plus} from 'lucide-react';
-import {monthReport,weeklyReview,metrics,goalProgress,recordsOf,money,plans,localDate,type Snapshot} from '@ledger/shared';
-import {Entrance,AnimatedProgress} from './animation';
+import {monthReport,weeklyReview,metrics,goalProgress,recordsOf,monthDates,money,plans,localDate,type Snapshot} from '@ledger/shared';
+import {Entrance,AnimatedProgress,AnimatedText,Ring,useReducedMotion} from './animation';
+import {CashFlow,Spending} from './dashboard-charts';
 import {Button} from './ui/button';
 import {UsageMeter} from './usage-meter';
 import {adapter,demoMode,download} from '../lib/data';
@@ -24,8 +27,19 @@ function ChartTip({active,payload,label,currency}:{active?:boolean;payload?:read
  return <div className="dark-tooltip"><strong>{label}</strong>{payload.map(p=><div key={p.name}><i style={{background:p.color}}/><span>{p.name}</span><b>{money(Number(p.value)*100,currency)}</b></div>)}</div>;
 }
 
+// Daily habit completion across the month, as a wave like the dashboard's habit widget (rest days are gaps, not failures).
+function HabitWave({s,month,end,rate}:{s:Snapshot;month:string;end:string;rate:number|null}){
+ const reduced=useReducedMotion(),gradient=useId().replaceAll(':',''),habits=recordsOf(s.records,'habit').filter(h=>h.data.active),completions=new Set(recordsOf(s.records,'completion').map(c=>`${c.data.habitId}:${c.data.date}`));
+ const data=monthDates(month).filter(d=>d<=end).map(date=>{const scheduled=habits.filter(h=>date>=h.data.startDate&&h.data.days.includes(new Date(`${date}T12:00:00Z`).getUTCDay()));return {day:Number(date.slice(-2)),rate:scheduled.length?Math.round(scheduled.filter(h=>completions.has(`${h.id}:${date}`)).length/scheduled.length*100):null};});
+ return <Entrance className="panel report-habits"><div className="panel-heading"><div><h2>Habit consistency</h2><p>Share of scheduled habits completed each day.</p></div><div className="habit-stat"><AnimatedText value={pct(rate)}/><small>This period</small></div></div>
+  {!habits.length?<p className="muted">Create a habit and choose the days that work for you to see your consistency here.</p>:<div className="report-wave" role="img" aria-label={`Daily habit completion this month, ${pct(rate)} overall.`}><ResponsiveContainer width="100%" height="100%"><AreaChart data={data} margin={{left:-20,right:8,top:8,bottom:0}}><defs><linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1"><stop stopColor="#a894ff" stopOpacity={.24}/><stop offset="1" stopColor="#a894ff" stopOpacity={0}/></linearGradient></defs><CartesianGrid vertical={false} stroke="#252525"/><XAxis dataKey="day" tick={{fill:'#999',fontSize:10}} axisLine={false} tickLine={false} minTickGap={18}/><YAxis domain={[0,100]} ticks={[0,50,100]} tickFormatter={v=>`${v}%`} tick={{fill:'#999',fontSize:10}} axisLine={false} tickLine={false}/><Tooltip cursor={{stroke:'#777',strokeDasharray:'3 3'}} content={({active,payload})=>active&&payload?.length&&payload[0].value!==null?<div className="dark-tooltip" role="tooltip"><strong>Day {payload[0].payload.day}</strong><div><span>Scheduled completed</span><b>{Math.round(Number(payload[0].value))}%</b></div></div>:null}/><Area type="monotone" dataKey="rate" stroke="#a894ff" strokeWidth={2.5} fill={`url(#${gradient})`} dot={{r:2.5,fill:'#a894ff',stroke:'#111',strokeWidth:2}} activeDot={{r:4,stroke:'#fff',strokeWidth:1}} connectNulls={false} isAnimationActive={!reduced} animationDuration={600} animationEasing="ease-out"/></AreaChart></ResponsiveContainer></div>}</Entrance>;
+}
+function TaskRing({done,due,overdue}:{done:number;due:number;overdue:number}){
+ return <Entrance className="panel report-ring"><h2>Tasks completed</h2>{due?<><Ring value={done/due*100}/><strong>{done} of {due}</strong><p className="muted">tasks due in this period are done{overdue?` · ${overdue} overdue`:''}.</p></>:<p className="muted">No tasks were due in this period.</p>}</Entrance>;
+}
+
 export function ReportsView({s,month,asOf,exportReport,notify,onUpgrade}:{s:Snapshot;month:string;asOf:Date;exportReport:()=>void;notify:(v:string)=>void;onUpgrade:(reason:string)=>void}){
- const {currency,timezone}=s.profile,plan=plans[s.profile.plan],today=localDate(asOf,timezone);
+ const {currency,timezone}=s.profile,plan=plans[s.profile.plan],today=localDate(asOf,timezone),router=useRouter(),reduced=useReducedMotion();
  if(!plan.history&&month!==today.slice(0,7))return <Entrance className="panel"><h2>Historical monthly reports</h2><p className="muted">Choose the current month for your Free report. Pro and Lifetime include report history. Your records and full workspace export remain available.</p><Link href="/plans" className="button">View plans</Link></Entrance>;
  const report=monthReport(s.records,month,currency,timezone,asOf),m=metrics(s.records,month,currency,timezone,asOf),c=report.current;
  const review=month===today.slice(0,7)?weeklyReview(s.records,{currency,timezone,asOf}):null;
@@ -43,6 +57,7 @@ export function ReportsView({s,month,asOf,exportReport,notify,onUpgrade}:{s:Snap
    <Entrance className="panel report-kpi"><span>Net savings</span><strong className={c.net<0?'negative':''}>{money(c.net,currency)}</strong><small className="rp-delta rp-flat">{m.savingsRate===null?'Savings rate needs income':`${pct(m.savingsRate)} savings rate`}</small></Entrance>
    <Entrance className="panel report-kpi"><span>Budget</span>{m.budget?<><strong>{money(m.budget,currency)}</strong><UsageMeter used={c.expenses} limit={m.budget} label="Budget"/><small className={`rp-delta ${(m.budgetUsage||0)>=80?'rp-bad':'rp-flat'}`}>{pct(m.budgetUsage)} used · {money(Math.max(0,m.budget-c.expenses),currency)} left</small></>:<><strong>—</strong><small className="rp-delta rp-flat">No budget set for this month</small></>}</Entrance>
   </div>
+  <div className="chart-grid report-charts"><CashFlow m={m} onAdd={()=>router.push('/finance/transactions')}/><Spending m={m} onCategory={name=>router.push(`/finance/transactions?category=${encodeURIComponent(name)}&month=${month}`)} onAdd={()=>router.push('/finance/transactions')}/></div>
   {review&&<Entrance className="panel report-review"><div className="panel-heading"><div><span className="eyebrow">WEEKLY REVIEW</span><h2>Your week in review</h2><p>{dayLabel(review.current.from)} – {dayLabel(review.current.to)} compared with the 7 days before.</p></div></div>
    {review.empty?<p className="muted">Add transactions, tasks or habits and your weekly review appears here.</p>:<>
    <div className="review-stats">
@@ -56,8 +71,9 @@ export function ReportsView({s,month,asOf,exportReport,notify,onUpgrade}:{s:Snap
     <div className="review-col review-slip"><h3><TriangleAlert size={16}/>What slipped</h3>{review.slips.length?<ul>{review.slips.map(t=><li key={t}>{t}</li>)}</ul>:<p className="muted">Nothing to flag this week.</p>}</div>
     <div className="review-col review-focus"><h3><Target size={16}/>Focus for next week</h3><ul>{review.focus.map(t=><li key={t}>{t}</li>)}</ul></div></div></>}
   </Entrance>}
+  <div className="report-activity"><HabitWave s={s} month={month} end={report.end} rate={m.habitRate}/><TaskRing done={m.completed} due={m.tasks.length} overdue={m.tasks.filter(t=>!t.data.done&&new Date(t.data.due)<asOf).length}/></div>
   <Entrance className="panel report-weeks"><div className="panel-heading"><div><h2>Week by week</h2><p>Monday to Sunday, clipped to {monthLabel(month)}. Totals match the monthly figures above.</p></div></div>
-   <div className="report-chart" role="img" aria-label={`Weekly income and expenses for ${monthLabel(month)}. Income ${money(c.income,currency)}, expenses ${money(c.expenses,currency)}.`}><ResponsiveContainer width="100%" height="100%"><BarChart data={chart} margin={{top:8,right:6,left:-12,bottom:0}}><CartesianGrid vertical={false} stroke="#303030" strokeDasharray="3 4"/><XAxis dataKey="week" tick={{fill:'#aaaeb5',fontSize:11}} stroke="#4a4a4a" interval={0} tickFormatter={value=>String(value).split(' – ')[0]}/><YAxis tick={{fill:'#aaaeb5',fontSize:11}} stroke="#4a4a4a" tickFormatter={n=>money(n*100,currency).replace(/,000/,'k')}/><Tooltip cursor={{fill:'#ffffff08'}} content={<ChartTip currency={currency}/>}/><Bar dataKey="Income" fill="#9bd4f5" radius={[4,4,0,0]} isAnimationActive={false} maxBarSize={34}/><Bar dataKey="Expenses" fill="#80e4bd" radius={[4,4,0,0]} isAnimationActive={false} maxBarSize={34}/></BarChart></ResponsiveContainer></div>
+   <div className="report-chart" role="img" aria-label={`Weekly income and expenses for ${monthLabel(month)}. Income ${money(c.income,currency)}, expenses ${money(c.expenses,currency)}.`}><ResponsiveContainer width="100%" height="100%"><BarChart data={chart} margin={{top:8,right:6,left:-12,bottom:0}}><CartesianGrid vertical={false} stroke="#303030" strokeDasharray="3 4"/><XAxis dataKey="week" tick={{fill:'#aaaeb5',fontSize:11}} stroke="#4a4a4a" interval={0} tickFormatter={value=>String(value).split(' – ')[0]}/><YAxis tick={{fill:'#aaaeb5',fontSize:11}} stroke="#4a4a4a" tickFormatter={n=>money(n*100,currency).replace(/,000/,'k')}/><Tooltip cursor={{fill:'#ffffff08'}} content={<ChartTip currency={currency}/>}/><Bar dataKey="Income" fill="#9bd4f5" radius={[4,4,0,0]} isAnimationActive={!reduced} animationDuration={600} maxBarSize={34}/><Bar dataKey="Expenses" fill="#80e4bd" radius={[4,4,0,0]} isAnimationActive={!reduced} animationDuration={600} maxBarSize={34}/></BarChart></ResponsiveContainer></div>
    <div className="chart-legend"><span><i style={{background:'#9bd4f5'}}/>Income</span><span><i style={{background:'#80e4bd'}}/>Expenses</span></div>
    <div className="table-scroll"><table><thead><tr><th>Week</th><th>Income</th><th>Expenses</th><th>Net</th><th>Tasks</th><th>Habits</th><th>Movement</th></tr></thead><tbody>{report.weeks.map(w=><tr key={w.from}><td>{w.label}</td><td>{money(w.income,currency)}</td><td>{money(w.expenses,currency)}</td><td className={w.net<0?'negative':w.net>0?'positive':''}>{money(w.net,currency)}</td><td>{w.tasksDue?`${w.tasksDone} / ${w.tasksDue}`:'—'}</td><td>{pct(w.habitRate)}</td><td>{w.workoutMinutes?`${w.workoutMinutes} min`:'—'}</td></tr>)}</tbody></table></div></Entrance>
   {report.categories.length>0&&<Entrance className="panel report-categories"><div className="panel-heading"><div><h2>Spending by category</h2><p>Share of {money(c.expenses,currency)} · change compared with {previousLabel}.</p></div></div>
