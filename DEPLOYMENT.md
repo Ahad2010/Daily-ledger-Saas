@@ -2,6 +2,58 @@
 
 The frontend is configured for Vercel. The Express API, PostgreSQL and scheduled notification worker run on an external host such as Railway. No deployment or payment connection has been made.
 
+## Go live: Railway (API + PostgreSQL + worker) and Vercel (app + admin)
+
+One backend serves both frontends:
+
+```text
+app.YOUR-DOMAIN   (Vercel, apps/web)   --\
+                                          >-- /backend rewrite --> api.YOUR-DOMAIN (Railway API) --> Railway PostgreSQL
+admin.YOUR-DOMAIN (Vercel, apps/admin) --/                              ^
+                                              Railway cron worker (every 5 min) ----+
+```
+
+Order matters: Railway first (you need the API URL), then Vercel, then go back to Railway to set the two origins.
+
+**1. Railway project**
+1. New project, then **Add PostgreSQL**. Keep it on Railway's private network (no public access needed).
+2. **New service from this GitHub repo** (root directory = repository root). Settings, Config as Code path: `/railway.api.json` (build, pre-deploy migration, `/ready` health check, one replica are already defined). Name it `api`.
+3. **Second service from the same repo**, config path `/railway.worker.json` (cron `*/5 * * * *`). Name it `worker`.
+4. Variables on **api** and **worker** (use Railway reference variables so both share them):
+
+| Variable | Value | api | worker |
+| --- | --- | --- | --- |
+| `NODE_ENV` | `production` | yes | yes |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (private URL) | yes | yes |
+| `SESSION_SECRET` | 48+ random chars, generate once, identical on both | yes | yes |
+| `FRONTEND_ORIGIN` | `https://app.YOUR-DOMAIN` | yes | yes |
+| `ADMIN_ORIGIN` | `https://admin.YOUR-DOMAIN` | yes | no |
+| `TRUST_PROXY_HOPS` | `2` (see below) | yes | no |
+| `BILLING_STUB_ENABLED` | `false` | yes | no |
+| `RESEND_API_KEY`, `EMAIL_FROM` | from Resend (verified domain) | yes | yes |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | `npx web-push generate-vapid-keys` | yes | yes |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` | `GOOGLE_CALLBACK_URL=https://app.YOUR-DOMAIN/backend/auth/google/callback` | yes | no |
+| `AI_PROVIDER`, `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` | optional | yes | no |
+
+Railway injects `PORT`. Only the **api** service needs a public domain (Networking, generate a Railway domain or attach `api.YOUR-DOMAIN`). The worker has no public URL.
+
+**2. Vercel: two projects from the same repo** (enable "Include source files outside of the Root Directory"):
+
+| Project | Root Directory | Domain |
+| --- | --- | --- |
+| app | `apps/web` | `app.YOUR-DOMAIN` |
+| admin | `apps/admin` | `admin.YOUR-DOMAIN` |
+
+Variables on **both**: `NEXT_PUBLIC_DATA_MODE=api`, `NEXT_PUBLIC_API_URL=/backend`, `API_INTERNAL_URL=https://YOUR-RAILWAY-API-DOMAIN`. Both projects talk to the same API; the build fails fast if these are wrong.
+
+**3. Finish**
+1. Set `FRONTEND_ORIGIN` / `ADMIN_ORIGIN` on Railway to the final exact HTTPS origins and redeploy the api service.
+2. Register the Google redirect URI exactly as `GOOGLE_CALLBACK_URL`.
+3. Sign up once on the app, then make that account the administrator (see KEY_SETUP.md): from your machine run `DATABASE_URL=<Railway PostgreSQL public URL> npm run admin -- select USER_ID "Initial administrator"`. This writes to the production database on purpose; enable the database's public network only for this step.
+4. Open `https://admin.YOUR-DOMAIN/admin/login`.
+
+**`TRUST_PROXY_HOPS`:** the browser reaches the API through Vercel's `/backend` rewrite, so there are two proxies (Vercel, then Railway). With `1` every visitor can appear to come from Vercel's IP and share one rate-limit bucket (the 180 requests/min global limit and the 5-failed-login lockout). Use `2`. To verify on staging: fail a login five times from one network, then log in from another network or phone; if the second one is also blocked, the value is wrong. Keep `1` if you instead point the app straight at the Railway domain.
+
 ## Vercel frontend
 
 Import the repository with **Root Directory `apps/web`** and enable files outside that directory. `apps/web/vercel.json` installs from the workspace root and builds Next.js. Use Node 24.
