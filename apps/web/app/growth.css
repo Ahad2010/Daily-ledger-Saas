@@ -25,3 +25,22 @@
 .billing-summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.billing-summary>div{border:1px solid var(--border);border-radius:8px;padding:11px 13px;background:#101213;display:grid;gap:3px}.billing-summary small{font-size:10px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}.billing-summary strong{font-size:13px;font-weight:500}
 .billing-receipt{display:inline-flex;align-items:center;gap:4px;color:var(--mint);font-size:12px}.billing-panel .plan-small a{color:var(--mint)}
 @media(max-width:560px){.billing-summary{grid-template-columns:1fr}}
+.report-page{max-width:1120px;margin:0 auto;display:grid;gap:18px}
+.report-hero.report-panel{max-width:none;margin:0;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;background:linear-gradient(125deg,#16201c,#111413 60%)}
+.report-hero .report-heading{text-align:left;padding:4px 0}.report-hero .report-heading h2{font-size:28px;margin:8px 0 4px}.report-hero .report-heading p{margin:0;font-size:12px}
+.report-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.report-kpi{display:grid;gap:6px;align-content:start;padding:18px}.report-kpi>span{font-size:11px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}.report-kpi>strong{font-size:24px;font-weight:600;letter-spacing:-.5px}
+.rp-delta{display:inline-flex;align-items:center;gap:3px;font-size:11px}.rp-good{color:#8bdfb8}.rp-bad{color:#f2908a}.rp-flat{color:var(--muted)}
+.report-review{display:grid;gap:16px}.report-review .panel-heading p{margin:6px 0 0;font-size:12px;color:var(--muted)}
+.review-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.review-stats>div{border:1px solid var(--border);background:#101213;border-radius:8px;padding:11px 12px;display:grid;gap:2px}.review-stats small{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}.review-stats strong{font-size:16px;font-weight:600}.review-stats span{font-size:10px;color:var(--muted)}
+.review-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.review-col{border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#0f1112}
+.review-col h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:13px;font-weight:600}.review-col ul{margin:0;padding-left:18px;display:grid;gap:8px;font-size:12px;line-height:1.65;color:#d7dadd}.review-col p{margin:0;font-size:12px}
+.review-good{border-color:#254035}.review-good h3{color:#8bdfb8}.review-slip{border-color:#4a2c2a}.review-slip h3{color:#f2908a}.review-focus{border-color:#2c3a46}.review-focus h3{color:#9bd4f5}
+.report-chart{height:240px;margin-top:6px}.report-weeks table{font-size:12px}
+.category-rows{display:grid;gap:14px;margin-top:10px}.category-row{display:grid;grid-template-columns:minmax(150px,1.1fr) 2fr minmax(120px,.9fr);align-items:center;gap:14px}.category-row>div:first-child{display:grid;gap:2px}.category-row strong{font-size:13px;font-weight:500}.category-row span{font-size:11px;color:var(--muted)}
+.category-bar{height:8px;background:#242829;border-radius:10px;overflow:hidden}.category-bar i{display:block;height:100%;background:var(--ice);border-radius:10px}
+.report-goal{display:grid;gap:4px;padding:12px 0;border-bottom:1px solid var(--border)}.report-goal:last-child{border-bottom:0}.report-goal>div:first-child{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.report-goal strong{font-size:13px;font-weight:500}.report-goal span{font-size:11px;color:var(--muted)}
+.report-empty{text-align:center;display:grid;gap:10px;justify-items:center;padding:34px 18px}.report-empty h3{margin:0}.report-empty p{margin:0}
+.report-note{font-size:11px;line-height:1.7;max-width:900px}
+@media(max-width:1000px){.report-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.review-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.review-columns{grid-template-columns:1fr}}
+@media(max-width:600px){.report-kpis{grid-template-columns:1fr 1fr;gap:10px}.report-kpi{padding:14px}.report-kpi>strong{font-size:19px}.review-stats{grid-template-columns:1fr 1fr}.category-row{grid-template-columns:1fr;gap:6px}.report-hero .inline-actions{width:100%}.report-hero .inline-actions .button{flex:1}}
