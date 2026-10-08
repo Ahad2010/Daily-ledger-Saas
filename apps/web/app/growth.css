@@ -48,3 +48,4 @@
 .avatar-upload{display:flex;gap:16px;align-items:center;margin:16px 0 4px;padding:14px;border:1px solid var(--border);border-radius:10px;background:#101213}.avatar-large{width:64px;height:64px;font-size:20px}
 .avatar-upload>div{display:grid;gap:6px;min-width:0}.avatar-upload small{font-size:11px;color:var(--muted)}.avatar-upload p{margin:0;font-size:12px}
 @media(max-width:480px){.avatar-upload{flex-direction:column;align-items:flex-start}}
+.install-app .button{margin-top:6px}.install-app p{margin:8px 0 0;font-size:12px;line-height:1.7}
