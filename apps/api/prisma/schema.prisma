@@ -21,6 +21,9 @@ model User {
   persona String?
   focusAreas Json @default("[]")
   referralSource String?
+  trialStartedAt DateTime?
+  avatarUrl String?
+  avatarPublicId String?
   referralCode String? @unique
   referralsSent Referral[] @relation("referrer")
   referralReceived Referral? @relation("invitee")
@@ -180,6 +183,8 @@ model BillingRecord {
  amount BigInt
  status String
  verified Boolean @default(false)
+ receiptUrl String?
+ description String?
  createdAt DateTime @default(now())
  @@index([userId,status])
 }

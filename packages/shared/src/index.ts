@@ -36,8 +36,9 @@ export const schemas = {
 };
 export type RecordData = { [K in Kind]: z.infer<typeof schemas[K]> };
 export type LedgerRecord<K extends Kind = Kind> = K extends Kind ? {id:string;kind:K;data:RecordData[K];version:number} : never;
-export interface Profile {name:string;email:string;currency:string;timezone:string;plan:Plan;optionalEmails:boolean;productUpdates:boolean;role?:string;allowances?:Record<string,number|null>;onboardingCompletedAt?:string|null;persona?:string|null;focusAreas?:string[]}
-export interface Snapshot {profile:Profile;records:LedgerRecord[];dismissed:string[];planDetails?:{source:string;expiresAt:string|null;catalog:Record<Plan,Record<string,number|null>>;usage:{emails:number;aiRequests:number;aiTokens:number};aiAllowances:Record<Plan,{requests:number;tokens:number}>}}
+export interface Profile {name:string;email:string;currency:string;timezone:string;plan:Plan;optionalEmails:boolean;productUpdates:boolean;role?:string;allowances?:Record<string,number|null>;onboardingCompletedAt?:string|null;persona?:string|null;focusAreas?:string[];avatarUrl?:string|null}
+export const TRIAL_DAYS=7;
+export interface Snapshot {profile:Profile;records:LedgerRecord[];dismissed:string[];planDetails?:{source:string;expiresAt:string|null;trial?:{available:boolean;used:boolean;endsAt:string|null};catalog:Record<Plan,Record<string,number|null>>;usage:{emails:number;aiRequests:number;aiTokens:number};aiAllowances:Record<Plan,{requests:number;tokens:number}>}}
 export const preferenceSchema = z.object({name:title,currency:currencySchema,timezone:z.string().refine(v=>{try { new Intl.DateTimeFormat('en',{timeZone:v}); return true; } catch { return false; }},'Use an IANA timezone'),optionalEmails:z.boolean(),productUpdates:z.boolean()});
 export const personas=['Developer','Designer','Freelancer','Business Owner','Student','Other'] as const;
 export const focusAreas=['finance','tasks','fitness','meals','goals'] as const;
