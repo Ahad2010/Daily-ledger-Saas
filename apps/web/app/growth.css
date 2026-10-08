@@ -11,3 +11,14 @@
 .plan-badge.trial-badge{border-color:#2f4a40;color:#b8f6de}
 @media(max-width:600px){.trial-offer{flex-direction:column;align-items:stretch}.trial-offer .button{width:100%}}
 .budget-hot{color:#f2908a}
+.import-drop{display:flex;flex-direction:column;align-items:center;gap:8px;border:1px dashed #3b4143;border-radius:10px;padding:28px 18px;text-align:center;background:#101213;cursor:pointer;color:var(--muted)}
+.import-drop:hover,.import-drop:focus-within{border-color:#5a6a63;background:#121614}.import-drop strong{color:var(--foreground);font-size:14px}.import-drop span{font-size:12px;max-width:380px;line-height:1.6}
+.import-drop input{margin-top:6px;font-size:12px;max-width:100%}
+.import-note{font-size:11px;color:var(--muted);line-height:1.7;margin:12px 0 0}.import-note a{color:var(--mint)}
+.import-map{display:grid;gap:14px;margin-top:6px}.import-file{margin:0;font-size:12px;color:var(--muted)}.import-file strong{color:var(--foreground);word-break:break-all}
+.import-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.import-grid label{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--muted)}.import-grid select,.import-grid input{width:100%;min-width:0}
+.import-warning{display:flex;gap:8px;align-items:flex-start;font-size:11px;color:#f2c98a;background:#2a2112;border:1px solid #5a4620;border-radius:8px;padding:9px 11px;margin:0}
+.import-summary{display:flex;flex-wrap:wrap;gap:8px}.import-summary span{font-size:11px;border:1px solid #2f3a35;background:#111a16;color:#b8f6de;border-radius:20px;padding:3px 10px}.import-summary span.warn{border-color:#6b4a2b;background:#2a1d13;color:#f2c98a}
+.import-preview{display:grid;gap:10px}.import-preview table{font-size:11px}.import-errors{margin:0;padding-left:18px;font-size:11px;color:#f2908a;line-height:1.7}
+.import-result{display:grid;gap:12px;justify-items:center;text-align:center;padding:10px 0}.import-result h3{margin:0;font-size:18px}.import-check{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#14261e;color:var(--mint);border:1px solid #2f4a40}
+@media(max-width:560px){.import-grid{grid-template-columns:1fr}}

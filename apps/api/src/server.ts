@@ -1,6 +1,7 @@
 import {googleAccount} from './google-account.js';
 import {referralRoutes,recordReferral,referralCodeSchema} from './referrals.js';
 import {billingRoutes} from './billing.js';
+import {importRoutes} from './import.js';
 import {pushRoutes} from './push.js';
 import 'dotenv/config';
 import express, { type Request, type Response, type NextFunction } from 'express';
@@ -60,6 +61,7 @@ app.use('/api/ai',aiRoutes());
 app.use('/api/push',pushRoutes());
 app.use('/api/referrals',referralRoutes());
 app.use('/api/billing',billingRoutes());
+app.use('/api/import',importRoutes());
 app.get('/api/snapshot',async(req,res)=>{res.json(await snapshot(req.user as User));});
 app.get('/api/records',async(req,res)=>{const page=z.coerce.number().int().min(1).default(1).parse(req.query.page);const limit=z.coerce.number().int().min(1).max(100).default(50).parse(req.query.limit);const kind=req.query.kind?kindSchema.parse(req.query.kind):undefined;const q=z.string().max(160).default('').parse(req.query.q);const where={userId:req.user!.id,...(kind?{kind}:{}),...(typeof req.query.from==='string'?{recordDate:{gte:req.query.from,...(typeof req.query.to==='string'?{lt:req.query.to}:{})}}:{})};const rows=await db.record.findMany({where,orderBy:{recordDate:'desc'}});const filtered=q?rows.filter(r=>JSON.stringify(r.data).toLowerCase().includes(q.toLowerCase())):rows;res.json({records:filtered.slice((page-1)*limit,page*limit).map(dto),page,limit,total:filtered.length});});
 const mutationSchema=z.object({kind:kindSchema,data:z.unknown(),version:z.number().int().positive().optional()});

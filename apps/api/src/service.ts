@@ -55,6 +55,8 @@ export async function saveRecord(userId:string,input:{id?:string;kind:Kind;data:
   if(kind==='transaction'&&(data.sourceId||data.sourceMonth)){if(!existing||(existing.data as any).sourceId!==data.sourceId||(existing.data as any).sourceMonth!==data.sourceMonth||!data.date.startsWith(data.sourceMonth))throw new HttpError(400,'Linked transactions must be created through Mark received or Mark paid. Keep their original month when editing.');}
   if(kind==='task')data.completedAt=data.done?(existing&&(existing.data as any).done?(existing.data as any).completedAt||null:new Date().toISOString()):null;
   const payload={data:data as Prisma.InputJsonValue,...metadata(kind,data)};
+  // Editing an imported transaction keeps its import key, so re-importing the same file never re-adds the original row.
+  if(existing?.uniqueKey?.startsWith('import:'))payload.uniqueKey=existing.uniqueKey;
   const r=existing?await tx.record.update({where:{id:existing.id},data:{...payload,version:{increment:1}}}):await tx.record.create({data:{userId,kind,...payload}});
   if(kind==='task'){
    await tx.job.updateMany({where:{userId,recordId:r.id,status:{in:['pending','leased']}},data:{status:'cancelled'}});
