@@ -11,7 +11,7 @@ export function currencyLabel(code:string){return currencyNames.of(code)||code;}
 export const kinds = ['transaction','budget','cashPlan','financeCategory','recurring','task','habit','completion','workout','meal','grocery','goal','milestone','notification','announcement','automation'] as const;
 export const kindSchema = z.enum(kinds);
 export type Kind = z.infer<typeof kindSchema>;
-export function safeReturnTo(value:unknown):string {if(typeof value!=='string'||value.length>2048||!value.startsWith('/')||value.startsWith('//')||/[\\\x00-\x20]/.test(value)||/%(?:2f|5c|0[0-9a-f]|1[0-9a-f]|20)/i.test(value))return '/';try{const url=new URL(value,'https://dailyledger.invalid');if(url.origin!=='https://dailyledger.invalid'||/^\/(login|signup|backend|auth)(\/|$)/.test(url.pathname))return '/';return url.pathname+url.search+url.hash;}catch{return '/';}}
+export function safeReturnTo(value:unknown):string {if(typeof value!=='string'||value.length>2048||!value.startsWith('/')||value.startsWith('//')||/[\\\x00-\x20]/.test(value)||/%(?:2f|5c|0[0-9a-f]|1[0-9a-f]|20)/i.test(value))return '/';try{const url=new URL(value,'https://dailyledger.invalid');if(url.origin!=='https://dailyledger.invalid'||/^\/(login|signup|verify-email|forgot-password|reset-password|backend|auth)(\/|$)/.test(url.pathname))return '/';return url.pathname+url.search+url.hash;}catch{return '/';}}
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v => !Number.isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0,10) === v, 'Use a valid date');
 const cents = z.number().int().min(0).max(1_000_000_000_000);
 const title = z.string().trim().min(1).max(160);
@@ -54,7 +54,7 @@ export function recordsOf<K extends Kind>(records:LedgerRecord[],kind:K):LedgerR
 export function goalProgress(goal:LedgerRecord<'goal'>,records:LedgerRecord[]){const steps=recordsOf(records,'milestone').filter(r=>r.data.goalId===goal.id);const current=goal.data.tracking==='steps'?steps.filter(r=>r.data.done).length:goal.data.current;const target=goal.data.tracking==='steps'?steps.length:goal.data.target;return {current,target,percentage:target?Math.min(100,current/target*100):0,done:target>0&&current>=target,steps};}
 export function localDate(instant:Date|string,timezone:string):string { const parts=new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(instant)); return ['year','month','day'].map(k=>parts.find(p=>p.type===k)!.value).join('-'); }
 export function monthDates(month:string){const [y,m]=month.split('-').map(Number);return Array.from({length:new Date(Date.UTC(y,m,0)).getUTCDate()},(_,i)=>`${month}-${String(i+1).padStart(2,'0')}`);}
-export function money(cents:number,currency='USD'){return new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:0,maximumFractionDigits:cents%100?2:0}).format(cents/100);}
+export function money(cents:number,currency='USD'){return new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:cents%100?2:0,maximumFractionDigits:cents%100?2:0}).format(cents/100);}
 export function metrics(records:LedgerRecord[],month:string,currency:string,timezone:string,asOf=new Date()) {
   const dates=monthDates(month); const today=localDate(asOf,timezone); const end=month===today.slice(0,7)?today:dates.at(-1)!;
   const tx=recordsOf(records,'transaction').filter(r=>r.data.currency===currency&&r.data.date.startsWith(month)&&r.data.date<=end);

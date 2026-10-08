@@ -5,13 +5,14 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import pg from 'pg';
+import {hashPassword} from '../apps/api/src/passwords';
 import { randomUUID,createHash,createHmac } from 'node:crypto';
 const require=createRequire(import.meta.url);
 const sign=require('cookie-signature').sign;
 const url=process.env.TEST_DATABASE_URL;
 test('real PostgreSQL: ownership, CSRF, concurrent quotas, versions, sessions and job cancellation',{skip:!url,timeout:180000},async()=>{
  const pool=new pg.Pool({connectionString:url});const secret='integration-session-secret-32-characters-long';const csrf='a'.repeat(64);const origin='http://localhost:3000';const port=4011;
- const processApi=spawn(process.execPath,['--import','tsx','apps/api/src/server.ts'],{env:{...process.env,DATABASE_URL:url,SESSION_SECRET:secret,FRONTEND_ORIGIN:origin,PORT:String(port),NODE_ENV:'development'},windowsHide:true,stdio:'pipe'});let logs='';processApi.stdout.on('data',d=>logs+=d);processApi.stderr.on('data',d=>logs+=d);
+ const processApi=spawn(process.execPath,['--import','tsx','apps/api/src/server.ts'],{env:{...process.env,DATABASE_URL:url,SESSION_SECRET:secret,FRONTEND_ORIGIN:origin,PORT:String(port),NODE_ENV:'development',RESEND_API_KEY:'',EMAIL_FROM:''},windowsHide:true,stdio:'pipe'});let logs='';processApi.stdout.on('data',d=>logs+=d);processApi.stderr.on('data',d=>logs+=d);
  const users=[randomUUID(),randomUUID()];const sessions=[randomUUID(),randomUUID()];
  try{
   for(let i=0;i<2;i++){await pool.query('INSERT INTO "User" (id,"googleId",email,name) VALUES ($1,$2,$3,$4)',[users[i],'test-'+users[i],'test@example.com','Integration user']);await pool.query('INSERT INTO session (sid,sess,expire) VALUES ($1,$2,NOW()+INTERVAL \'1 hour\')',[sessions[i],JSON.stringify({cookie:{originalMaxAge:3600000,expires:new Date(Date.now()+3600000).toISOString(),httpOnly:true,path:'/',sameSite:'lax'},passport:{user:users[i]},csrf})]);}
@@ -33,7 +34,7 @@ test('real PostgreSQL: ownership, CSRF, concurrent quotas, versions, sessions an
   assert.equal((await request(0,'/auth/logout','POST',{})).status,204);assert.equal((await request(0,'/api/snapshot')).status,401);
   const preauth=async()=>{const response=await fetch(base+'/auth/csrf');const body=await response.json() as any;return {cookie:response.headers.getSetCookie()[0].split(';')[0],csrf:body.csrf};};
   const post=(session:{cookie:string;csrf:string},path:string,body:unknown)=>fetch(base+path,{method:'POST',headers:{Cookie:session.cookie,Origin:origin,'X-CSRF-Token':session.csrf,'Content-Type':'application/json'},body:JSON.stringify(body)});
-  let local=await preauth();const email=`integration-${randomUUID()}@example.com`;const password='correct horse battery staple 42!';const signup=await post(local,'/auth/signup',{name:'Email account',email,password,returnTo:'https://evil.example'});assert.equal(signup.status,200);assert.equal((await signup.json() as any).returnTo,'/');const localCookie=signup.headers.getSetCookie()[0].split(';')[0];assert.notEqual(localCookie,local.cookie);
+  let local=await preauth();const email=`integration-${randomUUID()}@example.com`;const password='correct horse battery staple 42!';assert.equal((await post(local,'/auth/signup',{name:'Email account',email,password})).status,503);const emailUser=randomUUID();await pool.query('INSERT INTO "User" (id,email,name) VALUES ($1,$2,$3)',[emailUser,email,'Email account']);await pool.query('INSERT INTO "PasswordCredential" (id,"userId",email,"passwordHash","updatedAt") VALUES ($1,$2,$3,$4,NOW())',[randomUUID(),emailUser,email,await hashPassword(password)]);
   const credential=await pool.query('SELECT * FROM "PasswordCredential" WHERE email=$1',[email]);users.push(credential.rows[0].userId);assert.ok(credential.rows[0].passwordHash.startsWith('scrypt:'));assert.ok(!credential.rows[0].passwordHash.includes(password));
   local=await preauth();assert.equal((await post(local,'/auth/login',{email,password:'wrong'})).status,401);const login=await post(local,'/auth/login',{email,password});assert.equal(login.status,200);const signedCookie=login.headers.getSetCookie()[0].split(';')[0];local=await preauth();assert.equal((await post(local,'/auth/forgot-password',{email})).status,503);
   const resetId=randomUUID();const userId=credential.rows[0].userId;const token=createHmac('sha256',secret).update(`password-reset:${resetId}:${userId}`).digest('hex');await pool.query('INSERT INTO "PasswordReset" (id,"userId","tokenHash","expiresAt") VALUES ($1,$2,$3,NOW()+INTERVAL \'1 hour\')',[resetId,userId,createHash('sha256').update(token).digest('hex')]);

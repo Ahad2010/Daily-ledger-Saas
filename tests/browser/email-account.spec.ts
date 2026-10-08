@@ -1,8 +1,9 @@
 import { test,expect } from '@playwright/test';
 import pg from 'pg';
+import {readFileSync} from 'node:fs';
 import { randomUUID } from 'node:crypto';
 test('real email signup opens an empty account, then logs in to the same workspace',async({page})=>{
- test.skip(!process.env.TEST_DATABASE_URL,'Disposable PostgreSQL required');
+ test.skip(!process.env.TEST_DATABASE_URL||!process.env.OTP_TEST_MAILBOX,'Disposable API and synthetic Resend mailbox required');
  const email=`browser-${randomUUID()}@example.com`,password='My private ledger 42!';
  const pool=new pg.Pool({connectionString:process.env.TEST_DATABASE_URL});
  try{
@@ -15,6 +16,8 @@ test('real email signup opens an empty account, then logs in to the same workspa
   await page.getByLabel('Password',{exact:true}).fill(password);
   await expect(page.locator('.password-requirements .met')).toHaveCount(2);
   await page.getByRole('button',{name:'Create account',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Verify your email'})).toBeVisible();
+  const deliveries=readFileSync(process.env.OTP_TEST_MAILBOX!,'utf8').trim().split('\n').map(line=>JSON.parse(line));const code=deliveries.filter(row=>String(row.to)===email).at(-1).text.match(/code is: (\d{6})/)[1];await page.getByLabel('Code digit 1',{exact:true}).fill(code);await page.getByRole('button',{name:'Verify email',exact:true}).click();
   await expect(page.getByRole('heading',{name:'A little more about you'})).toBeVisible();
   await expect(page.getByLabel('Full name',{exact:true})).toHaveValue('Browser Test');
   await page.getByRole('button',{name:'Continue',exact:true}).click();
@@ -22,7 +25,7 @@ test('real email signup opens an empty account, then logs in to the same workspa
   await page.getByRole('button',{name:'Financial Planner',exact:true}).click();
   await page.getByRole('button',{name:'Build my dashboard'}).click();
   await expect(page.getByRole('heading',{name:'Building your dashboard'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:/^(Your life at a glance|Welcome, )/})).toBeVisible();
+  await page.getByRole('button',{name:'Continue with Free',exact:true}).click();await expect(page.getByRole('heading',{name:/^(Your life at a glance|Welcome, )/})).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:/^(Your life at a glance|Welcome, )/})).toBeVisible();
   await expect(page.locator('.onboarding-shell')).toHaveCount(0);
@@ -40,6 +43,7 @@ test('real email signup opens an empty account, then logs in to the same workspa
   await expect(page.getByRole('heading',{name:'Financial Planner',exact:true})).toBeVisible();
  }finally{
   await pool.query('DELETE FROM session WHERE sess->\'passport\'->>\'user\' IN (SELECT id FROM "User" WHERE email=$1)',[email]);
+  await pool.query('DELETE FROM "AuthChallenge" WHERE email=$1',[email]);
   await pool.query('DELETE FROM "User" WHERE email=$1',[email]);
   await pool.end();
  }

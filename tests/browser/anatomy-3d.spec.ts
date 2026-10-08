@@ -42,3 +42,11 @@ test('exercise detail keeps an explored muscle when returning to 2D',async({page
 
 
 
+
+test('3D loading and repeated closing do not synchronously unmount another React root',async({page})=>{
+ test.setTimeout(180000);const errors:string[]=[];page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});page.on('pageerror',error=>errors.push(error.message));
+ await page.route('**/fitness/models/muscular.glb*',async route=>{await new Promise(resolve=>setTimeout(resolve,1000));await route.continue();});
+ await page.goto('/fitness');await page.getByRole('button',{name:'View in 3D'}).click();const dialog=page.getByRole('dialog');await expect(dialog.locator('canvas')).toBeVisible();await dialog.getByRole('button',{name:'Back to 2D',exact:true}).click();
+ for(let i=0;i<3;i++){await page.getByRole('button',{name:'View in 3D'}).click();await expect(dialog.locator('.anatomy-3d-label')).toHaveAttribute('data-ready','true',{timeout:90000});if(i===1)await page.keyboard.press('Escape');else await dialog.getByRole('button',{name:'Back to 2D',exact:true}).click();await expect(dialog).toHaveCount(0);}
+ expect(errors.filter(error=>/synchronously unmount|React was already rendering|race condition/i.test(error))).toEqual([]);
+});

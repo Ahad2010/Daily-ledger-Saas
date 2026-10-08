@@ -18,7 +18,8 @@ const headings=['A little more about you','What best describes you?','What would
 export function Onboarding({profile,onSaved}:{profile:Profile;onSaved:(data:OnboardingInput)=>void}){
  const [multipleFocus,setMultipleFocus]=useState(false);
  const [step,setStep]=useState(0),[data,setData]=useState<OnboardingInput>({name:profile.name,currency:profile.currency as OnboardingInput['currency'],timezone:profile.timezone,persona:null,focusAreas:[],referralSource:''}),[error,setError]=useState('');const root=useRef<HTMLDivElement>(null),heading=useRef<HTMLHeadingElement>(null);
- useEffect(()=>{const timezone=Intl.DateTimeFormat().resolvedOptions().timeZone;const language=navigator.language;const currency=language.endsWith('-PK')?'PKR':language.endsWith('-GB')?'GBP':profile.currency;setData(d=>({...d,timezone:timezone||profile.timezone,currency:currency as OnboardingInput['currency']}));},[profile.currency,profile.timezone]);
+ const detected=useRef(false);
+ useEffect(()=>{if(detected.current)return;detected.current=true;const timezone=Intl.DateTimeFormat().resolvedOptions().timeZone;const region=new Intl.Locale(navigator.language).region;const currency=region==='PK'?'PKR':region==='GB'?'GBP':profile.currency;setData(d=>({...d,timezone:timezone||profile.timezone,currency:currency as OnboardingInput['currency']}));},[profile.currency,profile.timezone]);
  useEffect(()=>{heading.current?.focus();},[step]);
  useGSAP(()=>{const mm=gsap.matchMedia();mm.add('(prefers-reduced-motion: no-preference)',()=>{gsap.from('.onboarding-step-content',{opacity:0,x:8,duration:.25,ease:'power2.out'});const choices=root.current?.querySelectorAll('.persona-card,.focus-chip');if(choices?.length)gsap.from(choices,{opacity:0,y:4,duration:.2,stagger:.025});});return ()=>mm.revert();},{scope:root,dependencies:[step],revertOnUpdate:true});
  const mutation=useMutation({mutationFn:adapter.onboard,onSuccess:()=>onSaved(data)});

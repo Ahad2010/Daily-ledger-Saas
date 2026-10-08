@@ -36,11 +36,11 @@ test('selected administrator routes retain the shell and document',async({page})
  try{
   const admin=(await pool.query('SELECT "userId",version FROM "AdminAccess" WHERE id=1 AND active=true')).rows[0];test.skip(!admin,'Selected administrator required');
   await pool.query("INSERT INTO session (sid,sess,expire) VALUES ($1,$2,NOW()+INTERVAL '1 hour')",[sid,JSON.stringify({cookie:{originalMaxAge:3600000,httpOnly:true,secure:false,sameSite:'lax',path:'/'},passport:{user:admin.userId},csrf:randomUUID(),adminUserId:admin.userId,adminVersion:admin.version})]);
-  await page.context().addCookies([{name:'ledger.sid',value:'s:'+signature.sign(sid,env.SESSION_SECRET),domain:'localhost',path:'/',httpOnly:true,sameSite:'Lax'}]);
+  await page.context().addCookies([{name:'ledger.sid',value:'s:'+signature.sign(sid,process.env.TEST_SESSION_SECRET||env.SESSION_SECRET),domain:'localhost',path:'/',httpOnly:true,sameSite:'Lax'}]);
   let documents=0;page.on('request',r=>{if(r.isNavigationRequest()&&r.frame()===page.mainFrame())documents++;});
   expect((await page.goto('/admin'))!.status()).toBe(200);await expect(page.locator('.admin-metrics')).toBeVisible();await page.evaluate(()=>(window as any).__shell=document.querySelector('.sidebar'));
   for(const [path,label] of [['users','Users'],['plans','Plans & Subscriptions'],['support','Customer Support'],['announcements','Announcements'],['settings','Platform Settings'],['','Overview']]){
-   await page.locator('.sidebar').getByRole('link',{name:label,exact:true}).click();await expect(page).toHaveURL(`http://localhost:3000/admin${path?'/'+path:''}`);
+   await page.locator('.sidebar').getByRole('link',{name:label,exact:true}).click();await expect(page).toHaveURL(`${process.env.WEB_TEST_URL||'http://localhost:3000'}/admin${path?'/'+path:''}`);
    await expect(page.locator('.page-heading h1')).toBeVisible();await expect(page.locator('.admin-main .error')).toHaveCount(0);
    expect(await page.evaluate(()=>(window as any).__shell===document.querySelector('.sidebar'))).toBe(true);
   }

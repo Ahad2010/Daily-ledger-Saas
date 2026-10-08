@@ -1,3 +1,5 @@
+import {googleAccount} from './google-account.js';
+import {referralRoutes,recordReferral,referralCodeSchema} from './referrals.js';
 import {pushRoutes} from './push.js';
 import 'dotenv/config';
 import express, { type Request, type Response, type NextFunction } from 'express';
@@ -15,33 +17,35 @@ import type { User } from '@prisma/client';
 import { kindSchema, preferenceSchema, onboardingSchema, schemas, reportRows, csv, metrics, plans, safeReturnTo, localDate } from '@ledger/shared';
 import { db,pool } from './db.js';
 import { snapshot,saveRecord,deleteRecord,markNotification,settlePlan,HttpError,dto } from './service.js';
+import {otpConfigured} from './auth-otp.js';
 import { passwordAuth } from './password-auth.js';
 import {adminAuthentication,adminRoutes} from './admin.js';
 import {supportRoutes} from './support.js';
 import {aiRoutes} from './ai.js';
-import {policy,platformSettings} from './platform.js';
+import {policy} from './platform.js';
 import {savePreferences} from './preferences.js';
-declare module 'express-session' {interface SessionData{csrf?:string;returnTo?:string}}
+declare module 'express-session' {interface SessionData{csrf?:string;returnTo?:string;referralCode?:string}}
 // Passport extends Express's ambient namespace for session identity.
 // eslint-disable-next-line @typescript-eslint/no-namespace
 declare global {namespace Express {interface User {id:string}}}
 const production=process.env.NODE_ENV==='production';
 const origin=process.env.FRONTEND_ORIGIN||'http://localhost:3000';const secret=process.env.SESSION_SECRET;
 if(!secret||secret.length<32)throw new Error('Set SESSION_SECRET to at least 32 random characters.');
-if(production&&!origin.startsWith('https://'))throw new Error('Production FRONTEND_ORIGIN must use HTTPS.');
-export const app=express();app.set('trust proxy',1);app.use(helmet());app.use(cors({origin,credentials:true}));app.use(express.json({limit:'128kb'}));app.use(rateLimit({windowMs:60000,limit:180,message:{error:"Too many requests. Please try again shortly."},standardHeaders:true,legacyHeaders:false}));
+const origins=[origin,process.env.ADMIN_ORIGIN].filter((value):value is string=>!!value);
+for(const value of origins){const url=new URL(value);if(url.origin!==value||(production&&url.protocol!=='https:'))throw new Error('FRONTEND_ORIGIN and ADMIN_ORIGIN must be exact origins using HTTPS in production.');}
+export const app=express();app.set('trust proxy',1);app.use(helmet());app.use(cors({origin:origins,credentials:true}));app.use(express.json({limit:'128kb'}));app.use(rateLimit({windowMs:60000,limit:180,message:{error:"Too many requests. Please try again shortly."},standardHeaders:true,legacyHeaders:false}));
 const cookie={httpOnly:true,secure:production,sameSite:'lax' as const,maxAge:7*86400000,path:'/'};
 app.use(session({name:'ledger.sid',secret,resave:false,saveUninitialized:false,cookie,store:new (connectPg(session))({pool,tableName:'session',createTableIfMissing:false})}));app.use(passport.initialize());app.use(passport.session());
 passport.serializeUser((user,done)=>done(null,user.id));passport.deserializeUser(async(id:string,done)=>{try{const user=await db.user.findUnique({where:{id}});done(null,user||false);}catch(e){done(e);}});
 const googleReady=!!(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET&&process.env.GOOGLE_CALLBACK_URL);
-if(googleReady)passport.use(new GoogleStrategy({clientID:process.env.GOOGLE_CLIENT_ID!,clientSecret:process.env.GOOGLE_CLIENT_SECRET!,callbackURL:process.env.GOOGLE_CALLBACK_URL!,state:true},async(_access,_refresh,profile,done)=>{try{const email=profile.emails?.[0]?.value;if(!email)return done(new Error('Google did not provide an email.'));const preferences=(await platformSettings()).settings;const user=await db.user.upsert({where:{googleId:profile.id},create:{googleId:profile.id,email,name:profile.displayName||'Daily Ledger user',currency:preferences.currency,timezone:preferences.timezone,optionalEmails:preferences.optionalEmailsDefault},update:{email}});done(null,user);}catch(e){done(e as Error);}}));
-app.get('/health',(_req,res)=>res.json({status:'ok',googleConfigured:googleReady,passwordConfigured:true,resetConfigured:!!(process.env.RESEND_API_KEY&&process.env.EMAIL_FROM),billing:!production&&process.env.BILLING_STUB_ENABLED==='true'?'development-stub':'not-configured'}));
+if(googleReady)passport.use(new GoogleStrategy({clientID:process.env.GOOGLE_CLIENT_ID!,clientSecret:process.env.GOOGLE_CLIENT_SECRET!,callbackURL:process.env.GOOGLE_CALLBACK_URL!,state:true},async(_access,_refresh,profile,done)=>{try{done(null,await googleAccount(profile));}catch(e){done(e as Error);}}));
+app.get('/health',(_req,res)=>res.json({status:'ok',googleConfigured:googleReady,passwordConfigured:true,signupConfigured:otpConfigured(),resetConfigured:!!(process.env.RESEND_API_KEY&&process.env.EMAIL_FROM),billing:!production&&process.env.BILLING_STUB_ENABLED==='true'?'development-stub':'not-configured'}));
 app.get('/ready',async(_req,res)=>{try{await db.$queryRaw`SELECT 1`;res.json({status:'ready'});}catch{res.status(503).json({status:'unavailable',message:'Database connection is not ready.'});}});
-app.get('/auth/google',rateLimit({windowMs:60000,limit:20,message:{error:"Too many Google sign-in attempts. Please try again shortly."}}), (req,res,next)=>{if(!googleReady)return res.status(503).json({error:'Google sign-in is not configured. Set the backend OAuth environment variables.'});req.session.returnTo=safeReturnTo(req.query.returnTo);passport.authenticate('google',{scope:['profile','email']})(req,res,next);});
-app.get('/auth/google/callback',(req,res,next)=>{if(!googleReady)return res.status(503).json({error:'Google sign-in is not configured.'});const returnTo=safeReturnTo(req.session.returnTo);passport.authenticate('google',(error:Error,user:Express.User|false)=>{if(error||!user)return res.redirect(`${origin}/login?auth=failed&returnTo=${encodeURIComponent(returnTo)}`);req.session.regenerate(err=>{if(err)return next(err);req.logIn(user,e=>{if(e)return next(e);req.session.csrf=randomBytes(32).toString('hex');req.session.save(saveError=>saveError?next(saveError):res.redirect(origin+returnTo));});});})(req,res,next);});
+app.get('/auth/google',rateLimit({windowMs:60000,limit:20,message:{error:"Too many Google sign-in attempts. Please try again shortly."}}), (req,res,next)=>{if(!googleReady)return res.status(503).json({error:'Google sign-in is not configured. Set the backend OAuth environment variables.'});req.session.returnTo=safeReturnTo(req.query.returnTo);req.session.referralCode=req.query.ref?referralCodeSchema.parse(req.query.ref):undefined;passport.authenticate('google',{scope:['profile','email']})(req,res,next);});
+app.get('/auth/google/callback',(req,res,next)=>{if(!googleReady)return res.status(503).json({error:'Google sign-in is not configured.'});const returnTo=safeReturnTo(req.session.returnTo),referralCode=req.session.referralCode;passport.authenticate('google',async(error:Error,user:(Express.User&{email?:string;referralNew?:boolean})|false)=>{if(error||!user)return res.redirect(`${origin}/login?auth=failed&returnTo=${encodeURIComponent(returnTo)}`);try{if(user.referralNew&&user.email)await recordReferral(db,{id:user.id,email:user.email},referralCode);}catch(e){return next(e);}req.session.regenerate(err=>{if(err)return next(err);req.logIn(user,e=>{if(e)return next(e);req.session.csrf=randomBytes(32).toString('hex');req.session.save(saveError=>saveError?next(saveError):res.redirect(origin+returnTo));});});})(req,res,next);});
 function identity(req:Request,res:Response,next:NextFunction){if(!req.isAuthenticated())return res.status(401).json({error:'Sign in to access your workspace.'});next();}
 async function auth(req:Request,res:Response,next:NextFunction){if(!req.isAuthenticated())return res.status(401).json({error:'Sign in to access your workspace.'});const u=req.user as User;if(u.status!=='active')return res.status(403).json({error:'This account is suspended. Contact support.'});if(!u.lastActiveAt||u.lastActiveAt.getTime()<Date.now()-300000)await db.user.update({where:{id:u.id},data:{lastActiveAt:new Date()}});next();}
-function csrf(req:Request,res:Response,next:NextFunction){const supplied=req.get('X-CSRF-Token')||'';const expected=req.session.csrf||'';const requestOrigin=req.get('Origin');if(!requestOrigin||requestOrigin!==origin||!expected||supplied.length!==expected.length||!timingSafeEqual(Buffer.from(supplied),Buffer.from(expected)))return res.status(403).json({error:'Invalid request origin or CSRF token. Reload and try again.'});next();}
+function csrf(req:Request,res:Response,next:NextFunction){const supplied=req.get('X-CSRF-Token')||'';const expected=req.session.csrf||'';const requestOrigin=req.get('Origin');if(!requestOrigin||!origins.includes(requestOrigin)||!expected||Buffer.byteLength(supplied)!==Buffer.byteLength(expected)||!timingSafeEqual(Buffer.from(supplied),Buffer.from(expected)))return res.status(403).json({error:'Invalid request origin or CSRF token. Reload and try again.'});next();}
 app.use('/auth',passwordAuth(csrf));
 app.use('/auth/admin',adminAuthentication(csrf));
 app.get('/auth/me',identity,(req,res)=>{req.session.csrf ||= randomBytes(32).toString('hex');const u=req.user as User;res.json({user:{name:u.name,email:u.email,status:u.status},csrf:req.session.csrf});});
@@ -51,6 +55,7 @@ app.use('/api',auth);app.use('/api',(req,res,next)=>['GET','HEAD','OPTIONS'].inc
 app.use('/api/admin',adminRoutes());
 app.use('/api/ai',aiRoutes());
 app.use('/api/push',pushRoutes());
+app.use('/api/referrals',referralRoutes());
 app.get('/api/snapshot',async(req,res)=>{res.json(await snapshot(req.user as User));});
 app.get('/api/records',async(req,res)=>{const page=z.coerce.number().int().min(1).default(1).parse(req.query.page);const limit=z.coerce.number().int().min(1).max(100).default(50).parse(req.query.limit);const kind=req.query.kind?kindSchema.parse(req.query.kind):undefined;const q=z.string().max(160).default('').parse(req.query.q);const where={userId:req.user!.id,...(kind?{kind}:{}),...(typeof req.query.from==='string'?{recordDate:{gte:req.query.from,...(typeof req.query.to==='string'?{lt:req.query.to}:{})}}:{})};const rows=await db.record.findMany({where,orderBy:{recordDate:'desc'}});const filtered=q?rows.filter(r=>JSON.stringify(r.data).toLowerCase().includes(q.toLowerCase())):rows;res.json({records:filtered.slice((page-1)*limit,page*limit).map(dto),page,limit,total:filtered.length});});
 const mutationSchema=z.object({kind:kindSchema,data:z.unknown(),version:z.number().int().positive().optional()});

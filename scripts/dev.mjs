@@ -22,7 +22,9 @@ if(!(await listening(apiPort))){
 }else console.log('Using the existing local API.');
 if(await listening(3000))console.log('Using the existing frontend on http://localhost:3000.');
 else{const web=run([npm,'run','dev','-w','@ledger/web']);web.on('exit',()=>stop());}
+if(await listening(3003))console.log('Using the existing administrator frontend on http://localhost:3003/admin.');
+else run([npm,'run','dev','-w','@ledger/admin']);
 run(['scripts/dev-worker.mjs']);
 async function ready(url){const deadline=Date.now()+180000;while(Date.now()<deadline){try{const response=await fetch(url,{signal:AbortSignal.timeout(5000)});if(response.ok)return true;}catch{/* Startup/first route compilation can still be pending. */}await new Promise(resolve=>setTimeout(resolve,1000));}return false;}
-const [apiReady,webReady]=await Promise.all([ready(`http://127.0.0.1:${apiPort}/ready`),ready('http://127.0.0.1:3000/login')]);
-console.log(apiReady&&webReady?'Daily Ledger is ready: http://localhost:3000':`Startup needs attention: API ${apiReady?'ready':'unavailable'}, frontend ${webReady?'ready':'unavailable'}. Check the errors above.`);
+const [apiReady,webReady,adminReady]=await Promise.all([ready(`http://127.0.0.1:${apiPort}/ready`),ready('http://127.0.0.1:3000/login'),ready('http://127.0.0.1:3003/admin/login')]);
+console.log(apiReady&&webReady&&adminReady?'Daily Ledger is ready: app http://localhost:3000 · admin http://localhost:3003/admin':`Startup needs attention: API ${apiReady?'ready':'unavailable'}, frontend ${webReady?'ready':'unavailable'}, admin ${adminReady?'ready':'unavailable'}. Check the errors above.`);

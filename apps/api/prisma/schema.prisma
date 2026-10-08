@@ -21,6 +21,9 @@ model User {
   persona String?
   focusAreas Json @default("[]")
   referralSource String?
+  referralCode String? @unique
+  referralsSent Referral[] @relation("referrer")
+  referralReceived Referral? @relation("invitee")
   entitlementSource String @default("free")
   createdAt DateTime @default(now())
   records Record[]
@@ -35,6 +38,15 @@ model User {
   supportTickets SupportTicket[]
   pushSubscriptions PushSubscription[]
 }
+model Referral {
+ id String @id @default(uuid())
+ referrerId String
+ referrer User @relation("referrer",fields:[referrerId],references:[id],onDelete:Cascade)
+ inviteeId String @unique
+ invitee User @relation("invitee",fields:[inviteeId],references:[id],onDelete:Cascade)
+ createdAt DateTime @default(now())
+ @@index([referrerId])
+}
 model PushSubscription {
  id String @id @default(uuid())
  userId String
@@ -46,6 +58,24 @@ model PushSubscription {
  announcements Boolean @default(true)
  createdAt DateTime @default(now())
  @@index([userId])
+}
+model AuthChallenge {
+  id String @id @default(uuid())
+  email String
+  purpose String
+  name String?
+  passwordHash String?
+  codeHash String
+  proofHash String?
+  returnTo String @default("/")
+  referralCode String?
+  attempts Int @default(0)
+  expiresAt DateTime
+  sentAt DateTime @default(now())
+  verifiedAt DateTime?
+  usedAt DateTime?
+  @@unique([email,purpose])
+  @@index([expiresAt])
 }
 model PasswordCredential {
   id String @id @default(uuid())

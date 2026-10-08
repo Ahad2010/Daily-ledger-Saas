@@ -1,0 +1,47 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {randomUUID} from 'node:crypto';
+import {readFileSync,writeFileSync,unlinkSync} from 'node:fs';
+import {join,resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {tmpdir} from 'node:os';
+import pg from 'pg';
+const url=process.env.TEST_DATABASE_URL;
+test('OTP signup → onboarding, reset, cooldown, expiry, attempts, CSRF and single-use',{skip:!url,timeout:180000},async()=>{
+ const pool=new pg.Pool({connectionString:url}),mailbox=join(tmpdir(),`ledger-otp-${randomUUID()}.jsonl`),origin='http://localhost:3000',base='http://localhost:4016',prefix=`otp-${randomUUID()}`;
+ writeFileSync(mailbox,'');
+ const child=spawn(process.execPath,['--import','tsx','--import',pathToFileURL(resolve('tests/resend-fixture.mjs')).href,'apps/api/src/server.ts'],{windowsHide:true,stdio:'pipe',env:{...process.env,NODE_ENV:'test',DATABASE_URL:url,TEST_DATABASE_URL:url,PORT:'4016',FRONTEND_ORIGIN:origin,SESSION_SECRET:'otp-disposable-secret-at-least-32-characters',RESEND_API_KEY:'re_fixture',EMAIL_FROM:'fixture@example.com',OTP_TEST_MAILBOX:mailbox}});let logs='';child.stderr.on('data',data=>logs+=data);
+ try{
+  let ready=false;for(let i=0;i<400;i++){if(child.exitCode!==null)break;try{if((await fetch(base+'/ready')).ok){ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,200));}assert.ok(ready,logs);
+  let sessionIndex=1;const session=async()=>{const r=await fetch(base+'/auth/csrf');return {ip:`127.0.1.${sessionIndex++}`,cookie:r.headers.getSetCookie()[0].split(';')[0],csrf:(await r.json() as any).csrf};};
+  const post=(s:{cookie:string;csrf:string;ip?:string},path:string,body:object)=>fetch(base+path,{method:'POST',headers:{'X-Forwarded-For':s.ip||'127.0.0.1',Cookie:s.cookie,Origin:origin,'X-CSRF-Token':s.csrf,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const code=(email:string)=>{const rows=readFileSync(mailbox,'utf8').trim().split('\n').map(line=>JSON.parse(line));return rows.filter(row=>String(row.to)===email).at(-1).text.match(/code is: (\d{6})/)[1];};
+  const failedEmail=`${prefix}-fail@example.com`,failedSession=await session();const failedResponse=await post(failedSession,'/auth/signup',{name:'Failed email',email:failedEmail,password:'My verified ledger 42!'});assert.equal(failedResponse.status,502,logs);assert.equal((await pool.query('SELECT id FROM "AuthChallenge" WHERE email=$1',[failedEmail])).rowCount,0);
+  const email=`${prefix}@example.com`,password='My verified ledger 42!',s=await session();
+  assert.equal((await post({...s,csrf:'invalid'},'/auth/signup',{name:'OTP user',email,password})).status,403);
+  const referrer=await pool.query(`INSERT INTO "User" (id,email,name,plan,"referralCode") VALUES ($1,$2,'Referral owner','Pro','otp-fixture-ref') RETURNING id`,[randomUUID(),prefix+'-referrer@example.com']);
+  const request=await post(s,'/auth/signup',{name:'OTP user',email,password,referralCode:'otp-fixture-ref'});assert.equal(request.status,200);const challenge=await request.json() as any;assert.equal(challenge.returnTo,'/verify-email');assert.equal((await pool.query('SELECT id FROM "User" WHERE email=$1',[email])).rowCount,0);assert.equal((await fetch(base+'/api/snapshot',{headers:{Cookie:s.cookie}})).status,401);
+  assert.equal((await post(s,'/auth/otp/resend',{})).status,429);
+  assert.equal((await post(s,'/auth/otp/verify',{code:'123'})).status,400);
+  const initialCode=code(email);assert.equal((await post(s,'/auth/otp/verify',{code:initialCode==='000000'?'000001':'000000'})).status,400);
+  const stored=(await pool.query('SELECT * FROM "AuthChallenge" WHERE id=$1',[challenge.id])).rows[0];assert.equal(stored.attempts,1);assert.notEqual(stored.codeHash,initialCode);assert.ok(!JSON.stringify(challenge).includes(stored.passwordHash));
+  const alien=await session();assert.equal((await post(alien,'/auth/otp/verify',{code:initialCode})).status,400);
+  await pool.query('UPDATE "AuthChallenge" SET "sentAt"=$2::timestamp WHERE id=$1',[challenge.id,new Date(Date.now()-60000).toISOString()]);
+  const resent=await post(s,'/auth/otp/resend',{});assert.equal(resent.status,200,JSON.stringify(await resent.clone().json()));const renewed=await resent.json() as any;assert.notEqual(renewed.id,challenge.id);
+  const verifications=await Promise.all([post(s,'/auth/otp/verify',{code:code(email)}),post(s,'/auth/otp/verify',{code:code(email)})]);assert.equal(verifications.filter(r=>r.status===200).length,1);assert.ok(verifications.filter(r=>r.status!==200).every(r=>[400,403].includes(r.status)));const verification=verifications.find(r=>r.status===200)!;const signedCookie=verification.headers.getSetCookie()[0].split(';')[0];assert.notEqual(signedCookie,s.cookie);assert.equal((await post(s,'/auth/otp/verify',{code:code(email)})).status,403);
+  assert.equal((await pool.query('SELECT COUNT(*) FROM "Referral" WHERE "referrerId"=$1',[referrer.rows[0].id])).rows[0].count,'1');
+  const existingSignup=await post(await session(),'/auth/signup',{name:'Ignored replacement',email,password});assert.equal(existingSignup.status,200);assert.equal((await existingSignup.json() as any).verificationRequired,undefined);
+  const snapshot=await fetch(base+'/api/snapshot',{headers:{Cookie:signedCookie}});assert.equal(snapshot.status,200);const data=await snapshot.json() as any;assert.equal(data.profile.onboardingCompletedAt,null);assert.equal(data.records.length,0);
+  const resetSession=await session();assert.equal((await post(resetSession,'/auth/forgot-password',{email})).status,200);
+  const verifiedReset=await post(resetSession,'/auth/otp/verify',{code:code(email)});assert.equal(verifiedReset.status,200);const proof=await verifiedReset.json() as any;assert.equal((await post(resetSession,'/auth/otp/verify',{code:code(email)})).status,400);
+  assert.equal((await post(alien,'/auth/reset-password',{...proof,password:'New verified ledger 43!'})).status,400);
+  assert.equal((await post(resetSession,'/auth/reset-password',{...proof,password:'New verified ledger 43!'})).status,200);
+  assert.equal((await post(resetSession,'/auth/reset-password',{...proof,password:'Other verified ledger 43!'})).status,400);
+  assert.equal((await fetch(base+'/auth/me',{headers:{Cookie:signedCookie}})).status,401);
+  const loginSession=await session();assert.equal((await post(loginSession,'/auth/login',{email,password})).status,401);assert.equal((await post(loginSession,'/auth/login',{email,password:'New verified ledger 43!'})).status,200);
+  const absent=`${prefix}-missing@example.com`,missingSession=await session(),before=readFileSync(mailbox,'utf8');assert.equal((await post(missingSession,'/auth/forgot-password',{email:absent})).status,200);assert.equal(readFileSync(mailbox,'utf8'),before);
+  const lockedEmail=`${prefix}-locked@example.com`,locked=await session();await post(locked,'/auth/signup',{name:'Locked user',email:lockedEmail,password});const lockedCode=code(lockedEmail);for(let i=0;i<5;i++)assert.equal((await post(locked,'/auth/otp/verify',{code:lockedCode==='000000'?'000001':'000000'})).status,i===4?429:400);assert.equal((await post(locked,'/auth/otp/verify',{code:lockedCode})).status,429);
+  await pool.query('UPDATE "AuthChallenge" SET "expiresAt"=$2::timestamp WHERE email=$1',[lockedEmail,new Date(Date.now()-60000).toISOString()]);assert.equal((await post(locked,'/auth/otp/verify',{code:lockedCode})).status,400);
+ }finally{child.kill();await pool.query('DELETE FROM session WHERE sess->>\'authChallenge\' IN (SELECT id FROM "AuthChallenge" WHERE email LIKE $1)',[prefix+'%']);await pool.query('DELETE FROM session WHERE sess->\'passport\'->>\'user\' IN (SELECT id FROM "User" WHERE email LIKE $1)',[prefix+'%']);await pool.query('DELETE FROM "AuthChallenge" WHERE email LIKE $1',[prefix+'%']);await pool.query('DELETE FROM "User" WHERE email LIKE $1',[prefix+'%']);await pool.end();unlinkSync(mailbox);}
+});
