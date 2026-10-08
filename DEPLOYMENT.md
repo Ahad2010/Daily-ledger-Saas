@@ -34,6 +34,8 @@ Order matters: Railway first (you need the API URL), then Vercel, then go back t
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | `npx web-push generate-vapid-keys` | yes | yes |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` | `GOOGLE_CALLBACK_URL=https://app.YOUR-DOMAIN/backend/auth/google/callback` | yes | no |
 | `AI_PROVIDER`, `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` | optional | yes | no |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | optional, enables profile photos | yes | no |
+| `TRIAL_MODE` | `internal` (default, no-card 7-day Pro trial) or `off` | yes | no |
 
 Railway injects `PORT`. Only the **api** service needs a public domain (Networking, generate a Railway domain or attach `api.YOUR-DOMAIN`). The worker has no public URL.
 
@@ -126,4 +128,4 @@ Referral links and codes live in Settings. A new verified signup through the lin
 
 Official Vercel monorepo setup: https://vercel.com/docs/monorepos/monorepo-faq
 
-Setup keys and one-phase-at-a-time Claude prompts: [KEY_SETUP.md](KEY_SETUP.md). Whop and Cloudinary variable names in that guide are proposed implementation inputs, not active integrations.
+Setup keys and one-phase-at-a-time Claude prompts: [KEY_SETUP.md](KEY_SETUP.md). Whop variable names in that guide are proposed implementation inputs, not an active integration. Cloudinary (profile photos) is implemented and activates when its three variables are set.
