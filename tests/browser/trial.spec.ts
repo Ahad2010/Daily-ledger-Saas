@@ -30,3 +30,13 @@ test('usage meters turn red from 80% and show the hard limit at 100%',async({pag
  const ai=page.locator('.plan-usage-row').filter({hasText:'AI requests this month'});await expect(ai.locator('.usage-meter')).toHaveAttribute('data-level','high');await expect(ai.locator('.usage-flag')).toHaveText('90% used');await expect(ai.locator('.progress>div')).toHaveCSS('background-color','rgb(232, 104, 95)');
  const habits=page.locator('.plan-usage-row').filter({hasText:'Active habits'});await expect(habits.locator('.usage-flag')).toHaveCount(0);await expect(habits.locator('.progress>div')).toHaveCSS('background-color','rgb(128, 228, 189)');
 });
+
+test('Settings shows plan status and verified payment receipts, with an honest empty state',async({page})=>{
+ const s=fixture();s.planDetails!.trial.available=false;await mock(page,s);
+ let payments:unknown[]=[];await page.route('**/backend/api/billing',r=>r.fulfill({json:{plan:'Free',source:'free',trial:{available:false,used:true,endsAt:null},accessUntil:null,paymentsConfigured:false,payments}}));
+ await page.goto('/settings');await page.getByRole('button',{name:'Continue with Free',exact:true}).click({timeout:3000}).catch(()=>undefined);
+ const panel=page.locator('.billing-panel');await expect(panel).toContainText('Billing & invoices');await expect(panel).toContainText('Online payments are not connected yet');await expect(panel.locator('.billing-summary')).toContainText('Free membership');
+ payments=[{id:'1',provider:'whop',reference:'p1',kind:'recurring',description:'Pro membership',currency:'USD',amount:2000,status:'paid',receiptUrl:'https://example.com/r/1',createdAt:'2026-10-01T10:00:00Z'},{id:'2',provider:'whop',reference:'p2',kind:'recurring',description:null,currency:'USD',amount:2000,status:'paid',receiptUrl:'javascript:alert(1)',createdAt:'2026-09-01T10:00:00Z'}];
+ await page.reload();await page.getByRole('button',{name:'Continue with Free',exact:true}).click({timeout:3000}).catch(()=>undefined);
+ await expect(panel.locator('tbody tr')).toHaveCount(2);await expect(panel.locator('tbody tr').first()).toContainText('$20');await expect(panel.getByRole('link',{name:'View'})).toHaveCount(1);await expect(panel.getByRole('link',{name:'View'})).toHaveAttribute('href','https://example.com/r/1');
+});

@@ -22,3 +22,6 @@
 .import-preview{display:grid;gap:10px}.import-preview table{font-size:11px}.import-errors{margin:0;padding-left:18px;font-size:11px;color:#f2908a;line-height:1.7}
 .import-result{display:grid;gap:12px;justify-items:center;text-align:center;padding:10px 0}.import-result h3{margin:0;font-size:18px}.import-check{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#14261e;color:var(--mint);border:1px solid #2f4a40}
 @media(max-width:560px){.import-grid{grid-template-columns:1fr}}
+.billing-summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.billing-summary>div{border:1px solid var(--border);border-radius:8px;padding:11px 13px;background:#101213;display:grid;gap:3px}.billing-summary small{font-size:10px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}.billing-summary strong{font-size:13px;font-weight:500}
+.billing-receipt{display:inline-flex;align-items:center;gap:4px;color:var(--mint);font-size:12px}.billing-panel .plan-small a{color:var(--mint)}
+@media(max-width:560px){.billing-summary{grid-template-columns:1fr}}

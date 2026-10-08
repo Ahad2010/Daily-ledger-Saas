@@ -30,3 +30,8 @@ test('a suspended account cannot start a trial',{skip,timeout:60000},async()=>{
  const api=await startApi(4042);
  try{const banned=await api.user({status:'suspended'});assert.equal((await banned.request('/api/billing/trial','POST')).status,403);}finally{await api.stop();}
 });
+
+test('TRIAL_MODE=off removes the built-in trial offer and rejects direct calls',{skip,timeout:60000},async()=>{
+ const api=await startApi(4048,{TRIAL_MODE:'off'});
+ try{const free=await api.user({plan:'Free'});assert.equal((await free.json('/api/snapshot')).planDetails.trial.available,false);assert.equal((await free.request('/api/billing/trial','POST')).status,403);assert.equal((await free.json('/api/billing')).trial.available,false);}finally{await api.stop();}
+});

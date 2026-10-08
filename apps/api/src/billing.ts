@@ -2,7 +2,7 @@ import {Router} from 'express';
 import type {User} from '@prisma/client';
 import {TRIAL_DAYS} from '@ledger/shared';
 import {db} from './db.js';
-import {policy} from './platform.js';
+import {policy,internalTrialEnabled} from './platform.js';
 import {HttpError} from './service.js';
 
 // One no-card Pro trial per account. It is an expiring entitlement override, so access ends by itself
@@ -12,6 +12,7 @@ export async function startTrial(userId:string){
   await tx.$queryRaw`SELECT id FROM "User" WHERE id=${userId} FOR UPDATE`;
   const user=await tx.user.findUniqueOrThrow({where:{id:userId}});
   if(user.status!=='active')throw new HttpError(403,'This account is suspended.');
+  if(!internalTrialEnabled())throw new HttpError(403,'The free trial is not offered right now.');
   if(user.trialStartedAt)throw new HttpError(409,'Your free trial has already been used.');
   const effective=await policy(user,tx);
   if(effective.plan!=='Free'||user.entitlementSource==='provider')throw new HttpError(409,'The free trial is available on the Free plan only.');
@@ -32,7 +33,7 @@ export function billingRoutes(){
   const rows=await db.billingRecord.findMany({where:{userId:user.id,verified:true},orderBy:{createdAt:'desc'},take:100});
   res.json({
    plan:effective.plan,source:effective.source,
-   trial:{available:effective.plan==='Free'&&!user.trialStartedAt&&user.entitlementSource!=='provider',used:!!user.trialStartedAt,endsAt:effective.override?.grantedBy==='trial'?effective.override.expiresAt.toISOString():null},
+   trial:{available:internalTrialEnabled()&&effective.plan==='Free'&&!user.trialStartedAt&&user.entitlementSource!=='provider',used:!!user.trialStartedAt,endsAt:effective.override?.grantedBy==='trial'?effective.override.expiresAt.toISOString():null},
    accessUntil:effective.override?.grantedBy==='trial'?null:effective.override?.expiresAt.toISOString()||null,
    paymentsConfigured:false,
    payments:rows.map(r=>({id:r.id,provider:r.provider,reference:r.reference,kind:r.kind,description:r.description,currency:r.currency,amount:Number(r.amount),status:r.status,receiptUrl:r.receiptUrl,createdAt:r.createdAt.toISOString()}))

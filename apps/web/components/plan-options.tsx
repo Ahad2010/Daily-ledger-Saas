@@ -14,7 +14,7 @@ const labels={tasks:'Active tasks',habits:'Active habits & exercise checklists',
 const cap=(value:number|null)=>value===null||value===Infinity?'Unlimited':String(value);
 export function trialDaysLeft(endsAt:string|null|undefined,now=Date.now()){return endsAt?Math.max(0,Math.ceil((new Date(endsAt).getTime()-now)/86400000)):null;}
 export function TrialBanner({s}:{s:Snapshot}){
- const client=useQueryClient();const mutation=useMutation({mutationFn:()=>adapter.startTrial(),onSuccess:()=>client.invalidateQueries({queryKey:['snapshot']})});
+ const client=useQueryClient();const mutation=useMutation({mutationFn:()=>adapter.startTrial(),onSuccess:async()=>{await client.invalidateQueries({queryKey:['snapshot']});await client.invalidateQueries({queryKey:['billing']});}});
  if(demoMode||!s.planDetails?.trial?.available)return null;
  return <div className="trial-offer"><div><strong>Try Pro free for {TRIAL_DAYS} days</strong><span>No card needed. Everything unlocks right away, and your data stays with you if you do not continue.</span>{mutation.isError&&<p role="alert" className="error">{mutation.error.message}</p>}</div><Button variant="primary" disabled={mutation.isPending} onClick={()=>mutation.mutate()}>{mutation.isPending?'Starting…':`Start ${TRIAL_DAYS}-day Pro trial`}</Button></div>;
 }
