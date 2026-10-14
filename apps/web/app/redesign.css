@@ -350,3 +350,40 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
 .insight-icon{display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;border-radius:9px;background:#80e4bd1a;color:#80e4bd}
 .cook-again-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border:1px solid #2a2a2a;border-radius:10px;background:transparent;color:var(--foreground);font:inherit;font-size:13.5px;cursor:pointer;text-align:left}
 .cook-again-item:hover{border-color:#80e4bd66;background:#80e4bd0d}
+/* Workspace search */
+.search-wrap .search-trigger,.search-wrap .search-close{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:0;background:none;color:var(--muted);padding:0;cursor:pointer}
+.search-wrap .search-close:hover{color:var(--foreground)}
+.search-results{max-height:min(70vh,440px);overflow:auto}
+.search-results .eyebrow{padding:6px 7px 2px}
+.search-results p{margin:0;padding:12px 7px;color:var(--muted);font-size:13.5px}
+.search-results button{flex-direction:row;justify-content:space-between;align-items:center;gap:12px}
+.search-results button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.search-results button small{flex-shrink:0}
+.search-hint{display:flex;align-items:center;gap:6px;padding:8px 7px 2px;border-top:1px solid #2a2a2a;margin-top:6px}
+@media(max-width:800px){
+ .search-wrap:not(.open){width:36px;padding:8px;border:0;background:none;justify-content:center}
+ .search-wrap:not(.open) input{width:0;flex:0}
+ .search-wrap.open{position:fixed;left:12px;right:12px;top:9px;width:auto;height:44px;z-index:70;background:#131313;border:1px solid var(--border);border-radius:12px;padding:0 12px}
+ .search-wrap.open input{width:100%;font-size:16px}
+ .search-wrap.open .search-results{position:fixed;left:12px;right:12px;top:60px;max-height:calc(100dvh - 80px)}
+}
+/* Phone KPI cards: icon above the figure, no decorative chart, nothing cut off */
+@media(max-width:540px){
+ .metrics-grid{gap:10px}
+ .metrics-grid .metric-card{flex-direction:column;align-items:flex-start;gap:10px;min-height:0;padding:14px 14px 13px;position:relative}
+ .metrics-grid .metric-icon{padding:0;width:30px;height:30px;border-radius:10px}
+ .metrics-grid .metric-content{width:100%;min-width:0}
+ .metrics-grid .metric-content span{font-size:12px}
+ .metrics-grid .metric-content strong{font-size:clamp(17px,5.4vw,21px);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}
+ .metrics-grid .metric-content small{white-space:normal;max-width:none;font-size:11px;line-height:1.35;margin-top:6px;flex-wrap:wrap}
+ .metrics-grid .sparkline{display:none}
+ .metrics-grid .task-ring{position:absolute;top:12px;right:12px;width:46px;height:46px}
+ .metrics-grid .task-ring span{font-size:10px}
+}
+.announcement-list{margin-bottom:10px}
+.announcement-item{cursor:default;border:1px solid #80e4bd33;background:#80e4bd0d}
+.announcement-item .n-icon{background:#80e4bd1f;color:#80e4bd}
+.n-actions{display:flex;gap:14px;margin-top:8px;font-size:13px}
+.n-actions a{color:#80e4bd;font-weight:600}
+.n-actions button{border:0;background:none;color:var(--muted);padding:0;font:inherit;cursor:pointer;width:auto}
+.n-actions button:hover{color:var(--foreground)}

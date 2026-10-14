@@ -3,7 +3,7 @@ import {useMemo,useRef,useState} from 'react';
 import gsap from 'gsap';
 import {useGSAP} from '@gsap/react';
 import {money,type metrics} from '@ledger/shared';
-import {CountUp,useReducedMotion} from './animation';
+import {useReducedMotion} from './animation';
 // Vivid, high-contrast category colours that stay distinct on the dark surface.
 export const donutPalette=['#b6f26b','#2dd4a3','#4cc3ff','#9b8cff','#ffb072','#ff7eb6'];
 const percent=(v:number)=>v>0&&v<.1?'<0.1%':`${v<10?v.toFixed(1):Math.round(v)}%`;
@@ -22,7 +22,8 @@ export function SpendingChart({m,onCategory}:{m:Metrics;onCategory:(name:string)
   const svg=root.current;if(!svg)return;const segments=Array.from(svg.querySelectorAll<SVGCircleElement>('[data-donut-segment]'));const ticks=Array.from(svg.querySelectorAll<SVGLineElement>('[data-donut-tick]'));
   const paint=(p:number)=>{segments.forEach((el,i)=>{const arc=arcs[i];if(!arc)return;const visible=Math.min(Math.max(p*C-arc.start,0),arc.length);el.setAttribute('stroke-dasharray',`${visible} ${C}`);});ticks.forEach((el,i)=>{el.style.opacity=String(i/TICKS<=p?1:.18);});};
   const mm=gsap.matchMedia();
-  mm.add('(prefers-reduced-motion: no-preference)',context=>{const state={p:0};paint(0);let tween:gsap.core.Tween;context.ignore(()=>{tween=gsap.to(state,{p:1,duration:SWEEP,ease:'power3.out',onUpdate:()=>paint(state.p),onComplete:()=>paint(1)});});return ()=>tween.kill();});
+  mm.add('(prefers-reduced-motion: no-preference)',context=>{const state={p:0};paint(0);let tween:gsap.core.Tween|undefined;// Start the sweep when the chart is actually on screen, otherwise it finishes before anyone sees it.
+   const play=()=>{tween=gsap.to(state,{p:1,duration:SWEEP,ease:'power2.inOut',onUpdate:()=>paint(state.p),onComplete:()=>paint(1)});};const watcher=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)){watcher?.disconnect();context.ignore(play);}},{threshold:.4});if(watcher)watcher.observe(svg);else context.ignore(play);return ()=>{watcher?.disconnect();tween?.kill();};});
   mm.add('(prefers-reduced-motion: reduce)',()=>paint(1));
   return ()=>mm.revert();
  },{scope:root,dependencies:[signature],revertOnUpdate:true});
@@ -35,7 +36,7 @@ export function SpendingChart({m,onCategory}:{m:Metrics;onCategory:(name:string)
      {arcs.map((arc,i)=><circle key={arc.name} data-donut-segment className="gauge-segment" cx="100" cy="100" r={R} fill="none" stroke={donutPalette[i%donutPalette.length]} strokeWidth="22" strokeDasharray={reduced?`${arc.length} ${C}`:`0 ${C}`} strokeDashoffset={-arc.start} style={{cursor:'pointer',opacity:hovered&&hovered!==arc.name?.45:1,filter:`drop-shadow(0 0 5px ${donutPalette[i%donutPalette.length]}55)`}} onMouseEnter={()=>setHovered(arc.name)} onMouseLeave={()=>setHovered(null)} onClick={()=>onCategory(arc.name)}/>)}
     </g>
    </svg>
-   <div className="donut-center"><span>Total spent</span><span className="donut-value" style={{fontSize:money(m.expenses,m.currency).length>12?16:22}}><CountUp key={signature} value={m.expenses} from={0} duration={SWEEP} ease="power3.out" format={value=>money(value,m.currency)}/></span><small>{m.categories.length} categories</small></div>
+   <div className="donut-center"><span>Total spent</span><span className="donut-value" style={{fontSize:money(m.expenses,m.currency).length>12?16:22}}>{money(m.expenses,m.currency)}</span><small>{m.categories.length} categories</small></div>
   </div>
   <div className="donut-hover-details" role={active?'tooltip':undefined}>{active?<><span>{active.name}</span><strong>{money(active.amount,m.currency)}</strong><small>{percent(active.percentage)} of spending</small></>:<small>Hover a segment or select a category below</small>}</div>
   <div className="spending-legend refined-legend" aria-label="Spending categories">
