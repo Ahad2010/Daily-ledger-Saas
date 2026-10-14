@@ -14,7 +14,7 @@ test('money entry uses normal currency amounts and links use names',async({page}
  await expect(goal).toContainText('Build first buffer');
  await expect(page.getByText(/Goal ID:/)).toHaveCount(0);
  await page.goto('/meals');
- await page.locator('.meal-day.outside-month').first().getByRole('button',{name:'Plan meal',exact:true}).first().click();
+ await page.getByRole('tab',{name:'Plan'}).click();await page.getByRole('button',{name:/^Thu 1,/}).click();await page.locator('.plan-slot').first().getByRole('button',{name:'Plan meal',exact:true}).click();
  await expect(dialog.getByLabel('Date',{exact:true})).toHaveValue('2026-10-01');
  await expect(dialog.getByLabel('Meal',{exact:true})).toHaveValue('Breakfast');
  await dialog.getByLabel('Meal name',{exact:true}).fill('October breakfast');
