@@ -72,6 +72,6 @@ export function CsvImport({open,onOpenChange,s}:{open:boolean;onOpenChange:(open
     {preview.errors.length>0&&<ul className="import-errors">{preview.errors.slice(0,4).map(e=><li key={e.line}>Row {e.line}: {e.message}</li>)}{preview.errors.length>4&&<li>and {preview.errors.length-4} more</li>}</ul>}</div>}
    {error&&<p role="alert" className="error">{error}</p>}
    {progress&&!totals&&<p className="import-note" role="status">Importing {progress.done} of {progress.total}…</p>}
-   <div className="dialog-actions"><Button onClick={reset} disabled={busy}>Choose another file</Button><Button variant="primary" disabled={busy||!preview?.items.length} onClick={()=>void run()}>{busy?'Importing…':`Import ${preview?.items.length||0} transactions`}</Button></div></div>}
+   <div className="dialog-actions"><Button onClick={reset} disabled={busy}>Choose another file</Button><Button variant="primary" disabled={busy||!preview?.items.length} loading={busy} onClick={()=>void run()}>{busy?'Importing…':`Import ${preview?.items.length||0} transactions`}</Button></div></div>}
  </Dialog>;
 }

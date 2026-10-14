@@ -25,8 +25,8 @@ export function pageSuggestions(page:string,s:Snapshot,today:string):Suggestion[
  }
  if(page==='fitness'){
   const week=shift(today,-6);const done=recordsOf(s.records,'workout').filter(w=>w.data.done&&w.data.date>=week&&w.data.date<=today).length;
-  if(!done)out.push({id:'no-workout',tone:'nudge',text:'No workout completed in the last 7 days. Even 15 minutes counts.',action:{label:'Log workout',kind:'workout'}});
-  if(!recordsOf(s.records,'workout').some(w=>!w.data.done&&w.data.date>=today))out.push({id:'plan-workout',tone:'tip',text:'Nothing planned ahead. Schedule your next session.',action:{label:'Plan workout',kind:'workout',initial:{date:tomorrow}}});
+  if(!done)out.push({id:'no-workout',tone:'nudge',text:'No workout completed in the last 7 days. Even 15 minutes counts.',action:{label:'Log a workout',kind:'workout'}});
+  if(!recordsOf(s.records,'workout').some(w=>!w.data.done&&w.data.date>=today))out.push({id:'plan-workout',tone:'tip',text:'Nothing planned ahead. Schedule your next session.',action:{label:'Schedule a session',kind:'workout',initial:{date:tomorrow}}});
  }
  if(page==='meals'){
   if(!recordsOf(s.records,'meal').some(m=>m.data.date===tomorrow))out.push({id:'plan-tomorrow',tone:'tip',text:'Tomorrow’s meals are not planned yet.',action:{label:'Open planner',href:'/meals/planner'}});

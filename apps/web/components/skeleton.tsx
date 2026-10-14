@@ -1,6 +1,6 @@
 import { BrandMark } from './brand-mark';
 export function LedgerLoader({label='Loading…',compact=false,announce=true}:{label?:string;compact?:boolean;announce?:boolean}){return <div className={`ledger-loader${compact?' is-compact':''}`} role={announce?'status':undefined} aria-label={announce?label:undefined}><div className="ledger-loader-balls" aria-hidden="true"><i className="ball"/><i className="ball"/><i className="ball"/><i className="ball-shadow"/><i className="ball-shadow"/><i className="ball-shadow"/></div>{!compact&&<p>{label}</p>}</div>;}
-export function AccountLoading({message='Opening your workspace…'}:{message?:string}){return <div className="account-loading" role="status" aria-label={message}><BrandMark/><LedgerLoader label={message} announce={false}/></div>;}
+export function AccountLoading({message='Opening your workspace…'}:{message?:string}){return <div className="account-loading" role="status" aria-label={message}><BrandMark/><p>{message}</p><Skeleton className="account-loading-bar"/></div>;}
 export function Skeleton({className=''}:{className?:string}){return <div className={`skeleton ${className}`} aria-hidden="true"/>;}
 export function TableSkeleton(){return <div className="panel loader-panel"><LedgerLoader label="Loading…" compact/></div>;}
 export function WorkspaceSkeleton(_props:{path?:string}){return <div className="app-shell workspace-loading" role="status" aria-label="Loading your workspace"><LedgerLoader label="Loading your workspace…" announce={false}/></div>;}
