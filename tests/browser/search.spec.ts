@@ -6,7 +6,7 @@ for(const [name,width] of [['phone',390],['laptop',1440]] as const)test(`search 
  await expect(input).toBeFocused();
  await input.fill('meals');await expect(page.locator('.search-results').getByRole('button',{name:/Meals & Grocery/})).toBeVisible();
  await page.screenshot({path:`artifacts/search-pages-${name}.png`});
- await input.fill('chicken');const hit=page.locator('.search-results').getByRole('button',{name:/Grocery item|Meal/}).first();await expect(hit).toBeVisible();
+ await input.fill('chicken');await expect(page.locator('.search-results .eyebrow',{hasText:'Your records'})).toBeVisible();const hit=page.locator('.search-results').getByRole('button',{name:/chicken/i}).first();await expect(hit).toBeVisible();
  await page.screenshot({path:`artifacts/search-records-${name}.png`});
  await hit.click();await expect(page.getByRole('dialog')).toBeVisible();await page.keyboard.press('Escape');
  await input.fill('zzzz-nothing');await expect(page.locator('.search-results')).toContainText('No results');
