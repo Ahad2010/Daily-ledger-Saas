@@ -1,3 +1,4 @@
+import {logActivity} from './activity.js';
 import {Router,type Request} from 'express';
 import rateLimit from 'express-rate-limit';
 import {z} from 'zod';
@@ -24,6 +25,7 @@ export function supportRoutes(admin=false){
   const input=createSchema.parse(req.body);const user=await db.user.findUniqueOrThrow({where:{id:req.user!.id}});
   const {body,...data}=input;
   const ticket=await db.supportTicket.create({data:{...data,userId:user.id,messages:{create:{role:'user',authorName:user.name,body}}},include:{messages:true}});
+  void logActivity(req,{userId:user.id,type:'support.ticket_created',meta:{category:String((data as {category?:string}).category??'')}});
   res.status(201).json(ticket);
  });
  router.get('/:id',async(req,res)=>{const ticket=await db.supportTicket.findFirst({where:{id:String(req.params.id),...(admin?{}:{userId:req.user!.id})},include:{messages:{orderBy:{createdAt:'asc'}},...(admin?{user:{select:{name:true,email:true}}}:{})}});if(!ticket)throw new HttpError(404,'Ticket not found.');res.json(ticket);});

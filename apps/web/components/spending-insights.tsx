@@ -12,9 +12,9 @@ export function BudgetPulse({m}:{m:Metrics}){
   {m.budget?<><div className="pulse-figure"><strong className={left<0?'negative':'positive'}>{money(Math.abs(left),m.currency)}</strong><span>{left<0?'over budget':'left this month'}</span></div><div className={`pulse-bar ${usage>=100?'is-over':usage>=80?'is-hot':''}`}><AnimatedProgress value={usage}/></div><div className="pulse-scale"><span>{usage}% used</span><span>{money(m.budget,m.currency)}</span></div></>:<p className="muted">Your budget bar appears here once you set an overall limit.</p>}
  </Panel>;
 }
-export function SpendingInsights({s,m}:{s:Snapshot;m:Metrics}){
+export function SpendingInsights({s,m,stack=false}:{s:Snapshot;m:Metrics;stack?:boolean}){
  const items:Insight[]=buildInsights(s.records,m);
- return <Panel className="insights-panel"><div className="panel-heading"><div><h2>Smart insights</h2><p>Based only on your recorded transactions</p></div><Sparkles size={18} aria-hidden="true"/></div>
+ return <Panel className={`insights-panel${stack?' insights-stack':''}`}><div className="panel-heading"><div><h2>Smart insights</h2><p>Based only on your recorded transactions</p></div><Sparkles size={18} aria-hidden="true"/></div>
   {items.length?<ul className="insight-list">{items.map(item=>{const Icon=item.tone==='warn'?CircleAlert:icons[item.id];return <li key={item.id} data-tone={item.tone}><span className="insight-icon"><Icon size={17}/></span><div><strong>{item.title}</strong><p>{item.text}</p></div></li>;})}</ul>:<p className="muted">Record a few expenses and your personal insights will appear here.</p>}
  </Panel>;
 }

@@ -1,4 +1,5 @@
 'use client';
+import {LedgerLoader} from './skeleton';
 import {useState,type FormEvent} from 'react';
 import Link from 'next/link';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
@@ -29,4 +30,4 @@ export function SupportDesk({admin=false,account='admin'}:{admin?:boolean;accoun
 }
 function ReplyForm({ticket,send,refresh}:{ticket:Ticket;send:(data:object)=>Promise<unknown>;refresh:()=>Promise<unknown>}){const [body,setBody]=useState('');const reply=useMutation({mutationFn:()=>send({body,version:ticket.version}),onSuccess:async()=>{setBody('');await refresh();},onError:()=>refresh()});return <form className="support-reply" onSubmit={e=>{e.preventDefault();if(!reply.isPending)reply.mutate();}}><label>Add a reply<textarea aria-label="Reply message" value={body} onChange={e=>setBody(e.target.value)} required minLength={1} maxLength={4000} rows={3} placeholder="Add details or reply to support…" disabled={reply.isPending}/></label>{ticket.status==='resolved'&&<small>A new customer reply reopens this ticket.</small>}{reply.isError&&<p className="error" role="alert">{reply.error.message} Your draft has been kept.</p>}<Button variant="primary" type="submit" disabled={reply.isPending||!body.trim()}><Send size={14}/>{reply.isPending?'Sending…':'Send reply'}</Button></form>;}
 function SupportError({error,retry}:{error:string;retry:()=>void}){return <div className="support-error"><p className="error" role="alert">{error}</p><Button onClick={retry}><RefreshCw size={14}/>Retry connection</Button></div>;}
-function SupportSkeleton(){return <div className="support-skeleton" role="status" aria-label="Loading support content">{[1,2,3].map(i=><div key={i}><span className="skeleton"/><span className="skeleton"/><span className="skeleton"/></div>)}</div>;}
+function SupportSkeleton(){return <LedgerLoader label="Loading support content" compact/>;}

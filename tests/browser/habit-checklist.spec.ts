@@ -1,3 +1,4 @@
+import {holdToConfirm} from './hold';
 import {test,expect} from '@playwright/test';
 for(const width of [360,390,768,1024,1440,1920])test(`weekly habits, streaks and isolated chart hover ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:900});await page.goto('/tasks');
@@ -19,7 +20,7 @@ test('habit creation and removal update the checklist with motion-safe controls'
  await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/tasks');await page.getByRole('button',{name:'New habit',exact:true}).click();const dialog=page.getByRole('dialog');
  await dialog.getByLabel('Habit name',{exact:true}).fill('Stretching fixture');await dialog.getByRole('button',{name:'Create habit'}).click();await expect(dialog).toHaveCount(0);
  const habit=page.locator('.weekly-habit').filter({hasText:'Stretching fixture'});await expect(habit).toBeVisible();await expect(habit.locator('.habit-streak')).toContainText('0 current');
- await habit.getByRole('button',{name:'Delete Stretching fixture',exact:true}).click();await dialog.getByRole('button',{name:'Delete record',exact:true}).click();await expect(habit).toHaveCount(0);
+ await habit.getByRole('button',{name:'Delete Stretching fixture',exact:true}).click();await holdToConfirm(page,/Hold to delete/);await expect(habit).toHaveCount(0);
 });
 
 test('habit ticks stay simple and immediate without scale or stroke animation',async({page})=>{

@@ -1,3 +1,4 @@
+import {logActivity} from './activity.js';
 import {Router} from 'express';
 import type {User} from '@prisma/client';
 import {TRIAL_DAYS} from '@ledger/shared';
@@ -26,7 +27,7 @@ export async function startTrial(userId:string){
 
 export function billingRoutes(){
  const router=Router();
- router.post('/trial',async(req,res)=>res.status(201).json(await startTrial(req.user!.id)));
+ router.post('/trial',async(req,res)=>{const started=await startTrial(req.user!.id);void logActivity(req,{userId:req.user!.id,type:'trial.started'});res.status(201).json(started);});
  // Only provider-verified payments appear here; nothing is invented while no payment provider is connected.
  router.get('/',async(req,res)=>{
   const user=req.user as User,effective=await policy(user);

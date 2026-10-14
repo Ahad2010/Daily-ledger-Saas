@@ -162,6 +162,18 @@ model PolicyVersion {
  createdAt DateTime @default(now())
  @@index([plan,effectiveAt])
 }
+model ActivityEvent {
+ id String @id @default(uuid())
+ userId String?
+ type String
+ ip String?
+ userAgent String?
+ meta Json @default("{}")
+ createdAt DateTime @default(now())
+ @@index([userId,createdAt])
+ @@index([type,createdAt])
+ @@index([createdAt])
+}
 model AdminAudit {
  id String @id @default(uuid())
  actorId String

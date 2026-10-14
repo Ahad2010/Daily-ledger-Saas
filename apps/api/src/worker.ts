@@ -1,3 +1,4 @@
+import {pruneActivity} from './activity.js';
 import 'dotenv/config';
 import { Resend } from 'resend';
 import { localDate, nextOccurrence, reminderEligible, budgetAlerts, budgetAlertEnd, budgetAlertText, type LedgerRecord, type RecordData } from '@ledger/shared';
@@ -93,7 +94,7 @@ async function deliver(jobId:string){
   await tx.job.update({where:{id:job.id},data:{status:'done',leaseUntil:null,deliveredAt:new Date(),lastError:null}});
  },{timeout:30000});
 }
-export async function runWorker(){await schedules();const jobs=await db.$queryRaw<{id:string}[]>`UPDATE "Job" SET status='leased', "leaseUntil"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')+INTERVAL '2 minutes', attempts=attempts+1 WHERE id IN (SELECT id FROM "Job" WHERE (status='pending' OR (status='leased' AND "leaseUntil"<(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'))) AND "dueAt"<=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') AND attempts<"maxAttempts" ORDER BY "dueAt" LIMIT 25 FOR UPDATE SKIP LOCKED) RETURNING id`;
+export async function runWorker(){await schedules();await pruneActivity().then(count=>{if(count)console.log(JSON.stringify({activityPruned:count}));},error=>console.error('Activity prune failed:',(error as Error).message));const jobs=await db.$queryRaw<{id:string}[]>`UPDATE "Job" SET status='leased', "leaseUntil"=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')+INTERVAL '2 minutes', attempts=attempts+1 WHERE id IN (SELECT id FROM "Job" WHERE (status='pending' OR (status='leased' AND "leaseUntil"<(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'))) AND "dueAt"<=(CURRENT_TIMESTAMP AT TIME ZONE 'UTC') AND attempts<"maxAttempts" ORDER BY "dueAt" LIMIT 25 FOR UPDATE SKIP LOCKED) RETURNING id`;
  for(const job of jobs){
   // Persist the attempt before delivery, so even a rolled-back/crashed send has a durable window.
   const current=await db.job.findUniqueOrThrow({where:{id:job.id}});await db.deliveryAttempt.upsert({where:{jobId_attempt:{jobId:job.id,attempt:current.attempts}},create:{jobId:job.id,attempt:current.attempts,status:'started'},update:{}});

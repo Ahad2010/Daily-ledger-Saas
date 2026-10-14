@@ -1,0 +1,39 @@
+'use client';
+import {useMemo,useState,type ReactNode} from 'react';
+import Link from 'next/link';
+import {Area,AreaChart,Bar,BarChart,CartesianGrid,Cell,ComposedChart,Line,ResponsiveContainer,Tooltip,XAxis,YAxis} from 'recharts';
+import {ArrowRight,PiggyBank,Receipt,Wallet} from 'lucide-react';
+import {money,monthDates,type Snapshot,type metrics} from '@ledger/shared';
+import {Panel,Empty,monthLabel} from './dashboard-charts';
+import {useReducedMotion} from './animation';
+import {buildRecommendations} from '../lib/recommendations';
+type Metrics=ReturnType<typeof metrics>;
+const LIME='#b6f26b',CORAL='#ff9b7a',MUTED='#27352f';
+const pct=(v:number|null)=>v===null?'—':`${Math.round(v)}%`;
+// Weekly totals derived from the cumulative daily series.
+function weekly(m:Metrics){const out:{expenses:number;net:number}[]=[];m.cash.forEach((d,i)=>{const prev=i?m.cash[i-1]:{income:0,expenses:0};const w=Math.floor(i/7);out[w]=out[w]||{expenses:0,net:0};out[w].expenses+=d.expenses-prev.expenses;out[w].net+=(d.income-prev.income)-(d.expenses-prev.expenses);});return out.slice(-8);}
+function Kpi({icon,title,value,caption,children}:{icon:ReactNode;title:string;value:string;caption:ReactNode;children:ReactNode}){return <Panel className="fin-kpi"><div className="fin-kpi-head"><span className="fin-kpi-icon">{icon}</span><span>{title}</span></div><div className="fin-kpi-body"><div className="fin-kpi-figure"><strong>{value}</strong><small>{caption}</small></div><div className="fin-kpi-chart" aria-hidden="true">{children}</div></div></Panel>;}
+export function FinanceKpis({m,month}:{m:Metrics;month:string}){
+ const reduced=useReducedMotion();const weeks=useMemo(()=>weekly(m),[m]);
+ const bars=(key:'expenses'|'net')=><ResponsiveContainer width="100%" height="100%"><BarChart data={weeks} margin={{top:2,right:0,left:0,bottom:0}}><Bar dataKey={key} radius={[3,3,0,0]} isAnimationActive={!reduced} animationDuration={900}>{weeks.map((_,i)=><Cell key={i} fill={i===weeks.length-1?LIME:MUTED}/>)}</Bar></BarChart></ResponsiveContainer>;
+ return <div className="fin-kpis">
+  <Kpi icon={<Wallet size={16}/>} title="Monthly budget" value={m.budget?money(m.budget,m.currency):'Not set'} caption={m.budget?`${money(Math.max(m.budget-m.expenses,0),m.currency)} left this month`:<Link href={`/finance/budgets?month=${month}`}>Set a budget</Link>}>{bars('expenses')}</Kpi>
+  <Kpi icon={<Receipt size={16}/>} title="Actual spending" value={money(m.expenses,m.currency)} caption={m.budget?<span className={(m.budgetUsage||0)>=80?'budget-hot':undefined}>{pct(m.budgetUsage)} of budget</span>:'No budget to compare'}><ResponsiveContainer width="100%" height="100%"><AreaChart data={m.cash} margin={{top:4,right:0,left:0,bottom:0}}><defs><linearGradient id="kpi-spend" x1="0" y1="0" x2="0" y2="1"><stop stopColor={CORAL} stopOpacity={.35}/><stop offset="1" stopColor={CORAL} stopOpacity={0}/></linearGradient></defs><Area type="monotone" dataKey="expenses" stroke={CORAL} strokeWidth={2.4} fill="url(#kpi-spend)" isAnimationActive={!reduced} animationDuration={900}/></AreaChart></ResponsiveContainer></Kpi>
+  <Kpi icon={<PiggyBank size={16}/>} title="Savings rate" value={pct(m.savingsRate)} caption={m.income?`${money(m.saved,m.currency)} kept of ${money(m.income,m.currency)}`:'Add income to calculate'}>{bars('net')}</Kpi>
+ </div>;
+}
+function PaceTooltip({active,payload,label,m}:{active?:boolean;payload?:readonly any[];label?:any;m:Metrics}){if(!active||!payload?.length)return null;return <div className="dark-tooltip"><strong>{label} {monthLabel(m.month)}</strong>{payload.filter(p=>p.value!==undefined&&p.value!==null).map(p=><div key={p.dataKey}><i style={{background:p.color}}/><span>{p.dataKey==='budget'?'Budget pace':'Actual'}</span><b>{money(Number(p.value)*100,m.currency)}</b></div>)}</div>;}
+export function BudgetVsActual({m,month,onAdd}:{m:Metrics;month:string;onAdd:()=>void}){
+ const reduced=useReducedMotion();const [group,setGroup]=useState<'Week'|'Month'>('Month');
+ const data=useMemo(()=>{const days=monthDates(m.month);const rows=days.map((_,i)=>({day:i+1,budget:m.budget?m.budget/100*(i+1)/days.length:undefined,actual:i<m.cash.length?m.cash[i].expenses:undefined}));return group==='Month'?rows:rows.filter((_,i)=>i%7===6||i===rows.length-1);},[m,group]);
+ return <Panel className="fin-budget-chart"><div className="panel-heading"><div><h2>Budget vs actual</h2><p>{m.budget?'Even spending pace against what you have actually spent':'Set a monthly budget to see your pace line'}</p></div><div className="segmented">{(['Week','Month'] as const).map(g=><button key={g} className={g===group?'selected':''} onClick={()=>setGroup(g)} aria-pressed={g===group}>{g}</button>)}</div></div>
+  {m.expenses||m.budget?<><div className="fin-chart-legend"><span><i style={{background:LIME}}/>Budget pace</span><span><i style={{background:CORAL}}/>Actual</span>{!m.budget&&<Link href={`/finance/budgets?month=${month}`}>Set a budget <ArrowRight size={13}/></Link>}</div>
+   <div className="fin-chart" aria-label={`Actual spending ${money(m.expenses,m.currency)}${m.budget?` against a budget of ${money(m.budget,m.currency)}`:''}.`}><ResponsiveContainer width="100%" height="100%"><ComposedChart data={data} margin={{top:10,right:8,left:-12,bottom:2}}><defs><linearGradient id="fin-actual" x1="0" y1="0" x2="0" y2="1"><stop stopColor={CORAL} stopOpacity={.3}/><stop offset="1" stopColor={CORAL} stopOpacity={.02}/></linearGradient></defs><CartesianGrid stroke="#262d2a" strokeDasharray="3 4" vertical={false}/><XAxis dataKey="day" minTickGap={40} tickFormatter={d=>`${d} ${new Date(`${m.month}-01`).toLocaleString('en-US',{month:'short'})}`} tick={{fill:'#aaaeb5',fontSize:12}} stroke="#3a423f"/><YAxis tickFormatter={n=>money(n*100,m.currency).replace(/,000/,'k')} tick={{fill:'#aaaeb5',fontSize:12}} stroke="#3a423f"/><Tooltip cursor={{stroke:'#8a9298',strokeDasharray:'3 3'}} content={<PaceTooltip m={m}/>}/><Area type="monotone" dataKey="actual" stroke={CORAL} strokeWidth={2.6} fill="url(#fin-actual)" connectNulls={false} isAnimationActive={!reduced} animationDuration={1100}/>{m.budget?<Line type="monotone" dataKey="budget" stroke={LIME} strokeWidth={2.6} dot={false} isAnimationActive={!reduced} animationDuration={1100}/>:null}</ComposedChart></ResponsiveContainer></div></>:<Empty title="Your pace line starts here" text="Add an expense or set a budget to compare plan and reality." variant="chart" label="Add expense" onAdd={onAdd}/>}
+ </Panel>;
+}
+export function Recommendations({s,m,month}:{s:Snapshot;m:Metrics;month:string}){
+ const {rows,total}=useMemo(()=>buildRecommendations(s.records,m),[s.records,m]);
+ return <Panel className="fin-recs"><div className="panel-heading"><div><h2>Budget recommendations</h2><p>Compared with your own budgets and last month</p></div></div>
+  {rows.length?<><ul className="fin-rec-list">{rows.map(r=><li key={r.name}><div><strong>{r.name}</strong><small>{r.note}</small></div><div className="fin-rec-figures"><strong>Current: {money(r.current,m.currency)}</strong>{r.saving>0&&<small className="positive">Save {money(r.saving,m.currency)}</small>}</div></li>)}</ul><div className="fin-rec-total"><span>Total potential savings</span><strong>{money(total,m.currency)}</strong></div><Link className="fin-rec-link" href={`/finance/budgets?month=${month}`}>Manage budgets <ArrowRight size={14}/></Link></>:<p className="muted">Record a few expenses and your recommendations will appear here.</p>}
+ </Panel>;
+}
