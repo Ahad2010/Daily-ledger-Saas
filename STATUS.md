@@ -26,6 +26,13 @@ Last updated: 14 October 2026. Read this first. It separates what is built and t
 | Admin | Users, plans and revenue, announcements, automations, reports, AI, platform settings, admin audit log | `admin-app.tsx`, `apps/api/src/admin.ts` |
 | Admin: user activity | Per-account timeline, sign-in counts, failed sign-ins, record counts by type, global filterable log, 180-day retention | `apps/api/src/activity.ts` |
 | Admin: maintenance mode | Toggle with message and expected end; customers see a maintenance page, admin tools stay open | `apps/api/src/server.ts`, `maintenance-screen.tsx` |
+| Today screen | Tasks, habits, workout, meals, bills this week, goals and the weekly review on one page | `today-view.tsx` |
+| Calendar | Month grid with tasks, workouts, meals, bills and goal dates, filters and per-day add | `calendar-view.tsx` |
+| Meals planner | Food database, quick food log, daily target calculator, calories and macros against target, weekly chart, copy last week (Pro) | `nutrition-planner.tsx`, `lib/foods.ts`, `lib/nutrition.ts` |
+| Fitness planner | Set, rep and weight logger, programs, personal records, weekly summary, body weight trend | `fitness-planner.tsx`, `lib/fitness.ts` |
+| Goals | Click the percentage to set progress, pace badge, emergency fund preset, Finance auto-track (Pro) | `goal-planner.tsx`, `goal-progress-dialog.tsx` |
+| Monday weekly review | The Monday morning notification carries the weekly review (wins and focus) when there is real data | `apps/api/src/push.ts` (`weeklyDigest`) |
+| Cancel subscription | Hold to cancel in Billing, back to Free, no further charges (provider cancel to be wired with Whop) | `cancel-subscription.tsx`, `apps/api/src/billing.ts` |
 | Hosting | Separate app and admin on Vercel, one shared API and PostgreSQL and a 5-minute worker on Railway | `DEPLOYMENT.md`, `railway.*.json` |
 
 ## Verification on 14 October 2026 (local sandbox)
@@ -41,7 +48,6 @@ Last updated: 14 October 2026. Read this first. It separates what is built and t
 | --- | --- | --- |
 | Whop payments (checkout, signature-verified webhook, refunds, expiry) | No paid plan can be bought yet. The payment page only reflects a plan the server has confirmed. | Whop account, sandbox API key, webhook secret and the two plan IDs |
 | Annual plan | Easiest revenue lift | Price decision |
-| Monday weekly-review notification | Retention; the weekly data already exists in the report | Confirm wording and send time |
 | Starter templates in onboarding (student, freelancer, family) | Faster first-day value | Confirm the three templates |
 | Referral rewards (for example one month of Pro) | Only ranking exists today | Reward rules |
 | Bank sync (Plaid style) | CSV import covers the need for now | Provider choice |

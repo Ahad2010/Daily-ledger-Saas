@@ -7,12 +7,20 @@ import type {Prisma} from '@prisma/client';
 import {db} from './db.js';
 import {HttpError} from './service.js';
 import {policy} from './platform.js';
-import {localDate,goalProgress,type Plan,type LedgerRecord,type RecordData} from '@ledger/shared';
+import {localDate,goalProgress,weeklyReview,type Plan,type LedgerRecord,type RecordData} from '@ledger/shared';
 export const notificationEmailAllowed=(plan:Plan,optedIn:boolean)=>plan!=='Free'&&optedIn;
 export function localHour(timezone:string,now=new Date()){return Number(new Intl.DateTimeFormat('en',{timeZone:timezone,hour:'2-digit',hourCycle:'h23'}).format(now));}
 export function zonedHour(date:string,hour:number,timezone:string){const wanted=Date.parse(`${date}T${String(hour).padStart(2,'0')}:00:00Z`);let instant=wanted;for(let i=0;i<3;i++){const parts=new Intl.DateTimeFormat('en',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(instant));const get=(key:string)=>parts.find(p=>p.type===key)!.value;const local=Date.parse(`${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:${get('second')}Z`);instant+=wanted-local;}return new Date(instant);}
 export function recordReminder(record:LedgerRecord,records:LedgerRecord[]=[]){if(record.kind==='goal'&&record.data.active&&!goalProgress(record,records).done)return {date:record.data.deadline,title:'Your goal is waiting for its next step',body:record.data.title,url:`/goals/${record.id}`};if(record.kind==='workout'&&!record.data.done)return {date:record.data.date,title:'Your planned workout is waiting',body:record.data.title,url:'/fitness'};if(record.kind==='meal'&&!record.data.eaten)return {date:record.data.date,title:'Check in with your meal plan',body:record.data.title,url:'/meals'};return null;}
 export function habitReminderDate(data:RecordData['habit'],timezone:string,now=new Date()){const date=localDate(now,timezone);const hour=Number(new Intl.DateTimeFormat('en',{timeZone:timezone,hour:'2-digit',hourCycle:'h23'}).format(now));return data.active&&hour>=23&&date>=data.startDate&&data.days.includes(new Date(date+'T12:00:00Z').getUTCDay())?date:null;}
+// Monday morning: the weekly review in one notification, from the customer's own records. Nothing to say means no digest, so the normal morning summary is used instead.
+export function weeklyDigest(records:LedgerRecord[],currency:string,timezone:string,now=new Date()){
+ const review=weeklyReview(records,{currency,timezone,asOf:now});
+ if(!review.wins.length&&!review.slips.length)return null;
+ const lines=[...review.wins.slice(0,2),...review.focus.slice(0,1)];
+ if(!lines.length)return null;
+ return {title:'Your week in review',body:lines.join(' ').slice(0,240),url:'/today'};
+}
 // Honest morning summary built only from the customer's own records, evaluated in their timezone.
 export function morningDigest(rows:{kind:string;data:unknown}[],timezone:string,now=new Date()){
  const today=localDate(now,timezone),weekday=new Date(today+'T12:00:00Z').getUTCDay();
