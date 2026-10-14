@@ -5,7 +5,7 @@ for(const width of [390,1440])test(`goal pace, emergency fund preset and meal co
  await expect(page.getByRole('button',{name:/^Emergency fund \d/})).toBeVisible();
  await page.screenshot({path:`artifacts/goals-pace-${width}.png`,fullPage:true});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await page.goto('/meals');await expect(page.getByRole('heading',{name:'What your food costs'})).toBeVisible();
+ await page.goto('/meals');await page.getByRole('tab',{name:'Groceries'}).click();await expect(page.getByRole('heading',{name:'What your food costs'})).toBeVisible();
  await page.screenshot({path:`artifacts/meals-insights-${width}.png`,fullPage:true});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

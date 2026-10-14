@@ -548,3 +548,73 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
  .cal-legend{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
  .cal-legend button{flex:0 0 auto}
 }
+/* Meals hub */
+.meals-hub{display:grid;gap:16px}
+.meals-tabs{display:flex;gap:6px;padding:5px;border:1px solid #232323;border-radius:14px;background:#0f1110;overflow-x:auto;scrollbar-width:none}
+.meals-tabs::-webkit-scrollbar{display:none}
+.meals-tabs button{flex:1 0 auto;min-width:84px;border:0;background:transparent;color:var(--muted);padding:10px 16px;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;transition:background .18s,color .18s}
+.meals-tabs button.selected{background:#b6f26b;color:#0b0b0b}
+.meals-panel{display:grid;gap:16px;min-width:0}
+.meals-today{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;align-items:start}
+.meals-today>.np-summary{grid-column:1;grid-row:1}
+.meals-today>.np-water{grid-column:1;grid-row:2}
+.meals-today>.np-next{grid-column:1;grid-row:3}
+.meals-today>.np-log-card{grid-column:2;grid-row:1}
+.meals-today>.np-today-log{grid-column:2;grid-row:2/4}
+.np-summary-top{display:flex;align-items:center;gap:18px}
+.np-macros-col{flex:1;min-width:0;display:grid;gap:12px}
+.np-summary-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid #1f1f1f;color:var(--muted);font-size:13px}
+.cal-ring{position:relative;width:132px;height:132px;flex:0 0 auto}
+.cal-ring svg{width:100%;height:100%}
+.cal-ring>div{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cal-ring strong{font-family:var(--font-manrope),inherit;font-size:28px;font-variant-numeric:tabular-nums;line-height:1}
+.cal-ring small{color:var(--muted);font-size:11.5px;margin-top:3px}
+.np-recents{display:grid;gap:6px}
+.np-recents small{color:var(--muted);font-size:12px}
+.np-recents>div{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.np-recents button{flex:0 0 auto;display:inline-flex;gap:6px;align-items:center;border:1px solid #2a2a2a;background:#ffffff06;color:var(--foreground);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
+.np-recents button em{font-style:normal;color:var(--muted);font-size:11.5px}
+.np-slot h3{margin:12px 0 4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.np-meal-row{display:flex;align-items:center;gap:10px;min-height:46px;padding:4px 0;border-bottom:1px solid #1c1c1c}
+.np-meal-row>a{flex:1;min-width:0;color:var(--foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.np-meal-row .completed{text-decoration:line-through;color:var(--muted)}
+.np-meal-row small{color:var(--muted);font-size:12.5px;flex-shrink:0}
+.np-water .progress{margin:6px 0 14px}
+.np-water h2,.np-next h2{display:flex;align-items:center;gap:8px;font-size:16px}
+.np-water h2 svg,.np-next h2 svg{color:#4cc3ff}
+.np-water-actions{display:flex;gap:8px;flex-wrap:wrap}
+.np-bites{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.np-bites li{padding:10px 12px;border:1px solid #232323;border-radius:12px;background:#ffffff05}
+.np-bites strong{display:block;font-size:14px;font-weight:500}
+.np-bites small{color:var(--muted);font-size:12.5px}
+.np-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.np-stats>div{padding:14px;border:1px solid #232323;border-radius:14px;background:#ffffff05}
+.np-stats small{display:block;color:var(--muted);font-size:12px}
+.np-stats strong{font-family:var(--font-manrope),inherit;font-size:22px;font-variant-numeric:tabular-nums}
+.plan-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:4px 0 14px}
+.plan-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:14px}
+.plan-day{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;border:1px solid #232323;border-radius:12px;background:transparent;color:var(--foreground);cursor:pointer;min-width:0}
+.plan-day small{color:var(--muted);font-size:11px}
+.plan-day strong{font-size:16px;font-variant-numeric:tabular-nums}
+.plan-day i{width:6px;height:6px;border-radius:50%;background:#2a2a2a}
+.plan-day i.on{background:#b6f26b}
+.plan-day.today strong{color:#b6f26b}
+.plan-day.selected{background:#b6f26b1a;border-color:#b6f26b}
+.plan-slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.plan-slot{padding:14px;border:1px solid #232323;border-radius:14px;background:#ffffff04;min-width:0}
+.plan-slot-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.plan-slot-head span{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.plan-empty{margin:6px 0 2px;color:var(--muted);font-size:13px}
+@media(max-width:900px){
+ .meals-today{grid-template-columns:minmax(0,1fr)}
+ .meals-today>*{grid-column:1!important;grid-row:auto!important}
+ .meals-today>.np-summary{order:1}.meals-today>.np-log-card{order:2}.meals-today>.np-today-log{order:3}.meals-today>.np-water{order:4}.meals-today>.np-next{order:5}
+}
+@media(max-width:640px){
+ .meals-tabs button{min-width:0;padding:10px 12px;font-size:13.5px}
+ .np-summary-top{gap:12px}.cal-ring{width:108px;height:108px}.cal-ring strong{font-size:23px}
+ .np-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .plan-slots{grid-template-columns:minmax(0,1fr)}
+ .plan-day{padding:7px 0}
+ .meals-panel .panel{padding:16px}
+}
