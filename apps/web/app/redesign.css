@@ -312,7 +312,7 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
 .notification-panel .mark-all:hover:not(:disabled){border-color:#4a8f6c;background:#141a17}.notification-panel .mark-all:disabled{opacity:.45;cursor:default}
 .notification-panel .notification-list{list-style:none;margin:0;padding:0 22px;display:block}
 .notification-panel .notification-list li{border-bottom:1px solid #1f2623}
-.notification-panel .notification-item{display:flex;align-items:flex-start;gap:14px;width:100%;padding:16px 0;border:0;border-radius:0;background:none;color:var(--foreground);text-align:left;cursor:pointer}
+.notification-panel .notification-item{display:flex;flex-direction:row;align-items:flex-start;gap:14px;width:100%;padding:16px 0;border:0;border-radius:0;background:none;color:var(--foreground);text-align:left;cursor:pointer}
 .notification-panel .notification-item:hover{background:none}.notification-panel .notification-item:hover .n-head strong{color:#c9f58f}
 .notification-panel .notification-item.is-read{opacity:.7}
 .n-icon{display:grid;place-items:center;flex:0 0 40px;height:40px;border-radius:50%;background:rgba(182,242,107,.12);color:#b6f26b}

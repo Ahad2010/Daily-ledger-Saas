@@ -15,6 +15,7 @@ Last updated: 14 October 2026. Read this first. It separates what is built and t
 | Settings | Section sidebar (General, Notifications, Plan and usage, Billing and invoices, Referrals, Data), row layout, product tour replay | `ledger-app.tsx` (`Preferences`) |
 | Suggestions | Data-driven strip on Overview, Tasks, Finance, Fitness, Meals and Goals; upgrade hints only near a real plan limit | `lib/suggestions.ts`, `page-suggestions.tsx` |
 | Add or edit record | Slide-over drawer (bottom sheet on phones) | `ui/dialog.tsx` |
+| Notifications | Bell opens a right-hand side panel on phones and desktops with Mark all as read, dates and a smooth exit | `ledger-app.tsx`, `ui/dialog.tsx` (`side` variant) |
 | Hold to confirm | Hold button for every delete, logout and maintenance switch | `hold-button.tsx` |
 | Checkboxes and loader | iOS-style checkbox, bouncing-balls loader instead of skeleton blocks | `app/redesign.css`, `skeleton.tsx` |
 | Product tour | Auto-starts once after onboarding; Next, Back, Skip; replay from Settings | `product-tour.tsx` |
@@ -26,6 +27,13 @@ Last updated: 14 October 2026. Read this first. It separates what is built and t
 | Admin: user activity | Per-account timeline, sign-in counts, failed sign-ins, record counts by type, global filterable log, 180-day retention | `apps/api/src/activity.ts` |
 | Admin: maintenance mode | Toggle with message and expected end; customers see a maintenance page, admin tools stay open | `apps/api/src/server.ts`, `maintenance-screen.tsx` |
 | Hosting | Separate app and admin on Vercel, one shared API and PostgreSQL and a 5-minute worker on Railway | `DEPLOYMENT.md`, `railway.*.json` |
+
+## Verification on 14 October 2026 (local sandbox)
+
+- Unit and PostgreSQL integration tests: 72 of 72 pass.
+- Browser suite: 148 pass, 4 skipped, 1 fails. The failure is the 3D anatomy WebGL step, which only fails in the headless sandbox.
+- Responsive sweep (`tests/browser/responsive-sweep.spec.ts`): every customer page, drawer and dialog stays inside the viewport at 360, 390, 768, 1024, 1440 and 1920 px.
+- Not verified live: Google sign-in, real e-mail, real push delivery, Cloudinary, a real AI provider, hosted deployment.
 
 ## Not built yet
 
