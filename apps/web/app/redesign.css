@@ -336,3 +336,17 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
 .settings-content .check-label input{margin:0}
 .settings-content form + .panel,.settings-content .panel + .panel{margin-top:28px;padding-top:24px;border-top:1px solid #232323}
 .settings-content .settings-edit-actions{margin-bottom:6px}
+.goal-pace{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:10px 0 2px}
+.goal-pace small{color:var(--muted);font-size:12.5px}
+.pace-badge{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#ffffff0f;color:var(--foreground)}
+.pace-ahead .pace-badge,.pace-on-track .pace-badge{background:#80e4bd1f;color:#80e4bd}
+.pace-at-risk .pace-badge{background:#f5b94a1f;color:#f5b94a}
+.pace-overdue .pace-badge{background:#ff6b6b1f;color:#ff8a8a}
+.meal-insight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.meal-insight-grid>div{display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid #232323;border-radius:14px;background:#ffffff05}
+.meal-insight-grid strong{font-family:var(--font-heading,inherit);font-size:24px;font-variant-numeric:tabular-nums}
+.meal-insight-grid p{margin:0;font-size:12.5px;color:var(--muted)}
+.meal-insight-grid small{color:var(--muted);font-size:12px}
+.insight-icon{display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;border-radius:9px;background:#80e4bd1a;color:#80e4bd}
+.cook-again-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border:1px solid #2a2a2a;border-radius:10px;background:transparent;color:var(--foreground);font:inherit;font-size:13.5px;cursor:pointer;text-align:left}
+.cook-again-item:hover{border-color:#80e4bd66;background:#80e4bd0d}
