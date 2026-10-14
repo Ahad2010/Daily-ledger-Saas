@@ -25,3 +25,10 @@ test('meal insights: grocery spend, food budget, cost per meal and cook again',(
  assert.deepEqual([r.spent,r.remaining,r.budget,r.perMeal],[600,400,5000,333]);
  assert.equal(r.cookAgain[0].title,'Daal');assert.equal(r.cookAgain[0].times,2);
 });
+test('linked goals count transfers and income in the category since the start date, in the goal currency',()=>{
+ const g={id:'g',kind:'goal',version:1,data:{title:'Save',description:'',current:5,target:1000,unit:'USD',deadline:'2026-12-31',active:true,startDate:'2026-09-10',linkedCategory:'savings'}} as unknown as LedgerRecord<'goal'>;
+ const tx=(id:string,date:string,amount:number,category:string,type:string,currency='USD')=>rec(id,'transaction',{title:'x',date,amount,currency,type,category,account:'Cash',notes:''});
+ const records=[g,tx('a','2026-09-12',20000,'Savings','transfer'),tx('b','2026-09-01',99900,'Savings','transfer'),tx('c','2026-09-15',5000,'Savings','expense'),tx('d','2026-09-20',10000,'Savings','income'),tx('e','2026-09-20',7000,'Savings','transfer','PKR'),tx('f','2026-09-20',7000,'Food','transfer')];
+ assert.equal(goalProgress(g,records).current,300);
+ const plain={...g,data:{...g.data,linkedCategory:undefined}} as unknown as LedgerRecord<'goal'>;assert.equal(goalProgress(plain,records).current,5);
+});
