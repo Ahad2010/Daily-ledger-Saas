@@ -17,7 +17,7 @@ type Action={type:'create';kind:'task'|'transaction'|'habit'|'workout'|'goal'|'m
 type Message={id:string;question:string;answer:string;createdAt:string;month:string;actions?:Action[]|null;fresh?:boolean};
 const suggestions=[{intent:'general',text:'Add a task: call the bank tomorrow at 5pm'},{intent:'general',text:'Log a $12 lunch expense today'},{intent:'general',text:'How do I import my bank statement?'},{intent:'summary',text:'Summarize my month'},{intent:'spending',text:'Where did my money go?'},{intent:'tasks',text:'What needs my attention?'},{intent:'weekly',text:'Help me plan my week'},{intent:'goals',text:'How are my goals doing?'}];
 const intents=['general','summary','spending','tasks','weekly','goals'];
-const intentLabel=(intent:string)=>intent==='general'?'General (help & commands)':intent==='weekly'?'Weekly plan':intent[0].toUpperCase()+intent.slice(1);
+const intentLabel=(intent:string)=>intent==='general'?'General':intent==='weekly'?'Weekly plan':intent[0].toUpperCase()+intent.slice(1);
 // The assistant only proposes. Each create action runs through the normal validated save when the user confirms it.
 function ActionList({message}:{message:Message}){
  const client=useQueryClient();const [done,setDone]=useState<Record<number,boolean>>({}),[errors,setErrors]=useState<Record<number,string>>({}),[busy,setBusy]=useState<number|null>(null);
