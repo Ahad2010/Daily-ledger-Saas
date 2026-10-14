@@ -1,0 +1,33 @@
+/* Premium dashboard and finance surfaces: richer card depth, vivid chart colours, gauge donut, insights. */
+.metrics-grid .metric-card{background:linear-gradient(160deg,#151a17,#0d0f0e);border-color:#232b27;border-radius:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.metrics-grid .metric-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:rgba(182,242,107,.1);color:#b6f26b}
+.metrics-grid .metric-expense .metric-icon{background:rgba(255,155,122,.12);color:#ff9b7a}
+.metrics-grid .metric-saved .metric-icon{background:rgba(76,195,255,.12);color:#4cc3ff}
+.metrics-grid .metric-hero{background:linear-gradient(135deg,#0d5a3b 0%,#1b8a57 52%,#62c97a 100%);border-color:#35a56d}
+.metrics-grid .metric-hero .metric-icon{background:rgba(255,255,255,.18);color:#fff}
+.metrics-grid .metric-hero .metric-content span,.metrics-grid .metric-hero .metric-content small{color:rgba(255,255,255,.86)}
+.metrics-grid .metric-hero .mint{color:#eaffd0}
+.chart-grid .panel,.insight-grid .panel,.widgets-grid .panel{background:linear-gradient(180deg,#131715,#0e100f);border-color:#222927;border-radius:16px}
+.gauge-donut{position:relative;aspect-ratio:1;height:auto!important;width:100%;max-width:250px;margin:2px auto 8px}
+.gauge-donut svg{display:block;width:100%;height:100%;overflow:visible}
+.gauge-segment{transition:opacity .18s ease}
+.insight-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);gap:14px;margin-bottom:14px;align-items:stretch}
+.insight-grid .panel{margin-bottom:0;min-height:0}
+.budget-pulse .pulse-figure{display:flex;align-items:baseline;gap:10px;margin:6px 0 14px}
+.budget-pulse .pulse-figure strong{font-size:32px;line-height:1.1;font-weight:600}
+.budget-pulse .pulse-figure span{color:var(--muted);font-size:13px}
+.pulse-bar .progress{height:12px;border-radius:99px;background:#1b201e;overflow:hidden}
+.pulse-bar .progress>div{height:100%;border-radius:99px;background:linear-gradient(90deg,#2dd4a3,#b6f26b)}
+.pulse-bar.is-hot .progress>div{background:linear-gradient(90deg,#f6c453,#ff9b52)}
+.pulse-bar.is-over .progress>div{background:linear-gradient(90deg,#ff8a6b,#f0463a)}
+.pulse-scale{display:flex;justify-content:space-between;margin-top:9px;color:var(--muted);font-size:12px}
+.insights-panel .panel-heading svg{color:#b6f26b;flex-shrink:0}
+.insight-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.insight-list li{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid #232b27;border-radius:12px;background:#101312}
+.insight-list strong{display:block;font-size:13px;font-weight:600;margin-bottom:2px}
+.insight-list p{margin:0;color:var(--muted);font-size:12px;line-height:1.5}
+.insight-icon{display:grid;place-items:center;flex:0 0 32px;height:32px;border-radius:10px;background:rgba(76,195,255,.12);color:#4cc3ff}
+.insight-list li[data-tone=good] .insight-icon{background:rgba(182,242,107,.12);color:#b6f26b}
+.insight-list li[data-tone=warn] .insight-icon{background:rgba(255,155,82,.14);color:#ffa35c}
+@media(max-width:1020px){.insight-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:640px){.insight-list{grid-template-columns:minmax(0,1fr)}.budget-pulse .pulse-figure strong{font-size:28px}}
