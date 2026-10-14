@@ -36,7 +36,7 @@ export function SpendingChart({m,onCategory}:{m:Metrics;onCategory:(name:string)
      {arcs.map((arc,i)=><circle key={arc.name} data-donut-segment className="gauge-segment" cx="100" cy="100" r={R} fill="none" stroke={donutPalette[i%donutPalette.length]} strokeWidth="22" strokeDasharray={reduced?`${arc.length} ${C}`:`0 ${C}`} strokeDashoffset={-arc.start} style={{cursor:'pointer',opacity:hovered&&hovered!==arc.name?.45:1,filter:`drop-shadow(0 0 5px ${donutPalette[i%donutPalette.length]}55)`}} onMouseEnter={()=>setHovered(arc.name)} onMouseLeave={()=>setHovered(null)} onClick={()=>onCategory(arc.name)}/>)}
     </g>
    </svg>
-   <div className="donut-center"><span>Total spent</span><span className="donut-value" style={{fontSize:money(m.expenses,m.currency).length>12?16:22}}>{money(m.expenses,m.currency)}</span><small>{m.categories.length} categories</small></div>
+   <div className="donut-center"><span>Total spent</span><strong className="donut-value" style={{fontSize:money(m.expenses,m.currency).length>12?16:22}}>{money(m.expenses,m.currency)}</strong><small>{m.categories.length} categories</small></div>
   </div>
   <div className="donut-hover-details" role={active?'tooltip':undefined}>{active?<><span>{active.name}</span><strong>{money(active.amount,m.currency)}</strong><small>{percent(active.percentage)} of spending</small></>:<small>Hover a segment or select a category below</small>}</div>
   <div className="spending-legend refined-legend" aria-label="Spending categories">
