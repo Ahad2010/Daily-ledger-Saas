@@ -135,9 +135,9 @@ WHOP_SANDBOX=true
 
 Keep these on the API. Implement/test the handler before registering a webhook URL. Planned endpoint: `https://YOUR-API-DOMAIN/webhooks/whop`. Returning to the app must never activate a plan by itself; activation needs verified server-side payment evidence. Duplicate events, refunds, subscription expiry, owner binding, delayed webhooks and Pro-to-Lifetime recurring-charge cancellation need tests. [Whop webhook guide](https://docs.whop.com/developer/guides/webhooks).
 
-## Cloudinary: optional profile upload implementation pending
+## Cloudinary: profile photos (implemented, needs your account)
 
-Prepare cloud name, API key and API secret. Proposed variables are CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET. They do nothing until the upload endpoint is implemented. Keep the secret backend-only and use authenticated signed uploads. Do not enable unrestricted unsigned uploads as a shortcut.
+Create a free Cloudinary account, then set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` on the **API service only**. Until all three exist the photo controls stay hidden. The API signs each upload (JPG/PNG/WebP, cropped to 256x256 square) and the browser uploads directly to Cloudinary; the API accepts only images from your cloud under the user's own ID. The secret never reaches the browser. Verify with a real account on staging: upload, change and remove a photo.
 
 ## Copy-paste Claude prompts: ONE phase at a time
 

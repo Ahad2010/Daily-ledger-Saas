@@ -26,7 +26,7 @@ Password hashes use salted scrypt. Authentication rotates sessions. Reset links 
 
 Real Google consent/callback, Railway/Vercel deployment, Resend deliveries, and DNS remain dependent on external configuration; no live external integration is claimed verified. Supply Railway PostgreSQL/API variables, Google client/callback variables, Vercel API URLs, verified Resend sender/key, and a scheduled worker sharing the API's session secret. Detailed instructions are in README.md.
 
-The payment provider is unselected; checkout is a clearly labeled, non-activating development stub. Email verification and account linking are not implemented. Production legal pages require the operator's identity/contact and applicable commercial terms. Snapshot loading is an MVP adapter; larger workspaces should use the paginated API. Task recurrence currently preserves UTC time across DST. These limits are described in README.md.
+Whop is the chosen provider but is not implemented; checkout is a clearly labeled, non-activating development stub. New email signups require a Resend OTP; a verified Google email reuses/links the existing account with the same email (ambiguous duplicates require support). Production legal pages require the operator's identity/contact and applicable commercial terms. Snapshot loading is an MVP adapter; larger workspaces should use the paginated API. Task recurrence currently preserves UTC time across DST. These limits are described in README.md.
 
 ## Latest additions
 

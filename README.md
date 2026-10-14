@@ -82,7 +82,7 @@ Unrelated `vercel.app` and `railway.app` sites are not treated as sibling domain
 2. Store `RESEND_API_KEY` and a verified `EMAIL_FROM` only on Railway API/worker services.
 3. Create a second Railway service from the same repository with build `npm ci && npm run db:generate`, start `npm run worker`, and cron schedule `*/5 * * * *` (UTC).
 4. Give the worker the same database URL, `SESSION_SECRET`, and frontend/email configuration. It processes bounded batches, closes connections, and exits.
-5. Verify a task overdue by 24 hours, then completion/deletion/rescheduling, retry behavior, and opt-out with a staging account before enabling real deliveries.
+5. Verify a task 23 hours after its due time, then completion/deletion/rescheduling, retry behavior, and opt-out with a staging account before enabling real deliveries.
 
 Task mutations transactionally cancel stale jobs and enqueue a unique version/due-time key. The worker leases with `FOR UPDATE SKIP LOCKED`, recovers expired leases, persists attempts, creates unique in-app notifications, and rechecks ownership, version, completion, due time, plan allowance, and email preferences. Per-user locks serialize writes and email quotas. Retries back off and stop after five attempts. Resend receives a stable idempotency key; after its safe retry window expires, uncertain delivery requires operator review. Inspect `Job.lastError` and `DeliveryAttempt`; never blindly reset failed/uncertain jobs.
 
@@ -94,7 +94,7 @@ Announcements are created through the role-protected admin API with targeting, p
 
 `packages/shared/src/index.ts` centralizes initial prices and entitlements. The server serializes quota-check/write transactions using an owner row lock. Existing over-limit records remain readable/exportable and editable after downgrade; new/activation actions are restricted. Paid automation and recurring generation pause for Free accounts.
 
-The payment provider is **not selected**. `/api/billing/checkout` is an explicit development stub enabled only by `BILLING_STUB_ENABLED=true` outside production. It never charges or activates entitlements. Production returns an unconfigured error. Before adding real checkout, select a provider, implement signature-verified webhook handling, unique provider event keys, server-verified entitlements, and idempotency tests. Client redirect state must never grant a paid plan.
+Whop is the chosen payment provider, but its integration is **not implemented yet** (see KEY_SETUP.md). `/api/billing/checkout` is an explicit development stub enabled only by `BILLING_STUB_ENABLED=true` outside production. It never charges or activates entitlements. Production returns an unconfigured error. Before adding real checkout, select a provider, implement signature-verified webhook handling, unique provider event keys, server-verified entitlements, and idempotency tests. Client redirect state must never grant a paid plan.
 
 ## API reference
 
