@@ -13,7 +13,6 @@ for(const [name,width] of [['phone',390],['laptop',1440]] as const)test(`search 
  await input.fill('zzzz-nothing');await expect(page.locator('.search-results')).toContainText('No results');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.keyboard.press('Escape');await expect(page.locator('.search-results')).toHaveCount(0);
- await page.getByLabel('Search your records').fill('').catch(()=>{});
 });
 test('donut sweeps once it is on screen and ends full',async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto('/');
