@@ -246,3 +246,9 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
 .maintenance-control .maintenance-state{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.06em;background:#16251a;color:#b6f26b}
 .maintenance-control .maintenance-state.on{background:#2a1713;color:#ff9b7a}
 .maintenance-control .form-grid{margin:12px 0}
+
+/* Centred dialogs animate with individual transform properties so the translate(-50%,-50%) centring keeps tracking the dialog height
+   when its content grows (for example a CSV preview), instead of being frozen in pixels by a script animation. */
+.dialog-content:not(.dialog-drawer){animation:dialog-in .22s cubic-bezier(.23,1,.32,1)}
+@keyframes dialog-in{from{opacity:0;scale:.97;translate:0 10px}to{opacity:1;scale:1;translate:0 0}}
+@media(prefers-reduced-motion:reduce){.dialog-content:not(.dialog-drawer){animation:none}}
