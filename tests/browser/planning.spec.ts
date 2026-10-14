@@ -21,7 +21,7 @@ test('money entry uses normal currency amounts and links use names',async({page}
  await dialog.getByRole('button',{name:'Create meal'}).click();
  await expect(dialog).toHaveCount(0);
  await expect(page.getByText('October breakfast',{exact:true})).toBeVisible();
- await page.getByRole('button',{name:'Add item',exact:true}).click();
+ await page.getByRole('tab',{name:'Groceries'}).click();await page.getByRole('button',{name:'Add item',exact:true}).click();
  await dialog.getByLabel('Grocery item',{exact:true}).fill('Test oats');
  await dialog.getByLabel('Estimated cost',{exact:true}).fill('1.99');
  await dialog.getByLabel('Linked meal (optional)').selectOption({label:'October breakfast · 2026-10-01'});
