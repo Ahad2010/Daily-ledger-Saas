@@ -4,13 +4,14 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 gsap.registerPlugin(useGSAP);
 export function useRecordMotion(records:unknown,route:string){
- const root=useRef<HTMLElement>(null);const previous=useRef(new Map<string,{top:number;left:number;width:number;height:number;clone:HTMLElement;parent:HTMLElement;state:string}>());const previousRoute=useRef(route);
+ const root=useRef<HTMLElement>(null);const previous=useRef(new Map<string,{top:number;left:number;relTop:number;relLeft:number;width:number;height:number;clone:HTMLElement;parent:HTMLElement;state:string}>());const previousRoute=useRef(route);
  useGSAP(()=>{
-  if(!root.current)return;const next=new Map<string,{top:number;left:number;width:number;height:number;clone:HTMLElement;parent:HTMLElement;state:string}>();
+  if(!root.current)return;const next=new Map<string,{top:number;left:number;relTop:number;relLeft:number;width:number;height:number;clone:HTMLElement;parent:HTMLElement;state:string}>();
   const animate=!window.matchMedia('(prefers-reduced-motion: reduce)').matches&&previousRoute.current===route&&previous.current.size>0;
-  root.current.querySelectorAll<HTMLElement>('[data-record-id]').forEach(el=>{const id=el.dataset.recordId!;const rect=el.getBoundingClientRect();if(!rect.width||!rect.height)return;const state=el.dataset.motionState||'';next.set(id,{top:rect.top+window.scrollY,left:rect.left+window.scrollX,width:rect.width,height:rect.height,clone:el.cloneNode(true) as HTMLElement,parent:el.parentElement!,state});if(!animate)return;const old=previous.current.get(id);
+  root.current.querySelectorAll<HTMLElement>('[data-record-id]').forEach(el=>{const id=el.dataset.recordId!;const rect=el.getBoundingClientRect();if(!rect.width||!rect.height)return;const state=el.dataset.motionState||'';const parentRect=el.parentElement!.getBoundingClientRect();next.set(id,{top:rect.top+window.scrollY,left:rect.left+window.scrollX,relTop:rect.top-parentRect.top,relLeft:rect.left-parentRect.left,width:rect.width,height:rect.height,clone:el.cloneNode(true) as HTMLElement,parent:el.parentElement!,state});if(!animate)return;const old=previous.current.get(id);
    if(!old){if(!el.classList.contains('panel'))gsap.from(el,{opacity:0,y:8,duration:.28,ease:'power2.out'});}
-   else {const x=old.left-(rect.left+window.scrollX),y=old.top-(rect.top+window.scrollY);if(Math.abs(x)>1||Math.abs(y)>1)gsap.from(el,{x,y,duration:.3,ease:'power2.out'});}
+   else {// Inside the same list, compare positions relative to the list so a banner or suggestion appearing above it never makes every row slide.
+    const sameList=old.parent===el.parentElement;const x=sameList?old.relLeft-(rect.left-parentRect.left):old.left-(rect.left+window.scrollX),y=sameList?old.relTop-(rect.top-parentRect.top):old.top-(rect.top+window.scrollY);if(Math.abs(x)>1||Math.abs(y)>1)gsap.from(el,{x,y,duration:.3,ease:'power2.out'});}
   });
   const ghosts:HTMLElement[]=[];if(animate)previous.current.forEach((old,id)=>{if(next.has(id)||old.top-window.scrollY>innerHeight||old.top+old.height<window.scrollY)return;const ghost=old.clone;ghost.setAttribute('aria-hidden','true');ghost.inert=true;Object.assign(ghost.style,{position:'fixed',top:`${old.top-window.scrollY}px`,left:`${old.left-window.scrollX}px`,width:`${old.width}px`,height:`${old.height}px`,margin:'0',pointerEvents:'none',zIndex:'35'});(old.parent.isConnected?old.parent:root.current!).appendChild(ghost);ghosts.push(ghost);gsap.to(ghost,{opacity:0,y:-5,duration:.2,ease:'power2.in',onComplete:()=>ghost.remove()});});
   previous.current=next;previousRoute.current=route;return ()=>ghosts.forEach(el=>el.remove());
