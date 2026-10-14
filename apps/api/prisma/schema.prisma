@@ -28,6 +28,7 @@ model User {
   referralsSent Referral[] @relation("referrer")
   referralReceived Referral? @relation("invitee")
   entitlementSource String @default("free")
+  subscriptionCancelledAt DateTime?
   createdAt DateTime @default(now())
   records Record[]
   jobs Job[]

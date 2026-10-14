@@ -387,3 +387,7 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
 .n-actions a{color:#80e4bd;font-weight:600}
 .n-actions button{border:0;background:none;color:var(--muted);padding:0;font:inherit;cursor:pointer;width:auto}
 .n-actions button:hover{color:var(--foreground)}
+.cancel-subscription{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:18px 0;padding:16px 18px;border:1px solid #3a2420;border-radius:14px;background:#1a110f}
+.cancel-subscription p{margin:4px 0 0;color:var(--muted);font-size:13px;max-width:460px}
+.cancel-list{margin:0 0 14px;padding-left:18px;display:grid;gap:8px;color:var(--muted);font-size:13.5px}
+.notice-inline{padding:10px 14px;border-radius:10px;background:#80e4bd14;color:#80e4bd;font-size:13.5px}

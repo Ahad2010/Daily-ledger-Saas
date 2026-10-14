@@ -2,7 +2,7 @@ import type {Request} from 'express';
 import type {Prisma} from '@prisma/client';
 import {db} from './db.js';
 // Administrators see what happened and when, never what was written. Event metadata is limited to short, non-sensitive labels.
-export const activityTypes=['auth.signup','auth.login','auth.login_failed','auth.logout','auth.password_reset','onboarding.completed','record.created','record.updated','record.deleted','data.exported','support.ticket_created','notifications.enabled','trial.started','admin.login','admin.login_failed','admin.suspend','admin.reactivate','admin.revoke-sessions','admin.set-plan','admin.grant','admin.remove-override'] as const;
+export const activityTypes=['auth.signup','auth.login','auth.login_failed','auth.logout','auth.password_reset','onboarding.completed','record.created','record.updated','record.deleted','data.exported','support.ticket_created','notifications.enabled','trial.started','billing.cancelled','admin.login','admin.login_failed','admin.suspend','admin.reactivate','admin.revoke-sessions','admin.set-plan','admin.grant','admin.remove-override'] as const;
 export const RETENTION_DAYS=180;
 // Keep only a coarse network location: the last IPv4 octet and the host half of an IPv6 address are dropped.
 export function maskIp(ip?:string|null){

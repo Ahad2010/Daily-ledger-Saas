@@ -25,9 +25,27 @@ export async function startTrial(userId:string){
  });
 }
 
+// Cancelling returns the account to Free straight away and records the date, so a later provider webhook must not renew
+// a cancelled subscription; only a new purchase can. Data is kept and the normal downgrade rules apply.
+export async function cancelSubscription(userId:string){
+ return db.$transaction(async tx=>{
+  await tx.$queryRaw`SELECT id FROM "User" WHERE id=${userId} FOR UPDATE`;
+  const user=await tx.user.findUniqueOrThrow({where:{id:userId}});
+  const effective=await policy(user,tx);
+  if(effective.plan==='Free')throw new HttpError(409,'You are already on the Free plan.');
+  if(effective.plan==='Lifetime'||user.plan==='Lifetime')throw new HttpError(409,'Lifetime is a one-time purchase with nothing to cancel. Contact support for a refund request.');
+  if(effective.override&&effective.override.grantedBy!=='trial')throw new HttpError(409,'This plan was granted by Daily Ledger support. Contact support to change it.');
+  if(effective.override)await tx.entitlementOverride.delete({where:{userId}});
+  const cancelledAt=new Date();
+  await tx.user.update({where:{id:userId},data:{plan:'Free',entitlementSource:'free',subscriptionCancelledAt:cancelledAt}});
+  return {plan:'Free' as const,cancelledAt:cancelledAt.toISOString()};
+ });
+}
+
 export function billingRoutes(){
  const router=Router();
  router.post('/trial',async(req,res)=>{const started=await startTrial(req.user!.id);void logActivity(req,{userId:req.user!.id,type:'trial.started'});res.status(201).json(started);});
+ router.post('/cancel',async(req,res)=>{const result=await cancelSubscription(req.user!.id);void logActivity(req,{userId:req.user!.id,type:'billing.cancelled'});res.json(result);});
  // Only provider-verified payments appear here; nothing is invented while no payment provider is connected.
  router.get('/',async(req,res)=>{
   const user=req.user as User,effective=await policy(user);
@@ -36,6 +54,8 @@ export function billingRoutes(){
    plan:effective.plan,source:effective.source,
    trial:{available:internalTrialEnabled()&&effective.plan==='Free'&&!user.trialStartedAt&&user.entitlementSource!=='provider',used:!!user.trialStartedAt,endsAt:effective.override?.grantedBy==='trial'?effective.override.expiresAt.toISOString():null},
    accessUntil:effective.override?.grantedBy==='trial'?null:effective.override?.expiresAt.toISOString()||null,
+   cancelledAt:user.subscriptionCancelledAt?.toISOString()||null,
+   canCancel:effective.plan==='Pro'&&(!effective.override||effective.override.grantedBy==='trial'),
    paymentsConfigured:false,
    payments:rows.map(r=>({id:r.id,provider:r.provider,reference:r.reference,kind:r.kind,description:r.description,currency:r.currency,amount:Number(r.amount),status:r.status,receiptUrl:r.receiptUrl,createdAt:r.createdAt.toISOString()}))
   });
