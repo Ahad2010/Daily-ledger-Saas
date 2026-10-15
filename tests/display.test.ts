@@ -20,3 +20,11 @@ test('week start and date format change what is shown',()=>{
  setDisplay({dateFormat:'iso'});assert.equal(formatDate('2026-09-30'),'2026-09-30');
  setDisplay(null);
 });
+
+test('changing currency re-labels amounts instead of hiding them',async()=>{
+ const {relabelCurrency}=await import('@ledger/shared');
+ const rows=[{kind:'transaction',data:{amount:1000,currency:'USD'}},{kind:'budget',data:{amount:500,currency:'USD'}},{kind:'goal',data:{unit:'USD',target:1000}},{kind:'goal',data:{unit:'kg',target:5}},{kind:'task',data:{title:'x'}}];
+ const out=relabelCurrency(rows,'USD','AED') as typeof rows;
+ assert.equal((out[0].data as any).currency,'AED');assert.equal((out[0].data as any).amount,1000);assert.equal((out[1].data as any).currency,'AED');assert.equal((out[2].data as any).unit,'AED');assert.equal((out[3].data as any).unit,'kg');assert.deepEqual(out[4],rows[4]);
+ assert.equal(relabelCurrency(rows,'USD','USD'),rows);
+});
