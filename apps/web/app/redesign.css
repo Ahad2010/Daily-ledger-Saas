@@ -662,3 +662,47 @@ html{scrollbar-gutter:stable}
 .dialog-overlay[data-state=open]{animation:overlay-in .32s ease both}
 @media(max-width:640px){.dialog-drawer:not(.dialog-side)[data-state=open]{animation-name:drawer-in-y}}
 @media(prefers-reduced-motion:reduce){.dialog-drawer[data-state=open],.dialog-overlay[data-state=open]{animation:none}}
+@media(max-width:540px){
+ .metrics-grid .metric-content small{display:block;text-align:left;max-width:none;overflow:visible;margin-left:0}
+ .metrics-grid .metric-content small svg{display:inline-block;vertical-align:-3px;margin-right:3px}
+ .metrics-grid .metric-content small>span{display:inline}
+}
+/* Charts: no browser focus box after a click; keyboard users still get a soft ring */
+.recharts-wrapper,.recharts-wrapper *,.recharts-surface{outline:none!important}
+.recharts-wrapper:focus-visible{outline:2px solid #b6f26b55!important;outline-offset:2px;border-radius:12px}
+.recharts-bar-rectangle,.recharts-sector,.recharts-rectangle{outline:none!important}
+.dark-tooltip,.recharts-default-tooltip{background:rgba(16,19,18,.92)!important;backdrop-filter:blur(10px);border:1px solid #2c3530!important;border-radius:12px!important;box-shadow:0 14px 40px #000a,0 0 0 1px #ffffff06 inset;padding:10px 12px}
+/* Reports: week by week, categories, goals */
+.report-weeks,.report-categories,.report-goals{background:linear-gradient(170deg,#121614,#0d100e);border-color:#232b27;border-radius:18px}
+.report-weeks .report-chart{padding:6px 0 2px}
+.report-weeks .chart-legend{display:flex;justify-content:center;gap:18px;margin:6px 0 14px;color:var(--muted);font-size:12.5px}
+.report-weeks .chart-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+.report-weeks table{border-collapse:separate;border-spacing:0 6px;width:100%}
+.report-weeks th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#7c8782;font-weight:600;padding:6px 14px;text-align:left;border:0;background:none}
+.report-weeks td{padding:13px 14px;border:0;background:#ffffff05;font-variant-numeric:tabular-nums;white-space:nowrap}
+.report-weeks td:first-child{border-radius:12px 0 0 12px;font-weight:600}
+.report-weeks td:last-child{border-radius:0 12px 12px 0}
+.report-weeks tbody tr{transition:transform .15s}
+.report-weeks tbody tr:hover td{background:#b6f26b0f}
+.report-weeks td.positive{color:#b6f26b;font-weight:600}
+.report-weeks td.negative{color:#ff9b7a;font-weight:600}
+.category-rows{display:grid;gap:6px}
+.category-row{display:grid;grid-template-columns:minmax(120px,170px) minmax(0,1fr) auto;align-items:center;gap:18px;padding:12px 14px;border-radius:14px;background:#ffffff04;transition:background .15s}
+.category-row:hover{background:#ffffff09}
+.category-row strong{display:block;font-size:14.5px}
+.category-row span{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums}
+.category-bar{height:9px;border-radius:999px;background:#1c211f;overflow:hidden}
+.category-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#4cc3ff,#80e4bd);min-width:4px}
+.report-goal{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:6px 14px;padding:14px;border-radius:14px;background:#ffffff04;margin-bottom:8px}
+.report-goal>div{min-width:0}
+.report-goal strong{display:block;font-size:14.5px}
+.report-goal span{color:var(--muted);font-size:12.5px}
+.report-goal-pct{font-family:var(--font-manrope),inherit;font-size:22px;color:#80e4bd;font-variant-numeric:tabular-nums}
+.report-goal .progress{grid-column:1/-1;height:10px}
+@media(max-width:640px){
+ .report-weeks .table-scroll{overflow-x:auto;margin:0 -4px;padding:0 4px;-webkit-overflow-scrolling:touch}
+ .report-weeks table{min-width:640px}
+ .report-weeks td:first-child{position:sticky;left:0;z-index:1;background:#101311}
+ .category-row{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px}
+ .category-row .category-bar{grid-column:1/-1;order:3}
+}
