@@ -31,7 +31,7 @@ for(const [width,height] of widths)test(`no horizontal overflow on any page at $
 for(const [width,height] of widths)test(`drawers and dialogs stay inside the viewport at ${width}px`,async({page})=>{
  test.setTimeout(180000);await page.setViewportSize({width,height});await mock(page);const failures:string[]=[];
  const inside=async(name:string)=>{await page.waitForTimeout(700);const box=await page.getByRole('dialog').last().boundingBox();if(!box){failures.push(`${name}: no dialog`);return;}if(box.x<-1||box.x+box.width>width+1||box.y<-1||box.y+box.height>height+1)failures.push(`${name}: dialog ${Math.round(box.x)},${Math.round(box.y)} ${Math.round(box.width)}x${Math.round(box.height)} outside ${width}x${height}`);const bad=await page.evaluate(overflow);if(bad.length)failures.push(`${name}: ${bad.join(' | ')}`);};
- await page.goto('/tasks');await page.waitForLoadState('networkidle');
+ await page.goto('/tasks');await page.waitForLoadState('networkidle');await page.getByRole('tab',{name:'Tasks',exact:true}).click();
  await page.getByRole('button',{name:'New task',exact:true}).click();await inside('add task drawer');await page.keyboard.press('Escape');
  await page.getByRole('button',{name:/^Notifications,/}).click();await inside('notifications drawer');await page.keyboard.press('Escape');
  await page.getByRole('button',{name:/^Delete /}).first().click();await inside('delete dialog');await page.keyboard.press('Escape');

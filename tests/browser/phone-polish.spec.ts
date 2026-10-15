@@ -19,9 +19,9 @@ test('reports week table scrolls sideways instead of being cut on a phone',async
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 for(const path of ['/tasks','/goals'])test(`${path} summary cards form a 2x2 grid on a phone and tasks list comes before charts`,async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.goto(path);await page.waitForTimeout(800);
+ await page.setViewportSize({width:390,height:844});await page.goto(path);if(path==='/tasks')await page.getByRole('tab',{name:'Insights',exact:true}).click();await page.waitForTimeout(800);
  const cards=page.locator('.feature-main .insight-grid .insight-card');expect(await cards.count()).toBe(4);
  const boxes=await cards.evaluateAll(els=>els.map(e=>{const b=e.getBoundingClientRect();return [Math.round(b.left),Math.round(b.top)];}));
  expect(boxes[0][1]).toBe(boxes[1][1]);expect(boxes[2][1]).toBe(boxes[3][1]);expect(boxes[2][1]).toBeGreaterThan(boxes[0][1]);
- if(path==='/tasks'){const task=await page.getByRole('heading',{name:'Tasks',exact:true}).first().boundingBox();const chart=await page.locator('.feature-trends').first().boundingBox();expect(task!.y).toBeLessThan(chart!.y);}
+ 
 });

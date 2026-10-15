@@ -4,7 +4,7 @@ import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
 import {Camera,Trash2} from 'lucide-react';
 import type {Snapshot} from '@ledger/shared';
 import {Button} from './ui/button';
-import {demoMode,request} from '../lib/data';
+import {demoMode,request,adapter} from '../lib/data';
 
 const MAX_BYTES=3*1024*1024,TYPES=['image/jpeg','image/png','image/webp'];
 export const initialsOf=(name:string)=>name.split(' ').filter(Boolean).slice(0,2).map(n=>n[0]).join('')||'DL';
@@ -14,6 +14,8 @@ export function AvatarFace({url,name}:{url?:string|null;name:string}){
  return url&&!failed?<img src={url} alt="" className="avatar-image" onError={()=>setFailed(true)}/>:<>{initialsOf(name)}</>;
 }
 
+// Demo mode keeps the photo on this device: crop to a square and shrink so it fits in local storage.
+function shrink(file:File):Promise<string>{return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{const size=256,c=document.createElement('canvas');c.width=c.height=size;const side=Math.min(img.width,img.height);c.getContext('2d')!.drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,0,0,size,size);URL.revokeObjectURL(url);resolve(c.toDataURL('image/jpeg',0.82));};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('read'));};img.src=url;});}
 interface Signed{apiKey:string;timestamp:number;signature:string;public_id:string;allowed_formats:string;transformation:string;uploadUrl:string}
 export function AvatarUpload({s}:{s:Snapshot}){
  const client=useQueryClient(),input=useRef<HTMLInputElement>(null),[message,setMessage]=useState('');
@@ -31,18 +33,20 @@ export function AvatarUpload({s}:{s:Snapshot}){
   onError:(error:Error)=>setMessage(error.message)
  });
  const remove=useMutation({mutationFn:()=>request('/api/profile/avatar',{method:'DELETE'}),onSuccess:async()=>{setMessage('Profile photo removed.');await client.invalidateQueries({queryKey:['snapshot']});},onError:(error:Error)=>setMessage(error.message)});
- if(demoMode||!config.data?.configured)return null;
+ const demo=demoMode;
+ if(!demo&&!config.data?.configured)return null;
  const busy=upload.isPending||remove.isPending;
  function choose(file?:File){
   if(!file)return;setMessage('');
   if(!TYPES.includes(file.type)){setMessage('Choose a JPG, PNG or WebP image.');return;}
   if(file.size>MAX_BYTES){setMessage('Choose an image under 3 MB.');return;}
+  if(demo){void shrink(file).then(url=>adapter.setAvatar(url)).then(async()=>{setMessage('Profile photo updated.');await client.invalidateQueries({queryKey:['snapshot']});}).catch(()=>setMessage('That image could not be read.'));return;}
   upload.mutate(file);
  }
  return <div className="avatar-upload"><span className="avatar avatar-large"><AvatarFace url={s.profile.avatarUrl} name={s.profile.name}/></span>
   <div><strong>Profile photo</strong><small>JPG, PNG or WebP, up to 3 MB. It is cropped to a square.</small>
    <div className="inline-actions"><input ref={input} type="file" hidden accept="image/jpeg,image/png,image/webp" aria-label="Profile photo file" onChange={e=>{choose(e.target.files?.[0]);e.target.value='';}}/>
     <Button type="button" disabled={busy} onClick={()=>input.current?.click()}><Camera size={15}/>{upload.isPending?'Uploading…':s.profile.avatarUrl?'Change photo':'Upload photo'}</Button>
-    {s.profile.avatarUrl&&<Button type="button" disabled={busy} onClick={()=>remove.mutate()}><Trash2 size={15}/>Remove</Button>}</div>
+    {s.profile.avatarUrl&&<Button type="button" disabled={busy} onClick={()=>demo?void adapter.setAvatar(null).then(async()=>{setMessage('Profile photo removed.');await client.invalidateQueries({queryKey:['snapshot']});}):remove.mutate()}><Trash2 size={15}/>Remove</Button>}</div>
    {message&&<p role="status" className={upload.isError||remove.isError||/^Choose/.test(message)?'error':'mint'}>{message}</p>}</div></div>;
 }

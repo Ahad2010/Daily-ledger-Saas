@@ -1,0 +1,143 @@
+Date,Description,Amount,Type,Category,Account
+2026-07-01,Salary - Acme Corp,4200.00,income,Salary,Checking
+2026-07-01,Rent,1200.00,expense,Housing,Checking
+2026-07-01,Chipotle,17.06,expense,Food & dining,Card
+2026-07-01,Uber ride,17.07,expense,Transport,Card
+2026-07-01,Decathlon,50.06,expense,Shopping,Card
+2026-07-02,Local grocer,32.47,expense,Groceries,Card
+2026-07-02,Subway,7.66,expense,Food & dining,Card
+2026-07-03,Electricity bill,89.15,expense,Utilities,Checking
+2026-07-03,Pizza Hut,17.11,expense,Food & dining,Card
+2026-07-03,Zara,60.55,expense,Shopping,Card
+2026-07-04,Uber Eats,21.69,expense,Food & dining,Card
+2026-07-05,Internet - Fibre,49.99,expense,Utilities,Checking
+2026-07-05,Starbucks,21.34,expense,Food & dining,Card
+2026-07-05,Uber ride,25.43,expense,Transport,Card
+2026-07-06,Costco,57.80,expense,Groceries,Card
+2026-07-07,Gym membership,35.00,expense,Health,Checking
+2026-07-07,Fuel station,22.33,expense,Transport,Card
+2026-07-08,Starbucks,9.31,expense,Food & dining,Card
+2026-07-09,Spotify,9.99,expense,Entertainment,Card
+2026-07-09,Local grocer,54.99,expense,Groceries,Card
+2026-07-09,Fuel station,16.22,expense,Transport,Card
+2026-07-10,Netflix,15.49,expense,Entertainment,Card
+2026-07-10,Uber ride,36.17,expense,Transport,Card
+2026-07-11,Cafe Latte,14.67,expense,Food & dining,Card
+2026-07-13,Costco,38.76,expense,Groceries,Card
+2026-07-13,Starbucks,12.11,expense,Food & dining,Card
+2026-07-14,Savings transfer,300.00,expense,Savings,Checking
+2026-07-15,Freelance design project,502.81,income,Freelance,Checking
+2026-07-15,Subway,30.19,expense,Food & dining,Card
+2026-07-16,Local grocer,89.29,expense,Groceries,Card
+2026-07-16,Chipotle,10.24,expense,Food & dining,Card
+2026-07-16,Decathlon,45.53,expense,Shopping,Card
+2026-07-17,Pizza Hut,16.34,expense,Food & dining,Card
+2026-07-20,Mobile plan,25.00,expense,Utilities,Card
+2026-07-20,Local grocer,53.48,expense,Groceries,Card
+2026-07-20,Subway,23.76,expense,Food & dining,Card
+2026-07-20,Uber ride,37.49,expense,Transport,Card
+2026-07-21,Metro card,22.71,expense,Transport,Card
+2026-07-22,Chipotle,23.19,expense,Food & dining,Card
+2026-07-22,Fuel station,36.53,expense,Transport,Card
+2026-07-23,Whole Foods,82.33,expense,Groceries,Card
+2026-07-24,Uber Eats,26.73,expense,Food & dining,Card
+2026-07-25,Pizza Hut,16.13,expense,Food & dining,Card
+2026-07-26,Cafe Latte,30.17,expense,Food & dining,Card
+2026-07-27,Trader Joe's,50.76,expense,Groceries,Card
+2026-07-27,Pizza Hut,27.81,expense,Food & dining,Card
+2026-07-29,Lyft ride,16.73,expense,Transport,Card
+2026-07-29,Amazon,130.62,expense,Shopping,Card
+2026-07-30,Trader Joe's,72.32,expense,Groceries,Card
+2026-08-01,Salary - Acme Corp,4200.00,income,Salary,Checking
+2026-08-01,Rent,1200.00,expense,Housing,Checking
+2026-08-01,Chipotle,19.51,expense,Food & dining,Card
+2026-08-01,Doctor visit,31.95,expense,Health,Card
+2026-08-03,Electricity bill,95.57,expense,Utilities,Checking
+2026-08-03,Trader Joe's,58.59,expense,Groceries,Card
+2026-08-03,Cafe Latte,15.31,expense,Food & dining,Card
+2026-08-04,Starbucks,26.29,expense,Food & dining,Card
+2026-08-04,Metro card,5.91,expense,Transport,Card
+2026-08-05,Internet - Fibre,49.99,expense,Utilities,Checking
+2026-08-06,Costco,37.98,expense,Groceries,Card
+2026-08-06,Uber ride,22.38,expense,Transport,Card
+2026-08-07,Gym membership,35.00,expense,Health,Checking
+2026-08-08,Chipotle,27.38,expense,Food & dining,Card
+2026-08-09,Spotify,9.99,expense,Entertainment,Card
+2026-08-09,Cafe Latte,15.91,expense,Food & dining,Card
+2026-08-10,Netflix,15.49,expense,Entertainment,Card
+2026-08-10,Local grocer,80.94,expense,Groceries,Card
+2026-08-10,Metro card,22.28,expense,Transport,Card
+2026-08-10,Apple Store,128.71,expense,Shopping,Card
+2026-08-11,Metro card,20.63,expense,Transport,Card
+2026-08-12,Pizza Hut,20.86,expense,Food & dining,Card
+2026-08-13,Whole Foods,43.90,expense,Groceries,Card
+2026-08-13,Starbucks,20.22,expense,Food & dining,Card
+2026-08-14,Savings transfer,300.00,expense,Savings,Checking
+2026-08-14,Pizza Hut,33.25,expense,Food & dining,Card
+2026-08-15,Freelance design project,629.49,income,Freelance,Checking
+2026-08-17,Trader Joe's,81.76,expense,Groceries,Card
+2026-08-17,Starbucks,16.99,expense,Food & dining,Card
+2026-08-18,Uber Eats,27.95,expense,Food & dining,Card
+2026-08-19,Metro card,36.93,expense,Transport,Card
+2026-08-20,Mobile plan,25.00,expense,Utilities,Card
+2026-08-20,Local grocer,84.64,expense,Groceries,Card
+2026-08-20,Cafe Latte,29.31,expense,Food & dining,Card
+2026-08-20,Lyft ride,37.80,expense,Transport,Card
+2026-08-21,Starbucks,26.22,expense,Food & dining,Card
+2026-08-21,Lyft ride,19.54,expense,Transport,Card
+2026-08-21,IKEA,92.44,expense,Shopping,Card
+2026-08-22,Metro card,37.07,expense,Transport,Card
+2026-08-23,Chipotle,13.57,expense,Food & dining,Card
+2026-08-23,Lyft ride,33.04,expense,Transport,Card
+2026-08-24,Local grocer,37.56,expense,Groceries,Card
+2026-08-25,Cafe Latte,11.13,expense,Food & dining,Card
+2026-08-25,Pharmacy,58.49,expense,Health,Card
+2026-08-26,Chipotle,7.87,expense,Food & dining,Card
+2026-08-27,Carrefour,54.74,expense,Groceries,Card
+2026-08-27,Zara,151.34,expense,Shopping,Card
+2026-08-28,Chipotle,11.65,expense,Food & dining,Card
+2026-08-29,Pizza Hut,24.82,expense,Food & dining,Card
+2026-08-30,Starbucks,26.53,expense,Food & dining,Card
+2026-08-31,Local grocer,34.80,expense,Groceries,Card
+2026-09-01,Salary - Acme Corp,4200.00,income,Salary,Checking
+2026-09-01,Rent,1200.00,expense,Housing,Checking
+2026-09-01,Pizza Hut,14.62,expense,Food & dining,Card
+2026-09-01,Metro card,16.31,expense,Transport,Card
+2026-09-03,Electricity bill,66.49,expense,Utilities,Checking
+2026-09-03,Whole Foods,68.03,expense,Groceries,Card
+2026-09-03,Apple Store,141.88,expense,Shopping,Card
+2026-09-04,Chipotle,25.40,expense,Food & dining,Card
+2026-09-04,Metro card,10.20,expense,Transport,Card
+2026-09-05,Internet - Fibre,49.99,expense,Utilities,Checking
+2026-09-06,Gym membership,16.87,expense,Health,Card
+2026-09-07,Gym membership,35.00,expense,Health,Checking
+2026-09-07,Costco,60.18,expense,Groceries,Card
+2026-09-07,Pizza Hut,27.73,expense,Food & dining,Card
+2026-09-07,Uber ride,9.75,expense,Transport,Card
+2026-09-08,Cafe Latte,12.52,expense,Food & dining,Card
+2026-09-09,Spotify,9.99,expense,Entertainment,Card
+2026-09-10,Netflix,15.49,expense,Entertainment,Card
+2026-09-10,Costco,74.12,expense,Groceries,Card
+2026-09-13,Decathlon,131.72,expense,Shopping,Card
+2026-09-14,Savings transfer,300.00,expense,Savings,Checking
+2026-09-14,Trader Joe's,33.45,expense,Groceries,Card
+2026-09-14,Cafe Latte,16.10,expense,Food & dining,Card
+2026-09-14,Lyft ride,23.43,expense,Transport,Card
+2026-09-15,Freelance design project,724.37,income,Freelance,Checking
+2026-09-15,Uber ride,29.69,expense,Transport,Card
+2026-09-16,Lyft ride,13.32,expense,Transport,Card
+2026-09-16,IKEA,52.87,expense,Shopping,Card
+2026-09-17,Trader Joe's,75.35,expense,Groceries,Card
+2026-09-19,Chipotle,15.29,expense,Food & dining,Card
+2026-09-20,Mobile plan,25.00,expense,Utilities,Card
+2026-09-20,Subway,7.70,expense,Food & dining,Card
+2026-09-21,Local grocer,46.61,expense,Groceries,Card
+2026-09-22,Uber ride,35.90,expense,Transport,Card
+2026-09-22,Apple Store,30.70,expense,Shopping,Card
+2026-09-24,Trader Joe's,32.78,expense,Groceries,Card
+2026-09-24,Cafe Latte,20.67,expense,Food & dining,Card
+2026-09-26,Amazon,152.99,expense,Shopping,Card
+2026-09-27,Cafe Latte,9.94,expense,Food & dining,Card
+2026-09-28,Whole Foods,48.77,expense,Groceries,Card
+2026-09-28,Subway,9.36,expense,Food & dining,Card
+2026-09-29,Uber Eats,7.82,expense,Food & dining,Card
