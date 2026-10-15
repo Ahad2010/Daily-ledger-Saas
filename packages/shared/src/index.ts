@@ -10,7 +10,7 @@ export const currencySchema=z.string().refine(value=>currencyOptions.includes(va
 const currencyNames=new Intl.DisplayNames(['en'],{type:'currency'});
 export function currencyLabel(code:string){return currencyNames.of(code)||code;}
 
-export const kinds = ['transaction','budget','cashPlan','financeCategory','recurring','task','habit','completion','workout','meal','grocery','goal','milestone','notification','announcement','automation','bodyMetric','nutritionTarget','waterLog'] as const;
+export const kinds = ['transaction','budget','cashPlan','financeCategory','recurring','task','habit','completion','workout','meal','grocery','goal','milestone','notification','announcement','automation','bodyMetric','nutritionTarget','waterLog','goalCheckin'] as const;
 export const kindSchema = z.enum(kinds);
 export type Kind = z.infer<typeof kindSchema>;
 export function safeReturnTo(value:unknown):string {if(typeof value!=='string'||value.length>2048||!value.startsWith('/')||value.startsWith('//')||/[\\\x00-\x20]/.test(value)||/%(?:2f|5c|0[0-9a-f]|1[0-9a-f]|20)/i.test(value))return '/';try{const url=new URL(value,'https://dailyledger.invalid');if(url.origin!=='https://dailyledger.invalid'||/^\/(login|signup|verify-email|forgot-password|reset-password|backend|auth)(\/|$)/.test(url.pathname))return '/';return url.pathname+url.search+url.hash;}catch{return '/';}}
@@ -33,7 +33,8 @@ export const schemas = {
   nutritionTarget: z.object({title:z.string().trim().max(160).default('Daily nutrition target'),calories:z.number().int().min(800).max(10000),protein:z.number().int().min(0).max(600),carbs:z.number().int().min(0).max(1200),fat:z.number().int().min(0).max(500),waterMl:z.number().int().min(0).max(10000).optional(),goal:z.enum(['lose','maintain','gain']).optional()}),
   meal: z.object({title,date,slot:z.enum(['Breakfast','Lunch','Dinner','Snack']),notes:note,ingredients:z.string().max(1000).optional(),servings:z.number().int().min(1).max(20).optional(),generatedPlanId:date.optional(),eaten:z.boolean().optional(),foods:z.array(z.object({name:z.string().trim().min(1).max(80),grams:z.number().min(0).max(5000),calories:z.number().min(0).max(20000),protein:z.number().min(0).max(1000),carbs:z.number().min(0).max(2000),fat:z.number().min(0).max(1000)})).max(40).optional(),nutrition:z.object({calories:z.number().min(0).max(20000).optional(),protein:z.number().min(0).max(1000).optional(),carbs:z.number().min(0).max(2000).optional(),fat:z.number().min(0).max(1000).optional()}).optional()}),
   grocery: z.object({title,quantity:z.string().max(80).default(''),cost:cents,currency:currencySchema,done:z.boolean().default(false),mealId:z.string().optional()}),
-  goal: z.object({title,description:note,current:z.number().min(0).max(1e12),target:z.number().positive().max(1e12),unit:z.string().max(30),deadline:date,active:z.boolean().default(true),tracking:z.enum(['manual','steps']).optional(),startDate:date.optional(),linkedCategory:z.string().trim().max(80).optional()}),
+  goal: z.object({title,description:note,current:z.number().min(0).max(1e12),target:z.number().positive().max(1e12),unit:z.string().max(30),deadline:date,active:z.boolean().default(true),tracking:z.enum(['manual','steps']).optional(),startDate:date.optional(),linkedCategory:z.string().trim().max(80).optional(),autoSource:z.object({type:z.enum(['savings','weight','workouts','habit','lift']),ref:z.string().trim().max(160).optional(),baseline:z.number().min(0).max(1e9).optional()}).optional()}),
+  goalCheckin: z.object({title:z.string().trim().max(160).default('Check-in'),goalId:z.string().max(80),date,value:z.number().min(0).max(1e12),note:z.string().max(500).default('')}),
   milestone: z.object({title,goalId:title,done:z.boolean().default(false)}),
   notification: z.object({title,read:z.boolean().default(false),date}),
   announcement: z.object({title,description:note,audience:z.enum(['Everyone','Free','Pro','Lifetime']),version:z.number().int().positive(),priority:z.number().int().min(0).max(10),publishAt:z.string().datetime(),expiresAt:z.string().datetime(),followup:z.boolean().default(false),ctaLabel:z.string().max(80).optional(),ctaUrl:z.string().max(2048).refine(v=>{if(!v)return true;if(/[\\\x00-\x20]/.test(v))return false;if(v.startsWith('/')&&!v.startsWith('//'))return true;try{return new URL(v).protocol==='https:';}catch{return false;}},'Use an internal path or HTTPS URL').optional()}),
@@ -57,9 +58,34 @@ export const quotaKinds={task:'tasks',habit:'habits',goal:'goals',transaction:'t
 export function effectiveLimits(s:Snapshot){return {...plans[s.profile.plan],...Object.fromEntries(Object.entries(s.profile.allowances||{}).map(([key,value])=>[key,value===null?Infinity:value]))} as typeof plans[Plan];}
 export function planUsage(s:Snapshot,month:string){return {tasks:recordsOf(s.records,'task').filter(r=>!r.data.done).length,habits:recordsOf(s.records,'habit').filter(r=>r.data.active).length,goals:recordsOf(s.records,'goal').filter(r=>r.data.active).length,transactions:recordsOf(s.records,'transaction').filter(r=>r.data.date.startsWith(month)).length,automations:recordsOf(s.records,'automation').filter(r=>r.data.enabled).length,emails:s.planDetails?.usage.emails||0};}
 export function recordsOf<K extends Kind>(records:LedgerRecord[],kind:K):LedgerRecord<K>[] {return records.filter(r=>r.kind===kind) as LedgerRecord<K>[];}
-// Pro goals can follow a Finance category: money moved there (transfers and income) since the goal started counts as progress, in the goal's currency.
-export function linkedGoalAmount(goal:LedgerRecord<'goal'>,records:LedgerRecord[]){const category=goal.data.linkedCategory?.trim().toLowerCase();if(!category)return null;const unit=goal.data.unit.toUpperCase(),currencyUnit=/^[A-Z]{3}$/.test(unit);return recordsOf(records,'transaction').filter(r=>(r.data.type==='transfer'||r.data.type==='income')&&r.data.category.trim().toLowerCase()===category&&(!goal.data.startDate||r.data.date>=goal.data.startDate)&&(!currencyUnit||r.data.currency===unit)).reduce((n,r)=>n+r.data.amount,0)/100;}
-export function goalProgress(goal:LedgerRecord<'goal'>,records:LedgerRecord[]){const steps=recordsOf(records,'milestone').filter(r=>r.data.goalId===goal.id);const linked=goal.data.tracking==='steps'?null:linkedGoalAmount(goal,records);const current=goal.data.tracking==='steps'?steps.filter(r=>r.data.done).length:linked??goal.data.current;const target=goal.data.tracking==='steps'?steps.length:goal.data.target;return {current,target,percentage:target?Math.min(100,current/target*100):0,done:target>0&&current>=target,steps};}
+// Goals can follow the rest of the app. savings: money moved to a Finance category; weight: change from a starting weight in Body progress;
+// workouts: completed sessions; habit: days a habit was completed; lift: the heaviest set of a named exercise. Dates count from the goal's start date.
+type GoalSource=NonNullable<RecordData['goal']['autoSource']>;
+const goalSource=(goal:LedgerRecord<'goal'>):GoalSource|null=>goal.data.autoSource||(goal.data.linkedCategory?.trim()?{type:'savings',ref:goal.data.linkedCategory.trim()}:null);
+function goalEvents(goal:LedgerRecord<'goal'>,source:GoalSource,records:LedgerRecord[]){
+ const from=goal.data.startDate||'0000-00-00';const ev:{date:string;value:number}[]=[];
+ if(source.type==='savings'){const category=(source.ref||'').trim().toLowerCase(),unit=goal.data.unit.toUpperCase(),currencyUnit=/^[A-Z]{3}$/.test(unit);recordsOf(records,'transaction').filter(r=>(r.data.type==='transfer'||r.data.type==='income')&&r.data.category.trim().toLowerCase()===category&&r.data.date>=from&&(!currencyUnit||r.data.currency===unit)).forEach(r=>ev.push({date:r.data.date,value:r.data.amount/100}));}
+ else if(source.type==='weight'){const base=source.baseline??goal.data.current;recordsOf(records,'bodyMetric').filter(r=>r.data.date>=from).forEach(r=>ev.push({date:r.data.date,value:Math.max(0,source.ref==='gain'?r.data.weight-base:base-r.data.weight)}));}
+ else if(source.type==='workouts'){recordsOf(records,'workout').filter(r=>r.data.done&&r.data.date>=from).forEach(r=>ev.push({date:r.data.date,value:1}));}
+ else if(source.type==='habit'){recordsOf(records,'completion').filter(r=>r.data.habitId===source.ref&&r.data.date>=from).forEach(r=>ev.push({date:r.data.date,value:1}));}
+ else if(source.type==='lift'){const name=(source.ref||'').trim().toLowerCase();recordsOf(records,'workout').filter(r=>r.data.done&&r.data.date>=from).forEach(r=>(r.data.exercises||[]).filter(e=>e.name.trim().toLowerCase()===name).forEach(e=>e.sets.forEach(s=>{if(s.weight>0&&s.reps>0)ev.push({date:r.data.date,value:s.weight});})));}
+ return ev.sort((a,b)=>a.date.localeCompare(b.date));
+}
+const cumulative=(type:GoalSource['type'])=>type==='savings'||type==='workouts'||type==='habit';
+export const linkedGoalAmount=(goal:LedgerRecord<'goal'>,records:LedgerRecord[])=>goal.data.linkedCategory?.trim()?autoGoalAmount(goal,records):null;
+export function autoGoalAmount(goal:LedgerRecord<'goal'>,records:LedgerRecord[]){
+ const source=goalSource(goal);if(!source)return null;const ev=goalEvents(goal,source,records);
+ if(source.type==='weight')return ev.length?ev[ev.length-1].value:0;
+ return cumulative(source.type)?ev.reduce((n,e)=>n+e.value,0):ev.reduce((n,e)=>Math.max(n,e.value),0);
+}
+// Progress over time in the same units as the goal's current value, for the detail chart.
+export function goalHistory(goal:LedgerRecord<'goal'>,records:LedgerRecord[]){
+ const source=goalSource(goal);let points:{date:string;value:number}[]=[];
+ if(!source){points=recordsOf(records,'goalCheckin').filter(c=>c.data.goalId===goal.id).map(c=>({date:c.data.date,value:c.data.value})).sort((a,b)=>a.date.localeCompare(b.date));}
+ else{const ev=goalEvents(goal,source,records);let run=0;points=ev.map(e=>{run=source.type==='weight'?e.value:cumulative(source.type)?run+e.value:Math.max(run,e.value);return {date:e.date,value:run};});}
+ const byDay=new Map<string,number>();points.forEach(p=>byDay.set(p.date,p.value));return [...byDay.entries()].map(([date,value])=>({date,value}));
+}
+export function goalProgress(goal:LedgerRecord<'goal'>,records:LedgerRecord[]){const steps=recordsOf(records,'milestone').filter(r=>r.data.goalId===goal.id);const auto=goal.data.tracking==='steps'?null:autoGoalAmount(goal,records);const current=goal.data.tracking==='steps'?steps.filter(r=>r.data.done).length:auto??goal.data.current;const target=goal.data.tracking==='steps'?steps.length:goal.data.target;return {current,target,percentage:target?Math.min(100,current/target*100):0,done:target>0&&current>=target,steps};}
 export function localDate(instant:Date|string,timezone:string):string { const parts=new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(instant)); return ['year','month','day'].map(k=>parts.find(p=>p.type===k)!.value).join('-'); }
 export function monthDates(month:string){const [y,m]=month.split('-').map(Number);return Array.from({length:new Date(Date.UTC(y,m,0)).getUTCDate()},(_,i)=>`${month}-${String(i+1).padStart(2,'0')}`);}
 export function money(cents:number,currency='USD'){return new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:cents%100?2:0,maximumFractionDigits:cents%100?2:0}).format(cents/100);}
