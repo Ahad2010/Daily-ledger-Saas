@@ -13,7 +13,7 @@ test('web app manifest, icons and mobile metadata make Daily Ledger installable'
 
 test('Settings offers the browser install prompt when the browser supports it',async({page})=>{
  await page.addInitScript(()=>{(window as unknown as {__fire:()=>void}).__fire=()=>{const e=new Event('beforeinstallprompt') as Event&{prompt:()=>Promise<void>;userChoice:Promise<{outcome:string}>};e.prompt=()=>{(window as unknown as {__prompted:boolean}).__prompted=true;return Promise.resolve();};e.userChoice=Promise.resolve({outcome:'accepted'});window.dispatchEvent(e);};});
- await page.goto('/settings');await expect(page.locator('.plan-summary')).toBeVisible();await expect(page.locator('.install-app')).toHaveCount(0);
+ await page.goto('/settings');await expect(page.locator('.settings-shell')).toBeVisible();await expect(page.locator('.install-app')).toHaveCount(0);
  await page.evaluate(()=>(window as unknown as {__fire:()=>void}).__fire());
  await expect(page.locator('.install-app')).toContainText('Install Daily Ledger');await page.getByRole('button',{name:'Install app'}).click();
  await expect(page.locator('.install-app')).toContainText('was added to your device');expect(await page.evaluate(()=>(window as unknown as {__prompted?:boolean}).__prompted)).toBe(true);

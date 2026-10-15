@@ -28,6 +28,8 @@ model User {
   referralsSent Referral[] @relation("referrer")
   referralReceived Referral? @relation("invitee")
   entitlementSource String @default("free")
+  subscriptionCancelledAt DateTime?
+  display Json @default("{}")
   createdAt DateTime @default(now())
   records Record[]
   jobs Job[]
@@ -161,6 +163,18 @@ model PolicyVersion {
  actorId String
  createdAt DateTime @default(now())
  @@index([plan,effectiveAt])
+}
+model ActivityEvent {
+ id String @id @default(uuid())
+ userId String?
+ type String
+ ip String?
+ userAgent String?
+ meta Json @default("{}")
+ createdAt DateTime @default(now())
+ @@index([userId,createdAt])
+ @@index([type,createdAt])
+ @@index([createdAt])
 }
 model AdminAudit {
  id String @id @default(uuid())

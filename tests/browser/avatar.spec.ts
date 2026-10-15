@@ -25,5 +25,5 @@ test('profile photo: unsupported or oversized files are rejected before any uplo
  await box.getByLabel('Profile photo file').setInputFiles({name:'big.png',mimeType:'image/png',buffer:Buffer.alloc(3*1024*1024+1)});await expect(box.getByRole('status')).toHaveText('Choose an image under 3 MB.');expect(signed).toBe(0);
 });
 test('profile photo controls stay hidden until Cloudinary is configured',async({page})=>{
- const s=fixture();await mock(page,s,false);await page.goto('/settings');await expect(page.locator('.plan-summary')).toBeVisible();await expect(page.locator('.avatar-upload')).toHaveCount(0);
+ const s=fixture();await mock(page,s,false);await page.goto('/settings?tab=plan');await expect(page.locator('.plan-summary')).toBeVisible();await page.goto('/settings');await expect(page.locator('.settings-shell')).toBeVisible();await expect(page.locator('.avatar-upload')).toHaveCount(0);
 });

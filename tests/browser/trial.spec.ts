@@ -18,12 +18,12 @@ test('free users are offered a no-card Pro trial; starting it updates the plan w
  await offer.getByRole('button',{name:'Start 7-day Pro trial'}).click();expect(started).toBe(1);
  await expect(page.locator('.sidebar .plan-badge')).toHaveText('Pro trial · 7d left',{timeout:20000});
  await page.getByRole('dialog').getByRole('button',{name:'Continue with Free',exact:true}).click({timeout:3000}).catch(()=>undefined);
- await page.goto('/settings');await expect(page.locator('.plan-summary h2')).toHaveText('Pro plan');await expect(page.locator('.trial-status')).toContainText('7 days left');await expect(page.locator('.plan-source')).toContainText('Free Pro trial');await expect(page.locator('.trial-offer')).toHaveCount(0);
+ await page.goto('/settings?tab=plan');await expect(page.locator('.plan-summary h2')).toHaveText('Pro plan');await expect(page.locator('.trial-status')).toContainText('7 days left');await expect(page.locator('.plan-source')).toContainText('Free Pro trial');await expect(page.locator('.trial-offer')).toHaveCount(0);
 });
 
 test('usage meters turn red from 80% and show the hard limit at 100%',async({page})=>{
  const s=fixture(5);s.planDetails!.trial.available=false;s.planDetails!.trial.used=true;await mock(page,s);
- await page.goto('/settings');await page.getByRole('button',{name:'Continue with Free',exact:true}).click({timeout:3000}).catch(()=>undefined);
+ await page.goto('/settings?tab=plan');await page.getByRole('button',{name:'Continue with Free',exact:true}).click({timeout:3000}).catch(()=>undefined);
  const tasks=page.locator('.plan-usage-row').filter({hasText:'Active tasks'});
  await expect(tasks.locator('.usage-meter')).toHaveAttribute('data-level','full');await expect(tasks.locator('.usage-flag')).toHaveText('Limit reached');
  await expect(tasks.locator('.progress>div')).toHaveCSS('background-color','rgb(240, 70, 58)');
@@ -34,7 +34,7 @@ test('usage meters turn red from 80% and show the hard limit at 100%',async({pag
 test('Settings shows plan status and verified payment receipts, with an honest empty state',async({page})=>{
  const s=fixture();s.planDetails!.trial.available=false;await mock(page,s);
  let payments:unknown[]=[];await page.route('**/backend/api/billing',r=>r.fulfill({json:{plan:'Free',source:'free',trial:{available:false,used:true,endsAt:null},accessUntil:null,paymentsConfigured:false,payments}}));
- await page.goto('/settings');await page.getByRole('button',{name:'Continue with Free',exact:true}).click({timeout:3000}).catch(()=>undefined);
+ await page.goto('/settings?tab=billing');await page.getByRole('button',{name:'Continue with Free',exact:true}).click({timeout:3000}).catch(()=>undefined);
  const panel=page.locator('.billing-panel');await expect(panel).toContainText('Billing & invoices');await expect(panel).toContainText('Online payments are not connected yet');await expect(panel.locator('.billing-summary')).toContainText('Free membership');
  payments=[{id:'1',provider:'whop',reference:'p1',kind:'recurring',description:'Pro membership',currency:'USD',amount:2000,status:'paid',receiptUrl:'https://example.com/r/1',createdAt:'2026-10-01T10:00:00Z'},{id:'2',provider:'whop',reference:'p2',kind:'recurring',description:null,currency:'USD',amount:2000,status:'paid',receiptUrl:'javascript:alert(1)',createdAt:'2026-09-01T10:00:00Z'}];
  await page.reload();await page.getByRole('button',{name:'Continue with Free',exact:true}).click({timeout:3000}).catch(()=>undefined);

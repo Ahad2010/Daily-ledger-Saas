@@ -13,6 +13,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@ledger/shared": "*",
     "@radix-ui/react-dialog": "^1.1.15",
+    "pdfkit": "^0.17.2",
     "@radix-ui/react-slot": "^1.2.3",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",

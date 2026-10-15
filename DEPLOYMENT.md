@@ -56,6 +56,29 @@ Variables on **both**: `NEXT_PUBLIC_DATA_MODE=api`, `NEXT_PUBLIC_API_URL=/backen
 
 **`TRUST_PROXY_HOPS`:** the browser reaches the API through Vercel's `/backend` rewrite, so there are two proxies (Vercel, then Railway). With `1` every visitor can appear to come from Vercel's IP and share one rate-limit bucket (the 180 requests/min global limit and the 5-failed-login lockout). Use `2`. To verify on staging: fail a login five times from one network, then log in from another network or phone; if the second one is also blocked, the value is wrong. Keep `1` if you instead point the app straight at the Railway domain.
 
+## Where every key goes (never in Git)
+
+API keys and secrets are **never committed to GitHub**. `.env` files are ignored by Git on purpose. Put each value in exactly one place:
+
+| Value | Local development | Production |
+| --- | --- | --- |
+| AI key (`AI_PROVIDER`, `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`) | `apps/api/.env` | Railway, API service, Variables |
+| Database (`DATABASE_URL`), `SESSION_SECRET` | `apps/api/.env` | Railway, API service, Variables |
+| Email (`RESEND_API_KEY`, `EMAIL_FROM`) | `apps/api/.env` | Railway, API service **and** worker service, Variables |
+| Push (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`) | `apps/api/.env` | Railway, API service and worker, Variables |
+| Google sign-in (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`) | `apps/api/.env` | Railway, API service, Variables |
+| App frontend (`NEXT_PUBLIC_DATA_MODE=api`, `API_INTERNAL_URL`) | `apps/web/.env.local` | Vercel, app project, Environment Variables |
+| Admin frontend (same two variables) | `apps/admin/.env.local` | Vercel, admin project, Environment Variables |
+
+GitHub Secrets are only needed if you add a GitHub Action later. Copy variable names from the `.env.example` next to each app.
+
+### Groq (free) as the AI provider
+
+1. Create a key in the Groq console (console.groq.com, API Keys).
+2. Set `AI_PROVIDER=openai-compatible`, `AI_BASE_URL=https://api.groq.com/openai/v1`, `AI_API_KEY=<your key>` and `AI_MODEL=<a model id from Groq's model list>` in `apps/api/.env` (local) or Railway variables (live).
+3. Restart the API, open `/admin/ai` and switch the assistant on; set per-plan monthly limits.
+4. In demo mode (no API) the assistant answers from the sample data and never calls Groq.
+
 ## Vercel frontend
 
 Import the repository with **Root Directory `apps/web`** and enable files outside that directory. `apps/web/vercel.json` installs from the workspace root and builds Next.js. Use Node 24.

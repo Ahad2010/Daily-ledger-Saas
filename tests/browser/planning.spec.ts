@@ -1,7 +1,7 @@
 import { test,expect } from '@playwright/test';
 test('money entry uses normal currency amounts and links use names',async({page})=>{
  await page.goto('/finance');
- await expect(page.locator('.finance-budget-row')).toContainText('$720');
+ await page.getByRole('tab',{name:'Plan'}).click();await expect(page.locator('.finance-budget-row')).toContainText('$720');await page.getByRole('tab',{name:'Snapshot'}).click();
  await expect(page.locator('.finance-hero')).toContainText('$2,720');
  await page.goto('/goals');
  await page.getByRole('link',{name:'Emergency fund',exact:true}).click();await expect(page).toHaveURL(/\/goals\/.+/);const goal=page.locator('.actionable-goal').filter({hasText:'Emergency fund'});
@@ -14,14 +14,14 @@ test('money entry uses normal currency amounts and links use names',async({page}
  await expect(goal).toContainText('Build first buffer');
  await expect(page.getByText(/Goal ID:/)).toHaveCount(0);
  await page.goto('/meals');
- await page.locator('.meal-day.outside-month').first().getByRole('button',{name:'Plan meal',exact:true}).first().click();
+ await page.getByRole('tab',{name:'Plan'}).click();await page.getByRole('button',{name:/^Thu 1,/}).click();await page.locator('.plan-slot').first().getByRole('button',{name:'Plan meal',exact:true}).click();
  await expect(dialog.getByLabel('Date',{exact:true})).toHaveValue('2026-10-01');
  await expect(dialog.getByLabel('Meal',{exact:true})).toHaveValue('Breakfast');
  await dialog.getByLabel('Meal name',{exact:true}).fill('October breakfast');
  await dialog.getByRole('button',{name:'Create meal'}).click();
  await expect(dialog).toHaveCount(0);
  await expect(page.getByText('October breakfast',{exact:true})).toBeVisible();
- await page.getByRole('button',{name:'Add item',exact:true}).click();
+ await page.getByRole('tab',{name:'Groceries'}).click();await page.getByRole('button',{name:'Add item',exact:true}).click();
  await dialog.getByLabel('Grocery item',{exact:true}).fill('Test oats');
  await dialog.getByLabel('Estimated cost',{exact:true}).fill('1.99');
  await dialog.getByLabel('Linked meal (optional)').selectOption({label:'October breakfast · 2026-10-01'});
