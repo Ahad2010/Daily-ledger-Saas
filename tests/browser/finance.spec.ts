@@ -9,8 +9,27 @@ test('income and bills create actual transactions only after confirmation',async
 test('category budgets repeat and calculators handle profit and loss',async({page})=>{
  await page.goto('/finance/budgets');await page.getByRole('button',{name:'Add budget',exact:true}).click();const dialog=page.getByRole('dialog');await dialog.getByLabel('Budget name').fill('Food cap');await dialog.getByLabel('Budget',{exact:true}).fill('500');await dialog.getByLabel('Category (leave empty for overall budget)').fill('Food');await dialog.getByRole('button',{name:'Save budget'}).click();await expect(dialog).toHaveCount(0);await expect(page.locator('.finance-budget-row').filter({hasText:'Food'})).toContainText('Repeats monthly');await page.getByLabel('Selected month').fill('2026-10');await expect(page.locator('.finance-budget-row').filter({hasText:'Food'})).toContainText('$500 remaining');
  await page.goto('/finance/calculators/loan');await page.getByLabel('Annual interest rate').fill('0');await page.getByLabel('Loan amount').fill('12000');await page.getByLabel('Term',{exact:true}).fill('1');await expect(page.locator('.finance-calculator-results')).toContainText('$1,000');
- await page.goto('/finance/calculators/profit');await page.getByLabel('Revenue',{exact:true}).fill('100');await page.getByLabel('Total costs').fill('150');await expect(page.locator('.finance-calculator-results .negative').first()).toContainText('-$50');await page.getByRole('link',{name:'Back to calculators'}).click();await expect(page.getByText('Six practical calculators')).toBeVisible();
+ await page.goto('/finance/calculators/profit');await page.getByLabel('Revenue',{exact:true}).fill('100');await page.getByLabel('Total costs').fill('150');await expect(page.locator('.finance-calculator-results .negative').first()).toContainText('-$50');await page.getByRole('link',{name:'Back to calculators'}).click();await expect(page.getByText('Thirteen practical calculators')).toBeVisible();
 });
 for(const width of [360,390,768,1024,1440,1920])test(`finance tools, assistant and sidebar ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:900});for(const route of ['income','bills','budgets','savings','transactions','calculators','calculators/profit','recurring']){await page.goto('/finance/'+route);await expect(page.locator('h1')).toBeVisible();await expect(page.locator('.finance-back')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),route).toBe(true);await expect(page.locator('.panel').first()).toHaveCSS('opacity','1');await page.screenshot({path:`artifacts/finance-${route.replace('/','-')}-${width}.png`,fullPage:true});}await page.goto('/assistant');await expect(page.getByLabel('Ask the AI Assistant')).toBeEnabled();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`artifacts/assistant-${width}.png`,fullPage:true});await expect(page.locator('.sidebar .brand')).toContainText('Daily Ledger');await expect(page.locator('.sidebar .brand img')).toHaveAttribute('src','/daily-ledger-logo.png');if(width<800){await page.getByRole('button',{name:'Open navigation'}).click();await expect(page.locator('.sidebar .brand')).toBeFocused();await page.screenshot({path:`artifacts/sidebar-${width}.png`});await page.keyboard.press('Escape');}
+});
+
+test('new calculators work, can start from the member\'s own numbers and link to related tools',async({page})=>{
+ await page.goto('/finance/calculators');await expect(page.getByText('Thirteen practical calculators')).toBeVisible();
+ await page.goto('/finance/calculators/emergency');
+ await page.getByLabel('Monthly spending').fill('2000');await page.getByLabel('Saved so far').fill('3000');
+ await expect(page.locator('.finance-calculator-results')).toContainText('1.5 months');
+ await page.getByRole('button',{name:/Use this month/}).click();
+ await expect(page.getByLabel('Monthly spending')).not.toHaveValue('2000');
+ await page.goto('/finance/calculators/split');await page.getByLabel('Bill amount').fill('120');await page.getByLabel('People').fill('4');
+ await expect(page.locator('.finance-calculator-results')).toContainText('$33');
+ await page.getByRole('link',{name:/Hourly|Quick percentage|Business profit/}).first().click();
+ await expect(page).toHaveURL(/calculators\//);
+});
+test('bills and budgets show a summary and the quick add dialog describes each choice',async({page})=>{
+ await page.goto('/finance/budgets');await expect(page.locator('.fx-tiles')).toBeVisible();
+ await page.goto('/finance/bills');
+ await page.getByRole('button',{name:'Quick add',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Transaction',exact:true})).toBeVisible();await expect(page.getByText('Money in or out')).toBeVisible();
 });
