@@ -16,8 +16,8 @@ const addDays=(date:string,days:number)=>new Date(new Date(`${date}T12:00:00Z`).
 // Step one: choose what kind of goal this is. Types that follow other parts of the app are Pro; free accounts see why and where to upgrade.
 export function GoalTypePicker({s,onChoose}:{s:Snapshot;onChoose:(t:GoalType)=>void}){
  const pro=s.profile.plan!=='Free';
- return <div className="goal-types" role="list">{goalTypes.map(t=>{const locked=t.pro&&!pro;const body=<><span className="goal-type-icon">{icons[t.id]}</span><span className="goal-type-text"><strong>{t.label}{t.pro&&<em className="pro-chip">{locked?<><Lock size={10}/> Pro</>:'Auto'}</em>}</strong><small>{t.blurb}</small></span><ArrowRight size={16}/></>;
-  return locked?<Link key={t.id} role="listitem" className="goal-type locked" href="/plans" aria-label={`${t.label}, Pro. See plans`}>{body}</Link>:<button key={t.id} role="listitem" className="goal-type" onClick={()=>onChoose(t)}>{body}</button>;})}</div>;
+ return <div className="goal-types">{goalTypes.map(t=>{const locked=t.pro&&!pro;const body=<><span className="goal-type-icon">{icons[t.id]}</span><span className="goal-type-text"><strong>{t.label}{t.pro&&<em className="pro-chip">{locked?<><Lock size={10}/> Pro</>:'Auto'}</em>}</strong><small>{t.blurb}</small></span><ArrowRight size={16}/></>;
+  return locked?<Link key={t.id} className="goal-type locked" href="/plans" aria-label={`${t.label}, Pro. See plans`}>{body}</Link>:<button key={t.id} className="goal-type" onClick={()=>onChoose(t)}>{body}</button>;})}</div>;
 }
 
 // Step two: only the questions this type needs. The goal is saved with its automatic source so progress follows the data.
