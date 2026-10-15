@@ -4,7 +4,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Apple,CalendarPlus,Copy,Droplets,Pencil,Plus,Search,Sparkles,Target,Trash2,X} from 'lucide-react';
 import {Bar,BarChart,CartesianGrid,ReferenceLine,ResponsiveContainer,Tooltip,XAxis,YAxis} from 'recharts';
-import {money,recordsOf,schemas,type Kind,type LedgerRecord,type Snapshot} from '@ledger/shared';
+import {money,recordsOf,schemas,type Kind,type LedgerRecord,type Snapshot,dateLocale,isImperial,weightUnit,kgToDisplay,displayToKg,cmToFeetInches,feetInchesToCm} from '@ledger/shared';
 import {adapter} from '../lib/data';
 import {foodGroups,portion,searchFoods,type Food} from '../lib/foods';
 import {addMacros,dayNutrition,defaultWaterMl,nextBites,nutritionTarget,pct,recentFoods,suggestTarget,waterToday,weekNutrition,weekStats,type Macros,type Profile} from '../lib/nutrition';
@@ -13,6 +13,7 @@ import {HabitToggle} from './habit-checklist';
 import {MealGroceries,MealHealth} from './meal-health';
 import {CopyLastWeek,MealInsights} from './meal-insights';
 import {Button} from './ui/button';
+import {Select} from './ui/select';
 import {Dialog} from './ui/dialog';
 
 type Tools={add:(kind:Kind,initial?:Record<string,unknown>)=>void;edit:(r:LedgerRecord)=>void;toggle:(r:LedgerRecord,key?:string)=>void;remove:(r:LedgerRecord)=>void};
@@ -128,9 +129,9 @@ function PlanTab({s,month,today,tools,pending,weeks,week,setWeek,dates}:{s:Snaps
  const [selected,setSelected]=useState(dates.includes(today)?today:dates[0]);
  const weekStart=dates[0];
  useEffect(()=>{setSelected(dates.includes(today)?today:dates[0]);},[weekStart,today]);
- const dayLabel=(d:string)=>new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US',{weekday:'short',timeZone:'UTC'});
+ const dayLabel=(d:string)=>new Date(`${d}T12:00:00Z`).toLocaleDateString(dateLocale(),{weekday:'short',timeZone:'UTC'});
  return <Entrance className="panel meal-plan-panel">
-  <div className="panel-heading"><div><h2>Weekly meal plan</h2><p>Pick a day, plan its meals, tick them as you eat.</p></div><div className="inline-actions"><select aria-label="Meal plan week" value={week} onChange={e=>setWeek(Number(e.target.value))}>{weeks.map((ds,i)=><option value={i} key={i}>{new Date(ds[0]+'T12:00:00Z').toLocaleDateString('en-US',{month:'short',day:'numeric'})} – {new Date(ds[6]+'T12:00:00Z').toLocaleDateString('en-US',{month:'short',day:'numeric'})}</option>)}</select></div></div>
+  <div className="panel-heading"><div><h2>Weekly meal plan</h2><p>Pick a day, plan its meals, tick them as you eat.</p></div><div className="inline-actions"><select aria-label="Meal plan week" value={week} onChange={e=>setWeek(Number(e.target.value))}>{weeks.map((ds,i)=><option value={i} key={i}>{new Date(ds[0]+'T12:00:00Z').toLocaleDateString(dateLocale(),{month:'short',day:'numeric'})} – {new Date(ds[6]+'T12:00:00Z').toLocaleDateString(dateLocale(),{month:'short',day:'numeric'})}</option>)}</select></div></div>
   <div className="plan-actions"><Link className="button primary" href={`/meals/planner?month=${month}&week=${week}`}><CalendarPlus size={15}/>Build weekly plan</Link><CopyLastWeek s={s} dates={dates}/></div>
   <div className="plan-days" role="group" aria-label="Choose a day">{dates.map(d=>{const count=meals.filter(m=>m.data.date===d).length;return <button key={d} className={'plan-day'+(selected===d?' selected':'')+(d===today?' today':'')} aria-pressed={selected===d} aria-label={`${dayLabel(d)} ${Number(d.slice(8))}, ${count} planned`} onClick={()=>setSelected(d)}><small>{dayLabel(d)}</small><strong>{Number(d.slice(8))}</strong><i className={count?'on':''}/></button>;})}</div>
   <div className="meal-grid plan-slots">{slots.map(slot=>{const items=meals.filter(m=>m.data.date===selected&&m.data.slot===slot);return <div className="plan-slot meal-slot" key={slot}><div className="plan-slot-head"><span>{slot}</span><button className="meal-plan-action" onClick={()=>tools.add('meal',{date:selected,slot})}><Plus size={13}/>Plan meal</button></div>
@@ -153,7 +154,7 @@ function GroceriesTab({s,today,dates,tools,pending}:{s:Snapshot;today:string;dat
 
 function InsightsTab({s,today,dates}:{s:Snapshot;today:string;dates:string[]}){
  const target=nutritionTarget(s);const stats=weekStats(s,dates);
- const week=weekNutrition(s,dates).map(d=>({...d,label:new Date(`${d.date}T12:00:00Z`).toLocaleDateString('en-US',{weekday:'short',timeZone:'UTC'})}));
+ const week=weekNutrition(s,dates).map(d=>({...d,label:new Date(`${d.date}T12:00:00Z`).toLocaleDateString(dateLocale(),{weekday:'short',timeZone:'UTC'})}));
  return <>
   <Entrance className="panel"><div className="panel-heading"><div><h2>This week</h2><p>Based on meals you ticked as eaten.</p></div></div>
    <div className="np-stats"><div><small>Days logged</small><strong>{stats.logged}</strong></div><div><small>Avg calories</small><strong>{stats.avgCalories||'—'}</strong></div><div><small>Avg protein</small><strong>{stats.avgProtein?`${stats.avgProtein} g`:'—'}</strong></div><div><small>Days on target</small><strong>{target?stats.onTarget:'—'}</strong></div></div>
@@ -180,12 +181,12 @@ function TargetDialog({s,open,onOpenChange}:{s:Snapshot;open:boolean;onOpenChang
  }
  return <Dialog variant="drawer" open={open} onOpenChange={v=>{if(!busy)onOpenChange(v);}} title="Your daily target" description="Answer a few questions for a starting estimate, then adjust the numbers. This is a planning aid, not medical advice.">
   <div className="np-form">
-   <label><span>Sex</span><select value={p.sex} onChange={e=>update({...p,sex:e.target.value as Profile['sex']})}><option value="female">Female</option><option value="male">Male</option></select></label>
+   <label><span>Sex</span><Select label="Sex" value={p.sex} onChange={v=>update({...p,sex:v})} options={[{value:'female',label:'Female'},{value:'male',label:'Male'}]}/></label>
    <label><span>Age</span><input type="number" value={p.age} min={14} max={90} onChange={e=>update({...p,age:num(e.target.value,14,90,p.age)})}/></label>
-   <label><span>Height (cm)</span><input type="number" value={p.heightCm} min={120} max={230} onChange={e=>update({...p,heightCm:num(e.target.value,120,230,p.heightCm)})}/></label>
-   <label><span>Weight (kg)</span><input type="number" value={p.weightKg} min={30} max={250} onChange={e=>update({...p,weightKg:num(e.target.value,30,250,p.weightKg)})}/></label>
-   <label><span>Activity</span><select value={p.activity} onChange={e=>update({...p,activity:e.target.value as Profile['activity']})}><option value="low">Mostly sitting</option><option value="light">Light, 1 to 3 workouts a week</option><option value="moderate">Moderate, 3 to 5 workouts</option><option value="high">High, 6 to 7 workouts</option></select></label>
-   <label><span>Goal</span><select value={p.goal} onChange={e=>update({...p,goal:e.target.value as Profile['goal']})}><option value="lose">Lose weight slowly</option><option value="maintain">Maintain weight</option><option value="gain">Build muscle</option></select></label>
+   {isImperial()?<div className="np-height"><label><span>Height (ft)</span><input type="number" value={cmToFeetInches(p.heightCm).feet} min={4} max={7} onChange={e=>update({...p,heightCm:num(String(feetInchesToCm(Number(e.target.value)||5,cmToFeetInches(p.heightCm).inches)),120,230,p.heightCm)})}/></label><label><span>(in)</span><input type="number" value={cmToFeetInches(p.heightCm).inches} min={0} max={11} onChange={e=>update({...p,heightCm:num(String(feetInchesToCm(cmToFeetInches(p.heightCm).feet,Math.min(11,Math.max(0,Number(e.target.value)||0)))),120,230,p.heightCm)})}/></label></div>:<label><span>Height (cm)</span><input type="number" value={p.heightCm} min={120} max={230} onChange={e=>update({...p,heightCm:num(e.target.value,120,230,p.heightCm)})}/></label>}
+   <label><span>Weight ({weightUnit()})</span><input type="number" value={kgToDisplay(p.weightKg,0)} min={kgToDisplay(30,0)} max={kgToDisplay(250,0)} onChange={e=>update({...p,weightKg:num(String(displayToKg(Number(e.target.value)||0)),30,250,p.weightKg)})}/></label>
+   <label><span>Activity</span><Select label="Activity" value={p.activity} onChange={v=>update({...p,activity:v})} options={[{value:'low',label:'Mostly sitting'},{value:'light',label:'Light',hint:'1 to 3 workouts a week'},{value:'moderate',label:'Moderate',hint:'3 to 5 workouts'},{value:'high',label:'Very active',hint:'6+ workouts or physical job'}]}/></label>
+   <label><span>Goal</span><Select label="Goal" value={p.goal} onChange={v=>update({...p,goal:v})} options={[{value:'lose',label:'Lose weight slowly'},{value:'maintain',label:'Maintain weight'},{value:'gain',label:'Build muscle'}]}/></label>
   </div>
   <div className="np-form np-macros">
    <label><span>Calories (kcal)</span><input aria-label="Calories target" type="number" value={t.calories} onChange={e=>setT({...t,calories:num(e.target.value,800,10000,t.calories)})}/></label>

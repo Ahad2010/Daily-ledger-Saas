@@ -1,10 +1,12 @@
 import { z } from 'zod';
+import {displaySchema,numberLocale,getDisplay,type Display} from './display';
 import {monthBudgets} from './finance';
 export * from './finance';
 export * from './trends';
 export * from './import';
 export * from './report';
 export * from './statement';
+export * from './display';
 
 export const currencyOptions=Intl.supportedValuesOf('currency');
 export const currencySchema=z.string().refine(value=>currencyOptions.includes(value),'Choose a supported currency');
@@ -43,10 +45,10 @@ export const schemas = {
 };
 export type RecordData = { [K in Kind]: z.infer<typeof schemas[K]> };
 export type LedgerRecord<K extends Kind = Kind> = K extends Kind ? {id:string;kind:K;data:RecordData[K];version:number} : never;
-export interface Profile {name:string;email:string;currency:string;timezone:string;plan:Plan;optionalEmails:boolean;productUpdates:boolean;role?:string;allowances?:Record<string,number|null>;onboardingCompletedAt?:string|null;persona?:string|null;focusAreas?:string[];avatarUrl?:string|null}
+export interface Profile {name:string;email:string;currency:string;timezone:string;plan:Plan;optionalEmails:boolean;productUpdates:boolean;role?:string;allowances?:Record<string,number|null>;onboardingCompletedAt?:string|null;persona?:string|null;focusAreas?:string[];avatarUrl?:string|null;display?:Partial<Display>|null}
 export const TRIAL_DAYS=7;
 export interface Snapshot {profile:Profile;records:LedgerRecord[];dismissed:string[];planDetails?:{source:string;expiresAt:string|null;trial?:{available:boolean;used:boolean;endsAt:string|null};catalog:Record<Plan,Record<string,number|null>>;usage:{emails:number;aiRequests:number;aiTokens:number};aiAllowances:Record<Plan,{requests:number;tokens:number}>}}
-export const preferenceSchema = z.object({name:title,currency:currencySchema,timezone:z.string().refine(v=>{try { new Intl.DateTimeFormat('en',{timeZone:v}); return true; } catch { return false; }},'Use an IANA timezone'),optionalEmails:z.boolean(),productUpdates:z.boolean()});
+export const preferenceSchema = z.object({name:title,currency:currencySchema,timezone:z.string().refine(v=>{try { new Intl.DateTimeFormat('en',{timeZone:v}); return true; } catch { return false; }},'Use an IANA timezone'),optionalEmails:z.boolean(),productUpdates:z.boolean(),display:displaySchema.optional()});
 export const personas=['Developer','Designer','Freelancer','Business Owner','Student','Other'] as const;
 export const focusAreas=['finance','tasks','fitness','meals','goals'] as const;
 
@@ -89,7 +91,7 @@ export function goalHistory(goal:LedgerRecord<'goal'>,records:LedgerRecord[]){
 export function goalProgress(goal:LedgerRecord<'goal'>,records:LedgerRecord[]){const steps=recordsOf(records,'milestone').filter(r=>r.data.goalId===goal.id);const auto=goal.data.tracking==='steps'?null:autoGoalAmount(goal,records);const current=goal.data.tracking==='steps'?steps.filter(r=>r.data.done).length:auto??goal.data.current;const target=goal.data.tracking==='steps'?steps.length:goal.data.target;return {current,target,percentage:target?Math.min(100,current/target*100):0,done:target>0&&current>=target,steps};}
 export function localDate(instant:Date|string,timezone:string):string { const parts=new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(instant)); return ['year','month','day'].map(k=>parts.find(p=>p.type===k)!.value).join('-'); }
 export function monthDates(month:string){const [y,m]=month.split('-').map(Number);return Array.from({length:new Date(Date.UTC(y,m,0)).getUTCDate()},(_,i)=>`${month}-${String(i+1).padStart(2,'0')}`);}
-export function money(cents:number,currency='USD'){return new Intl.NumberFormat('en-US',{style:'currency',currency,minimumFractionDigits:cents%100?2:0,maximumFractionDigits:cents%100?2:0}).format(cents/100);}
+export function money(cents:number,currency='USD'){return new Intl.NumberFormat(numberLocale(),{style:'currency',currency,minimumFractionDigits:cents%100?2:0,maximumFractionDigits:cents%100?2:0}).format(cents/100);}
 export function metrics(records:LedgerRecord[],month:string,currency:string,timezone:string,asOf=new Date()) {
   const dates=monthDates(month); const today=localDate(asOf,timezone); const end=month===today.slice(0,7)?today:dates.at(-1)!;
   const tx=recordsOf(records,'transaction').filter(r=>r.data.currency===currency&&r.data.date.startsWith(month)&&r.data.date<=end);
@@ -145,6 +147,6 @@ export function demoSnapshot():Snapshot {
 
 export function passwordChecks(value:string){return {length:value.length>=12&&value.length<=128,mix:/[A-Za-z]/.test(value)&&/[0-9]/.test(value)&&/[^A-Za-z0-9\s]/.test(value)};}
 export function parseMoneyInput(value:string):number {if(!/^\d+(?:\.\d{1,2})?$/.test(value.trim()))return NaN;const [whole,fraction='']=value.trim().split('.');return Number(whole)*100+Number(fraction.padEnd(2,'0'));}
-export function calendarWeeks(month:string):string[][] {const first=new Date(`${month}-01T12:00:00Z`);const offset=(first.getUTCDay()+6)%7;const total=monthDates(month).length;first.setUTCDate(1-offset);return Array.from({length:Math.ceil((total+offset)/7)},(_,week)=>Array.from({length:7},(_,day)=>{const date=new Date(first);date.setUTCDate(first.getUTCDate()+week*7+day);return date.toISOString().slice(0,10);}));}
+export function calendarWeeks(month:string):string[][] {const first=new Date(`${month}-01T12:00:00Z`);const offset=(first.getUTCDay()-getDisplay().weekStart+7)%7;const total=monthDates(month).length;first.setUTCDate(1-offset);return Array.from({length:Math.ceil((total+offset)/7)},(_,week)=>Array.from({length:7},(_,day)=>{const date=new Date(first);date.setUTCDate(first.getUTCDate()+week*7+day);return date.toISOString().slice(0,10);}));}
 
 

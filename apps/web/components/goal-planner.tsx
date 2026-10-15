@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {useState} from 'react';
 import {Target,Plus,Pencil,Trash2,ArrowRight,CalendarDays,CheckCircle2,Zap} from 'lucide-react';
 import {Area,AreaChart,CartesianGrid,ReferenceLine,ResponsiveContainer,Tooltip,XAxis,YAxis} from 'recharts';
-import {goalHistory,goalProgress,recordsOf,type Snapshot,type Kind,type LedgerRecord} from '@ledger/shared';
+import {goalHistory,goalProgress,recordsOf,type Snapshot,type Kind,type LedgerRecord,dateLocale} from '@ledger/shared';
 import {Entrance,AnimatedProgress,CountUp} from './animation';
 import {HabitToggle} from './habit-checklist';
 import {Button} from './ui/button';
@@ -17,7 +17,7 @@ const dayMs=86400000;
 const daysBetween=(a:string,b:string)=>Math.round((Date.parse(b+'T12:00:00Z')-Date.parse(a+'T12:00:00Z'))/dayMs);
 
 function GoalHistory({goal,s,today}:{goal:LedgerRecord<'goal'>;s:Snapshot;today:string}){
- const points=goalHistory(goal,s.records).map(p=>({...p,label:new Date(`${p.date}T12:00:00Z`).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'UTC'})}));
+ const points=goalHistory(goal,s.records).map(p=>({...p,label:new Date(`${p.date}T12:00:00Z`).toLocaleDateString(dateLocale(),{month:'short',day:'numeric',timeZone:'UTC'})}));
  const checkins=recordsOf(s.records,'goalCheckin').filter(c=>c.data.goalId===goal.id).sort((a,b)=>b.data.date.localeCompare(a.data.date)).slice(0,6);
  const unit=goal.data.tracking==='steps'?'steps':goal.data.unit;
  return <Entrance className="panel goal-history"><div className="panel-heading"><div><span className="eyebrow">PROGRESS OVER TIME</span><h2>How it has gone</h2><p>{points.length?`${points.length} ${points.length===1?'point':'points'} since you started.`:'Your progress line appears after your first check-in or activity.'}</p></div></div>
@@ -43,7 +43,7 @@ export function GoalPlanner({s,today,goalId,onAdd,onEdit,onRemove,onToggle}:{s:S
   <div className="goal-values"><div><CountUp value={Math.round(progress.current*100)} format={v=>(v/100).toLocaleString()}/><small> / {progress.target.toLocaleString()} {stepBased?'steps':goal.data.unit}</small></div>{stepBased||auto?<span className="goal-percent" title={stepBased?'Complete steps to move this goal':'Tracked automatically'}><CountUp value={Math.round(progress.percentage)} format={v=>`${v}%`}/></span>:<button type="button" className="goal-percent clickable" aria-label={`Set progress for ${goal.data.title}, currently ${Math.round(progress.percentage)}%`} onClick={()=>setCheckIn(goal)}><CountUp value={Math.round(progress.percentage)} format={v=>`${v}%`}/><small>Tap to set</small></button>}</div>
   <AnimatedProgress value={progress.percentage}/><p className="goal-deadline"><CalendarDays size={14}/>{progress.done?'You reached this goal.':days<0?`${Math.abs(days)} days past target`:days===0?'Target is today':`${days} days left`}<time>{goal.data.deadline}</time></p>
   {!pro&&goal.data.active&&!progress.done&&<p className="goal-pace goal-pace-locked"><small>Pace, weekly amount and finish date are in <Link href="/plans">Pro</Link>.</small></p>}
-  {pace&&pace.status!=='done'&&<div className={`goal-pace pace-${pace.status}`}><span className="pace-badge">{pace.label}</span><small>{pace.perWeek!==null&&pace.remaining>0?`${pace.perWeek>=10?Math.round(pace.perWeek).toLocaleString():Number(pace.perWeek.toFixed(1)).toLocaleString()} ${stepBased?'steps':goal.data.unit} per week to finish on time`:'Set a new target date to get back on track.'}{pace.projected&&pace.status!=='ahead'?` · at your pace: ${new Date(pace.projected+'T12:00:00Z').toLocaleDateString('en-US',{month:'short',day:'numeric'})}`:''}</small></div>}
+  {pace&&pace.status!=='done'&&<div className={`goal-pace pace-${pace.status}`}><span className="pace-badge">{pace.label}</span><small>{pace.perWeek!==null&&pace.remaining>0?`${pace.perWeek>=10?Math.round(pace.perWeek).toLocaleString():Number(pace.perWeek.toFixed(1)).toLocaleString()} ${stepBased?'steps':goal.data.unit} per week to finish on time`:'Set a new target date to get back on track.'}{pace.projected&&pace.status!=='ahead'?` · at your pace: ${new Date(pace.projected+'T12:00:00Z').toLocaleDateString(dateLocale(),{month:'short',day:'numeric'})}`:''}</small></div>}
   <div className="goal-next"><small>{auto?'TRACKED FOR YOU':'YOUR NEXT STEP'}</small><strong>{progress.done?'Take a moment to celebrate.':auto?`${Math.max(0,progress.target-progress.current).toLocaleString(undefined,{maximumFractionDigits:1})} ${goal.data.unit} to go. It updates as you use the app.`:next?.data.title||(stepBased?'Add your first actionable step.':`${Math.max(0,progress.target-progress.current).toLocaleString()} ${goal.data.unit} still to go.`)}</strong>
    {auto&&!progress.done&&<Link className="button" href={sourceLabel[source!.type].href}>Open {sourceLabel[source!.type].label.replace('your ','')} <ArrowRight size={14}/></Link>}
    {!stepBased&&!auto&&!progress.done&&<Button onClick={()=>setCheckIn(goal)}><CheckCircle2 size={14}/>Check in <ArrowRight size={14}/></Button>}

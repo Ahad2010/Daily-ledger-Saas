@@ -1,7 +1,7 @@
 import { test,expect } from '@playwright/test';
 test('money entry uses normal currency amounts and links use names',async({page})=>{
  await page.goto('/finance');
- await expect(page.locator('.finance-budget-row')).toContainText('$720');
+ await page.getByRole('tab',{name:'Plan'}).click();await expect(page.locator('.finance-budget-row')).toContainText('$720');await page.getByRole('tab',{name:'Snapshot'}).click();
  await expect(page.locator('.finance-hero')).toContainText('$2,720');
  await page.goto('/goals');
  await page.getByRole('link',{name:'Emergency fund',exact:true}).click();await expect(page).toHaveURL(/\/goals\/.+/);const goal=page.locator('.actionable-goal').filter({hasText:'Emergency fund'});

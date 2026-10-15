@@ -1,7 +1,8 @@
+import {worldFoods} from './foods-world';
 // Approximate nutrition per 100 g (as eaten/cooked unless the name says otherwise). General reference values, not medical advice.
 export type Food={name:string;group:string;calories:number;protein:number;carbs:number;fat:number;serving:number;unit?:string};
 const f=(name:string,group:string,calories:number,protein:number,carbs:number,fat:number,serving=100,unit?:string):Food=>({name,group,calories,protein,carbs,fat,serving,unit});
-export const foods:Food[]=[
+const base:Food[]=[
  f('Roti (whole wheat)','Grains',297,9.8,50,6.7,40,'1 roti'),f('Paratha','Grains',326,7,41,15,80,'1 paratha'),f('White rice, cooked','Grains',130,2.7,28,0.3,180,'1 cup'),f('Brown rice, cooked','Grains',123,2.7,25.6,1,180,'1 cup'),f('Oats, dry','Grains',389,16.9,66,6.9,40,'1 bowl'),f('Whole-wheat bread','Grains',247,13,41,3.4,30,'1 slice'),f('Pasta, cooked','Grains',158,5.8,31,0.9,140,'1 cup'),f('Poha, cooked','Grains',130,2.5,25,2.5,150),f('Quinoa, cooked','Grains',120,4.4,21,1.9,185,'1 cup'),
  f('Chicken breast, cooked','Protein',165,31,0,3.6,120),f('Chicken karahi','Protein',190,17,5,11,200),f('Chicken biryani','Protein',180,9,24,5.5,300),f('Beef, lean, cooked','Protein',217,26,0,12,100),f('Mutton curry','Protein',210,16,4,14,200),f('Fish (rohu/tilapia), cooked','Protein',128,26,0,2.7,120),f('Salmon, cooked','Protein',206,22,0,12,120),f('Egg, whole','Protein',143,12.6,0.7,9.5,50,'1 egg'),f('Egg white','Protein',52,11,0.7,0.2,33,'1 white'),f('Tuna, canned in water','Protein',116,26,0,1,100),f('Tofu','Protein',76,8,1.9,4.8,100),f('Whey protein powder','Protein',400,80,8,6,30,'1 scoop'),
  f('Daal (lentil curry)','Legumes',116,9,20,0.4,200),f('Chickpeas, cooked','Legumes',164,8.9,27,2.6,150),f('Chana masala','Legumes',150,7,22,4,200),f('Kidney beans, cooked','Legumes',127,8.7,23,0.5,150),f('Hummus','Legumes',166,8,14,9.6,50),
@@ -12,6 +13,8 @@ export const foods:Food[]=[
  f('Samosa','Snacks',262,4.5,24,17,60,'1 samosa'),f('Pakora','Snacks',280,7,25,17,80),f('Biscuits, plain','Snacks',450,6.5,72,15,20,'2 biscuits'),f('Chips, potato','Snacks',536,7,53,35,30),f('Dark chocolate','Snacks',546,5,60,31,20),f('Ice cream','Snacks',207,3.5,24,11,100),f('Gulab jamun','Snacks',320,5,45,13,50,'1 piece'),
  f('Chai with milk and sugar','Drinks',50,1.5,8,1.5,200,'1 cup'),f('Orange juice','Drinks',45,0.7,10,0.2,250,'1 glass'),f('Cola','Drinks',42,0,10.6,0,330,'1 can'),f('Black coffee','Drinks',2,0.3,0,0,240,'1 cup'),
 ];
+// The base list comes first, so a duplicate name keeps its original numbers.
+export const foods:Food[]=[...base,...worldFoods].filter((x,i,all)=>all.findIndex(y=>y.name===x.name)===i);
 export const foodGroups=[...new Set(foods.map(x=>x.group))];
 export function searchFoods(query:string,limit=12){const words=query.toLowerCase().split(/\s+/).filter(Boolean);if(!words.length)return foods.slice(0,limit);return foods.filter(x=>words.every(w=>x.name.toLowerCase().includes(w)||x.group.toLowerCase().includes(w))).slice(0,limit);}
 export function portion(food:Food,grams:number){const k=grams/100;return {name:food.name,grams:Math.round(grams),calories:Math.round(food.calories*k),protein:Math.round(food.protein*k*10)/10,carbs:Math.round(food.carbs*k*10)/10,fat:Math.round(food.fat*k*10)/10};}

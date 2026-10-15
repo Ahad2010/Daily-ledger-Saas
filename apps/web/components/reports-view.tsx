@@ -4,15 +4,15 @@ import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {BarChart,Bar,AreaChart,Area,XAxis,YAxis,CartesianGrid,Tooltip,ResponsiveContainer} from 'recharts';
 import {Download,ArrowUpRight,ArrowDownRight,CircleCheck,TriangleAlert,Target,Plus} from 'lucide-react';
-import {monthReport,weeklyReview,metrics,goalProgress,recordsOf,monthDates,money,plans,localDate,type Snapshot} from '@ledger/shared';
+import {monthReport,weeklyReview,metrics,goalProgress,recordsOf,monthDates,money,plans,localDate,type Snapshot,dateLocale} from '@ledger/shared';
 import {Entrance,AnimatedProgress,AnimatedText,Ring,useReducedMotion} from './animation';
 import {CashFlow,Spending} from './dashboard-charts';
 import {Button} from './ui/button';
 import {UsageMeter} from './usage-meter';
 import {adapter,demoMode,download} from '../lib/data';
 
-const monthLabel=(month:string)=>new Date(`${month}-01T12:00:00Z`).toLocaleDateString('en-US',{month:'long',year:'numeric',timeZone:'UTC'});
-const dayLabel=(date:string)=>new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'UTC'});
+const monthLabel=(month:string)=>new Date(`${month}-01T12:00:00Z`).toLocaleDateString(dateLocale(),{month:'long',year:'numeric',timeZone:'UTC'});
+const dayLabel=(date:string)=>new Date(`${date}T12:00:00Z`).toLocaleDateString(dateLocale(),{month:'short',day:'numeric',timeZone:'UTC'});
 const pct=(value:number|null)=>value===null?'—':`${Math.round(value)}%`;
 
 // "good" says which direction is healthy: more income is good, more spending is not.

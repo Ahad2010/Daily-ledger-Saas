@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {ArrowRight,Dumbbell,Flame,ListChecks,Lock,PencilRuler,Scale,Wallet} from 'lucide-react';
-import {recordsOf,schemas,type Snapshot} from '@ledger/shared';
+import {recordsOf,schemas,kgToDisplay,displayToKg,weightUnit,type Snapshot} from '@ledger/shared';
 import {adapter} from '../lib/data';
 import {goalTypes,type GoalType,type GoalTypeId} from '../lib/goal-types';
 import {exerciseNames} from '../lib/fitness';
@@ -29,16 +29,16 @@ export function GoalSetupDialog({s,today,type,emergency,onOpenChange}:{s:Snapsho
  const defaults:Record<GoalTypeId,{title:string;target:number;days:number}>={money:{title:'Save for something important',target:1000,days:90},weight:{title:'Reach my weight goal',target:5,days:90},workouts:{title:'Train 12 times',target:12,days:42},lift:{title:'Lift 100 kg',target:100,days:90},habit:{title:'Keep my habit for 30 days',target:30,days:45},project:{title:'Finish my project',target:100,days:30},custom:{title:'My goal',target:100,days:60}};
  const d=defaults[type.id];
  const [title,setTitle]=useState(d.title),[target,setTarget]=useState(String(d.target)),[deadline,setDeadline]=useState(addDays(today,d.days)),[unit,setUnit]=useState(type.id==='money'?currency:type.id==='custom'?'units':type.id==='weight'||type.id==='lift'?'kg':type.id==='workouts'?'sessions':'days');
- const [category,setCategory]=useState('Savings'),[follow,setFollow]=useState(false),[habitId,setHabitId]=useState(habits[0]?.id||''),[exercise,setExercise]=useState('Squat'),[startWeight,setStartWeight]=useState(lastWeight?String(lastWeight):''),[goalWeight,setGoalWeight]=useState('');
+ const [category,setCategory]=useState('Savings'),[follow,setFollow]=useState(false),[habitId,setHabitId]=useState(habits[0]?.id||''),[exercise,setExercise]=useState('Squat'),[startWeight,setStartWeight]=useState(lastWeight?String(kgToDisplay(lastWeight)):''),[goalWeight,setGoalWeight]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  async function save(){
   setBusy(true);setError('');
   try{
    const base={title:title.trim(),description:'',active:true,startDate:today,deadline,current:0,tracking:'manual' as const};
    let data:Record<string,unknown>;
-   if(type.id==='weight'){const from=Number(startWeight),to=Number(goalWeight);if(!from||!to||from===to)throw new Error('Enter your current weight and a different goal weight.');data={...base,title:title.trim()||`Reach ${to} kg`,target:Math.round(Math.abs(from-to)*10)/10,unit:'kg',autoSource:{type:'weight',ref:to<from?'lose':'gain',baseline:from}};}
+   if(type.id==='weight'){const from=displayToKg(Number(startWeight)),to=displayToKg(Number(goalWeight));if(!from||!to||from===to)throw new Error('Enter your current weight and a different goal weight.');data={...base,title:title.trim()||`Reach ${to} kg`,target:Math.round(Math.abs(from-to)*10)/10,unit:'kg',autoSource:{type:'weight',ref:to<from?'lose':'gain',baseline:from}};}
    else if(type.id==='workouts')data={...base,target:Number(target),unit:'sessions',autoSource:{type:'workouts'}};
-   else if(type.id==='lift')data={...base,target:Number(target),unit:'kg',autoSource:{type:'lift',ref:exercise.trim()}};
+   else if(type.id==='lift')data={...base,target:displayToKg(Number(target)),unit:'kg',autoSource:{type:'lift',ref:exercise.trim()}};
    else if(type.id==='habit'){if(!habitId)throw new Error('Create a habit first, then link a goal to it.');data={...base,target:Number(target),unit:'days',autoSource:{type:'habit',ref:habitId}};}
    else if(type.id==='money')data={...base,target:Number(target),unit:unit||currency,...(follow&&pro&&category.trim()?{autoSource:{type:'savings',ref:category.trim()}}:{})};
    else data={...base,target:Number(target),unit:unit.trim()||'units'};
@@ -48,10 +48,10 @@ export function GoalSetupDialog({s,today,type,emergency,onOpenChange}:{s:Snapsho
  return <Dialog variant="drawer" open onOpenChange={v=>{if(!busy)onOpenChange(v);}} title={type.label} description={type.blurb}>
   <div className="goal-setup">
    <label><span>Goal name</span><input value={title} maxLength={120} onChange={e=>setTitle(e.target.value)}/></label>
-   {type.id==='weight'&&<div className="goal-setup-row"><label><span>Current weight (kg)</span><input type="number" step="0.1" inputMode="decimal" value={startWeight} onChange={e=>setStartWeight(e.target.value)}/></label><label><span>Goal weight (kg)</span><input type="number" step="0.1" inputMode="decimal" value={goalWeight} onChange={e=>setGoalWeight(e.target.value)}/></label></div>}
+   {type.id==='weight'&&<div className="goal-setup-row"><label><span>Current weight ({weightUnit()})</span><input type="number" step="0.1" inputMode="decimal" value={startWeight} onChange={e=>setStartWeight(e.target.value)}/></label><label><span>Goal weight ({weightUnit()})</span><input type="number" step="0.1" inputMode="decimal" value={goalWeight} onChange={e=>setGoalWeight(e.target.value)}/></label></div>}
    {type.id==='lift'&&<label><span>Exercise</span><input list="goal-lifts" value={exercise} maxLength={80} onChange={e=>setExercise(e.target.value)}/><datalist id="goal-lifts">{lifts.map(l=><option key={l} value={l}/>)}</datalist></label>}
    {type.id==='habit'&&<label><span>Habit</span><select value={habitId} onChange={e=>setHabitId(e.target.value)}>{habits.length?habits.map(h=><option key={h.id} value={h.id}>{h.data.title}</option>):<option value="">No active habits yet</option>}</select></label>}
-   {type.id!=='weight'&&<div className="goal-setup-row"><label><span>{type.id==='workouts'?'Sessions to complete':type.id==='habit'?'Days to complete':type.id==='lift'?'Target weight (kg)':'Target amount'}</span><input type="number" min={1} inputMode="decimal" value={target} onChange={e=>setTarget(e.target.value)}/></label>{(type.id==='money'||type.id==='custom')&&<label><span>Unit</span><input value={unit} maxLength={30} onChange={e=>setUnit(e.target.value)}/></label>}</div>}
+   {type.id!=='weight'&&<div className="goal-setup-row"><label><span>{type.id==='workouts'?'Sessions to complete':type.id==='habit'?'Days to complete':type.id==='lift'?`Target weight (${weightUnit()})`:'Target amount'}</span><input type="number" min={1} inputMode="decimal" value={target} onChange={e=>setTarget(e.target.value)}/></label>{(type.id==='money'||type.id==='custom')&&<label><span>Unit</span><input value={unit} maxLength={30} onChange={e=>setUnit(e.target.value)}/></label>}</div>}
    <label><span>Target date</span><input type="date" min={today} value={deadline} onChange={e=>setDeadline(e.target.value)}/></label>
    {type.id==='money'&&<>{emergency>0&&<button type="button" className="goal-chip" onClick={()=>{setTitle('Emergency fund');setTarget(String(emergency));}}>Use emergency fund: {emergency.toLocaleString()} {currency} (3 months of your spending)</button>}
     {pro?<label className="goal-follow"><input type="checkbox" checked={follow} onChange={e=>setFollow(e.target.checked)}/><span>Follow a Finance category automatically</span></label>:<p className="muted goal-note">Pro can fill this goal from a Finance category such as Savings. <Link href="/plans">See Pro</Link></p>}

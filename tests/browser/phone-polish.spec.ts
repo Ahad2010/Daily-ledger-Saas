@@ -12,10 +12,11 @@ test('plans comparison shows a value for every plan on a phone',async({page})=>{
  const hidden=await cells.evaluateAll(els=>els.filter(e=>{const b=e.getBoundingClientRect();return !b.width||!b.height||b.right>innerWidth+1;}).length);expect(hidden).toBe(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
-test('reports week table scrolls sideways instead of being cut on a phone',async({page})=>{
+test('reports week by week becomes stacked cards on a phone with nothing cut off',async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto('/reports');
  const wrap=page.locator('.report-weeks .table-scroll');await expect(wrap).toBeVisible();
- expect(await wrap.evaluate(el=>el.scrollWidth>el.clientWidth&&getComputedStyle(el).overflowX==='auto')).toBe(true);
+ expect(await page.locator('.report-weeks tbody tr').first().evaluate(el=>getComputedStyle(el).display)).toBe('grid');
+ expect(await page.locator('.report-weeks tbody tr').first().evaluate(el=>el.getBoundingClientRect().right<=innerWidth)).toBe(true);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 for(const path of ['/tasks','/goals'])test(`${path} summary cards form a 2x2 grid on a phone and tasks list comes before charts`,async({page})=>{

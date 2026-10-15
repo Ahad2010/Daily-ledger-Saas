@@ -12,7 +12,7 @@ export function Select<T extends string>({value,options,onChange,label,className
  const current=options.find(o=>o.value===value)||options[0];
  const place=()=>{const r=button.current?.getBoundingClientRect();if(!r)return;const width=Math.max(r.width,compact?170:r.width),left=Math.min(Math.max(8,r.left),window.innerWidth-width-8),height=Math.min(options.length*44+12,320);setPos(window.innerHeight-r.bottom<height+16&&r.top>height?{left,width,bottom:window.innerHeight-r.top+6}:{left,width,top:r.bottom+6});};
  useLayoutEffect(()=>{if(open)place();},[open]);
- useEffect(()=>{if(!open)return;const close=(e:Event)=>{if(!menu.current?.contains(e.target as Node)&&!button.current?.contains(e.target as Node))setOpen(false);};const move=()=>setOpen(false);document.addEventListener('pointerdown',close);window.addEventListener('resize',move);window.addEventListener('scroll',move,true);return()=>{document.removeEventListener('pointerdown',close);window.removeEventListener('resize',move);window.removeEventListener('scroll',move,true);};},[open]);
+ useEffect(()=>{if(!open)return;const close=(e:Event)=>{if(!menu.current?.contains(e.target as Node)&&!button.current?.contains(e.target as Node))setOpen(false);};const move=()=>place();document.addEventListener('pointerdown',close);window.addEventListener('resize',move);window.addEventListener('scroll',move,true);return()=>{document.removeEventListener('pointerdown',close);window.removeEventListener('resize',move);window.removeEventListener('scroll',move,true);};},[open]);
  const openMenu=()=>{setActive(Math.max(0,options.findIndex(o=>o.value===value)));setOpen(true);};
  const pick=(v:T)=>{onChange(v);setOpen(false);button.current?.focus();};
  const key=(e:React.KeyboardEvent)=>{

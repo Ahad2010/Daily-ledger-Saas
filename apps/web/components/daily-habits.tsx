@@ -20,6 +20,6 @@ export function DailyHabits({s,today,pending,onComplete,onAdd}:{s:Snapshot;today
   </button>;})}
   {!due.length&&<p className="tf-empty">{habits.length?'Rest day. Your streaks are safe.':'Create your first habit to start a streak.'}</p>}</div>
   {!!rest.length&&<p className="dh-rest">Not scheduled today: {rest.map(h=>h.data.title).join(', ')}</p>}
-  <Button onClick={onAdd}><Plus size={15}/>New habit</Button>
+  <Button onClick={onAdd}><Plus size={15}/>Add habit</Button>
  </Entrance>;
 }

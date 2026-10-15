@@ -3,14 +3,14 @@ import Link from 'next/link';
 import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Receipt,ExternalLink} from 'lucide-react';
-import {money,type Snapshot} from '@ledger/shared';
+import {money,type Snapshot,dateLocale} from '@ledger/shared';
 import {Entrance} from './animation';
 import {demoMode,request} from '../lib/data';
 import {CancelSubscription} from './cancel-subscription';
 
 interface Payment{id:string;provider:string;kind:string;description:string|null;currency:string;amount:number;status:string;receiptUrl:string|null;createdAt:string}
 interface Details{plan:string;source:string;trial:{available:boolean;used:boolean;endsAt:string|null};accessUntil:string|null;cancelledAt:string|null;canCancel:boolean;paymentsConfigured:boolean;payments:Payment[]}
-const date=(value:string)=>new Date(value).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+const date=(value:string)=>new Date(value).toLocaleDateString(dateLocale(),{year:'numeric',month:'short',day:'numeric'});
 const safeReceipt=(value:string|null)=>value&&/^https:\/\//i.test(value)?value:null;
 
 export function BillingPanel({s}:{s:Snapshot}){

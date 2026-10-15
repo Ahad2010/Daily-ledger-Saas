@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {AlertCircle,CheckCircle2,Flame,ListChecks,Plus,Target,Undo2} from 'lucide-react';
-import {habitStreak,localDate,recordsOf,schemas,type LedgerRecord,type Snapshot} from '@ledger/shared';
+import {habitStreak,localDate,recordsOf,schemas,type LedgerRecord,type Snapshot,dateLocale} from '@ledger/shared';
 import {adapter} from '../lib/data';
 import {Entrance,AnimatedProgress,CountUp} from './animation';
 import {HabitToggle} from './habit-checklist';
@@ -61,7 +61,7 @@ export function TasksFocus({s,today,tools,completeHabit,pending,onTab}:{s:Snapsh
   <div className="tf-columns">
    <Entrance className="panel tf-card">
     <div className="panel-heading"><div><h2>Needs your attention</h2><p>Overdue first, then what is due today.</p></div><button className="button" onClick={()=>onTab('tasks')}>All tasks</button></div>
-    <div className="tf-list">{focus.map(t=><div key={t.id} className={`tf-row ${leaving.includes(t.id)?'leaving':''}`} data-record-id={`focus-${t.id}`} data-motion-state={String(t.version)}><input type="checkbox" checked={t.data.done||leaving.includes(t.id)} onChange={()=>finish(t)} aria-label={`Complete ${t.data.title}`}/><button className="tf-title" onClick={()=>tools.edit(t)}><strong>{t.data.title}</strong><small>{dueDay(t)<today?'Overdue · ':''}{new Date(t.data.due).toLocaleTimeString('en-US',{timeZone:tz,hour:'numeric',minute:'2-digit'})}</small></button><span className={`tag priority-${t.data.priority}`}>{t.data.priority}</span></div>)}
+    <div className="tf-list">{focus.map(t=><div key={t.id} className={`tf-row ${leaving.includes(t.id)?'leaving':''}`} data-record-id={`focus-${t.id}`} data-motion-state={String(t.version)}><input type="checkbox" checked={t.data.done||leaving.includes(t.id)} onChange={()=>finish(t)} aria-label={`Complete ${t.data.title}`}/><button className="tf-title" onClick={()=>tools.edit(t)}><strong>{t.data.title}</strong><small>{dueDay(t)<today?'Overdue · ':''}{new Date(t.data.due).toLocaleTimeString(dateLocale(),{timeZone:tz,hour:'numeric',minute:'2-digit'})}</small></button><span className={`tag priority-${t.data.priority}`}>{t.data.priority}</span></div>)}
     {!focus.length&&<p className="tf-empty"><CheckCircle2 size={18}/>Nothing is due. Add a task above or plan tomorrow.</p>}</div>
    </Entrance>
    <Entrance className="panel tf-card">

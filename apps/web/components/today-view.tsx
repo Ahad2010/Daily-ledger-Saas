@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import {ArrowRight,CalendarDays,CheckCircle2,Dumbbell,Flame,Receipt,Sparkles,TrendingDown,TrendingUp,Utensils} from 'lucide-react';
-import {goalProgress,localDate,money,recordsOf,weeklyReview,type Kind,type LedgerRecord,type Snapshot} from '@ledger/shared';
+import {goalProgress,localDate,money,recordsOf,weeklyReview,type Kind,type LedgerRecord,type Snapshot,dateLocale} from '@ledger/shared';
 import {dailyBrief} from '../lib/daily-brief';
 import {dayNutrition,nutritionTarget,pct} from '../lib/nutrition';
 import {Entrance,Ring} from './animation';
@@ -10,7 +10,7 @@ import {Button} from './ui/button';
 
 type Tools={add:(kind:Kind,initial?:Record<string,unknown>)=>void;edit:(r:LedgerRecord)=>void;toggle:(r:LedgerRecord,key?:string)=>void};
 const shift=(date:string,days:number)=>new Date(new Date(`${date}T12:00:00Z`).getTime()+days*86400000).toISOString().slice(0,10);
-const clock=(iso:string,timezone:string)=>new Date(iso).toLocaleTimeString('en-US',{timeZone:timezone,hour:'numeric',minute:'2-digit'});
+const clock=(iso:string,timezone:string)=>new Date(iso).toLocaleTimeString(dateLocale(),{timeZone:timezone,hour:'numeric',minute:'2-digit'});
 
 // One screen for the day: what is due, what is planned, what has been eaten, which bills are close, and last week in short.
 export function TodayView({s,today,asOf,tools,completeHabit,pending}:{s:Snapshot;today:string;asOf:Date;tools:Tools;completeHabit:(h:LedgerRecord<'habit'>,d:string)=>void;pending:boolean}){
@@ -28,7 +28,7 @@ export function TodayView({s,today,asOf,tools,completeHabit,pending}:{s:Snapshot
  const review=weeklyReview(s.records,{currency,timezone:tz,asOf});
  const total=tasks.length+habits.length+workouts.length+meals.length;
  const done=tasks.filter(t=>t.data.done).length+habits.filter(habitDone).length+workouts.filter(w=>w.data.done).length+meals.filter(m=>m.data.eaten).length;
- const dateLabel=new Date(`${today}T12:00:00Z`).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'});
+ const dateLabel=new Date(`${today}T12:00:00Z`).toLocaleDateString(dateLocale(),{weekday:'long',month:'long',day:'numeric',timeZone:'UTC'});
  void dayOfMonth;
  return <div className="today-view">
   <Entrance className="panel today-hero"><div><span className="eyebrow">{dateLabel.toUpperCase()}</span><h2>{brief.greeting}</h2><p>{brief.line}</p><div className="inline-actions"><Button variant="primary" onClick={()=>tools.add('task')}>Add task</Button><Button onClick={()=>tools.add('meal',{date:today})}>Plan a meal</Button><Button onClick={()=>tools.add('workout',{date:today})}>Plan a workout</Button></div></div><div className="today-ring" aria-label={`${done} of ${total} done today`}><Ring value={total?done/total*100:0}/><small>{done} of {total} done</small></div></Entrance>
@@ -43,7 +43,7 @@ export function TodayView({s,today,asOf,tools,completeHabit,pending}:{s:Snapshot
     {meals.length?<ul className="today-list">{meals.map(m=><li key={m.id}><HabitToggle checked={!!m.data.eaten} disabled={pending} label={`Eaten ${m.data.title}`} onChange={()=>tools.toggle(m,'eaten')}/><button className={'plain-button'+(m.data.eaten?' completed':'')} onClick={()=>tools.edit(m)}>{m.data.title}</button><small>{m.data.slot}</small></li>)}</ul>:<p className="muted">No meals planned. <button className="plain-button" onClick={()=>tools.add('meal',{date:today})}>Plan a meal</button></p>}
     {target&&<p className="today-kcal">{Math.round(day.eaten.calories)} of {target.data.calories} kcal · {pct(day.eaten.calories,target.data.calories)}%</p>}</Entrance>
    <Entrance className="panel today-card"><div className="panel-heading"><h2><Receipt size={18}/> Bills this week</h2><Link href="/finance/bills">Bills <ArrowRight size={14}/></Link></div>
-    {bills.length?<ul className="today-list">{bills.map(({plan,date})=><li key={plan.id}><span>{plan.data.title}</span><time>{date===today?'Today':new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US',{weekday:'short',day:'numeric',timeZone:'UTC'})}</time><strong>{money(plan.data.amount,plan.data.currency)}</strong></li>)}</ul>:<p className="muted">No bills due in the next 7 days.</p>}</Entrance>
+    {bills.length?<ul className="today-list">{bills.map(({plan,date})=><li key={plan.id}><span>{plan.data.title}</span><time>{date===today?'Today':new Date(`${date}T12:00:00Z`).toLocaleDateString(dateLocale(),{weekday:'short',day:'numeric',timeZone:'UTC'})}</time><strong>{money(plan.data.amount,plan.data.currency)}</strong></li>)}</ul>:<p className="muted">No bills due in the next 7 days.</p>}</Entrance>
    <Entrance className="panel today-card"><div className="panel-heading"><h2><Sparkles size={18}/> Goals</h2><Link href="/goals">Goals <ArrowRight size={14}/></Link></div>
     {goals.length?<ul className="today-list">{goals.map(({g,p})=><li key={g.id}><Link href={`/goals/${g.id}`}>{g.data.title}</Link><small>{Math.round(p.percentage)}%</small><time>{g.data.deadline}</time></li>)}</ul>:<p className="muted">No active goals. <button className="plain-button" onClick={()=>tools.add('goal')}>Create one</button></p>}</Entrance>
   </div>

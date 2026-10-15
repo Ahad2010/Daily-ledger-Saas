@@ -29,7 +29,7 @@ test('a plan limit on confirm is explained, not hidden, and nothing is marked as
 
 test('general help and command prompts are offered and send the general context',async({page})=>{
  await setup(page,[]);let body:any;await page.route('**/backend/api/ai/chat',r=>{body=r.request().postDataJSON();return r.fulfill({json:{message:{id:'m3',question:body.question,answer:'Open Transactions and choose Import CSV.',month:'2026-09',createdAt:new Date().toISOString(),actions:[{type:'link',path:'/finance/transactions',label:'Open Transactions'}]}}});});
- await page.goto('/assistant');await page.getByRole('button',{name:'How do I import my bank statement?'}).click();await expect(page.getByRole('combobox',{name:'Assistant context'})).toHaveValue('general');
+ await page.goto('/assistant');await page.getByRole('button',{name:'How do I import my bank statement?'}).click();await expect(page.getByRole('combobox',{name:'Assistant context'})).toContainText('General');
  await page.getByRole('button',{name:'Send',exact:true}).click();await expect(page.locator('.ai-exchange .ai-answer')).toContainText('choose Import CSV');expect(body.intent).toBe('general');
  await expect(page.getByRole('link',{name:'Open Transactions'})).toBeVisible();
 });
