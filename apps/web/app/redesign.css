@@ -1004,3 +1004,17 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
 .settings-edit .form-grid label>span{font-size:12.5px;color:var(--muted)}
 .settings-edit .form-grid .ui-select{width:100%}
 @media(max-width:600px){.settings-edit .form-grid{grid-template-columns:1fr}}
+
+.dialog-title{text-transform:none!important}
+/* Confirmation dialogs (only buttons in the body) */
+.dialog-heading h2,.dialog-heading [role=heading]{text-transform:none!important}
+.dialog-body:has(>.dialog-actions:only-child){padding-top:22px}
+.dialog-body>.dialog-actions:only-child{margin:0;padding:0;border:0;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+.dialog-heading p{margin:6px 0 0;line-height:1.5}
+@media(max-width:480px){.dialog-body>.dialog-actions:only-child{display:grid;grid-template-columns:1fr;}.dialog-body>.dialog-actions:only-child>*{width:100%}}
+
+/* Smart suggestions while adding */
+.form-suggest{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px;padding:10px 12px;border:1px solid #2c3a31;border-radius:12px;background:linear-gradient(90deg,#b6f26b12,#2dd4a30a)}
+.form-suggest>svg{color:#b6f26b}.form-suggest>span{font-size:12px;color:var(--muted);margin-right:2px}
+.suggest-chip{border:1px solid #3a4a40;background:#ffffff08;color:var(--foreground);border-radius:999px;padding:5px 12px;font-size:12.5px;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.suggest-chip:hover{border-color:#b6f26b;color:#b6f26b;background:#b6f26b12}

@@ -16,7 +16,7 @@ import {TableSkeleton} from './skeleton';
 import {Button} from './ui/button';
 import HoldButton from './hold-button';
 import {Dialog} from './ui/dialog';
-type Action={type:'create';kind:'task'|'transaction'|'habit'|'workout'|'goal'|'meal'|'grocery';data:Record<string,unknown>;label:string}|{type:'link';path:string;label:string};
+type Action={type:'create';kind:'task'|'transaction'|'habit'|'workout'|'goal'|'meal'|'grocery'|'completion';data:Record<string,unknown>;label:string}|{type:'link';path:string;label:string};
 type Message={id:string;question:string;answer:string;createdAt:string;month:string;actions?:Action[]|null;fresh?:boolean};
 const suggestions=[{intent:'general',text:'Add a task: call the bank tomorrow at 5pm'},{intent:'general',text:'Log a $12 lunch expense today'},{intent:'general',text:'How do I import my bank statement?'},{intent:'summary',text:'Summarize my month'},{intent:'spending',text:'Where did my money go?'},{intent:'tasks',text:'What needs my attention?'},{intent:'weekly',text:'Help me plan my week'},{intent:'goals',text:'How are my goals doing?'}];
 const intents=['general','summary','spending','tasks','weekly','goals'];

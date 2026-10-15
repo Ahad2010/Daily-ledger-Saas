@@ -1,9 +1,11 @@
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { schemas,parseMoneyInput,recordsOf, type Kind, type LedgerRecord } from '@ledger/shared';
+import { schemas,parseMoneyInput,recordsOf,money, type Kind, type LedgerRecord } from '@ledger/shared';
 import {CurrencyPicker} from './currency-picker';
 import { Button } from './ui/button';
+import {Sparkles} from 'lucide-react';
+import {transactionHint,taskHint} from '../lib/suggest';
 type Field={key:string;label:string;type?:string;options?:string[];default?:unknown};
 export const fields:Partial<Record<Kind,Field[]>>={
  transaction:[{key:'title',label:'Description'},{key:'type',label:'Type',options:['expense','income','transfer']},{key:'amount',label:'Amount',type:'money',default:0},{key:'currency',label:'Currency',type:'currency'},{key:'date',label:'Date',type:'date'},{key:'category',label:'Category',default:'Essentials'},{key:'account',label:'Account / payment method',default:'Checking'},{key:'notes',label:'Notes',type:'textarea'}],
@@ -30,7 +32,8 @@ export function RecordForm({kind,record,initial,records=[],date,currency,plan='F
  for(const f of config)if(f.type==='money')defaults[f.key]=(Number(defaults[f.key])/100).toFixed(2);
  if(record?.kind==='task'){const d=new Date(record.data.due);defaults.due=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
  const {register,handleSubmit,formState:{errors},setValue,watch}=useForm<any>({defaultValues:defaults,resolver:zodResolver(schemas[kind] as any) as any});
- return <form onSubmit={handleSubmit(onSave)} className="record-form">{kind==='habit'&&!!defaults.exerciseSlug&&<input type="hidden" {...register('exerciseSlug')}/>}<div className="form-grid">{config.map(f=>{
+ const typed=String(watch('title')||''),txHint=kind==='transaction'&&!record?transactionHint(typed,records,currency):null,tkHint=kind==='task'&&!record?taskHint(typed):null;
+ return <form onSubmit={handleSubmit(onSave)} className="record-form">{(txHint||tkHint)&&<div className="form-suggest" role="group" aria-label="Suggestions"><Sparkles size={14}/><span>Suggested</span>{txHint?.categories.map(c=><button type="button" key={c} className="suggest-chip" onClick={()=>setValue('category',c,{shouldDirty:true})}>{c}</button>)}{txHint?.type&&<button type="button" className="suggest-chip" onClick={()=>setValue('type',txHint.type,{shouldDirty:true})}>Mark as income</button>}{txHint?.amount&&<button type="button" className="suggest-chip" onClick={()=>setValue('amount',(txHint.amount!.cents/100).toFixed(2),{shouldDirty:true})}>Same as last time · {money(txHint.amount.cents,currency)}</button>}{tkHint&&<button type="button" className="suggest-chip" onClick={()=>setValue('priority',tkHint.priority,{shouldDirty:true})}>{tkHint.why}: set {tkHint.priority} priority</button>}</div>}{kind==='habit'&&!!defaults.exerciseSlug&&<input type="hidden" {...register('exerciseSlug')}/>}<div className="form-grid">{config.map(f=>{
   const related=f.key==='goalId'?recordsOf(records,'goal'):f.key==='mealId'?recordsOf(records,'meal'):null;
   if(kind==='goal'&&watch('tracking')==='steps'&&['current','target','unit'].includes(f.key))return <input key={f.key} type="hidden" {...register(f.key,f.type==='number'?{valueAsNumber:true}:{})}/>;
   if(f.key==='linkedCategory'){if(watch('tracking')==='steps')return null;return plan==='Free'?<p key={f.key} className="wide form-hint">Pro can fill this goal automatically from a Finance category such as Savings. <a href="/plans">See Pro</a></p>:<label key={f.key} className="wide"><span>{f.label}</span><input placeholder="For example Savings" {...register(f.key)}/><small className="form-hint">Transfers and income in this category count towards the goal. Leave empty to update it yourself.</small></label>;}
