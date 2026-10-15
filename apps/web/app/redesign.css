@@ -726,3 +726,16 @@ html{scrollbar-gutter:stable}
  .plan-compare table,.plan-compare tbody,.plan-compare tbody tr{min-width:0!important;width:100%!important;max-width:100%}
  .plan-compare tbody th{overflow-wrap:anywhere}
 }
+/* Phone: the work comes first, the summary numbers sit in a tidy 2x2, charts come last */
+@media(max-width:700px){
+ main[data-page=tasks]{display:flex;flex-direction:column}
+ main[data-page=tasks]>*{order:2}
+ main[data-page=tasks]>.feature-back{order:0}
+ main[data-page=tasks]>.page-heading{order:1}
+ main[data-page=tasks]>.insight-grid{order:3}
+ main[data-page=tasks]>.feature-trends{order:4}
+ .feature-main .insight-grid:not(.insight-grid .insight-grid){grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .feature-main .insight-card{padding:13px 14px;border-radius:14px;min-height:0}
+ .feature-main .insight-card strong{font-size:22px}
+ .feature-main .insight-card small,.feature-main .insight-card p{font-size:11.5px;line-height:1.4}
+}
