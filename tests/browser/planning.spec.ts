@@ -7,7 +7,7 @@ test('money entry uses normal currency amounts and links use names',async({page}
  await page.getByRole('link',{name:'Emergency fund',exact:true}).click();await expect(page).toHaveURL(/\/goals\/.+/);const goal=page.locator('.actionable-goal').filter({hasText:'Emergency fund'});
  await goal.getByRole('button',{name:'Add step'}).click();
  const dialog=page.getByRole('dialog');
- expect(await dialog.getByLabel('Goal',{exact:true}).evaluate((element:HTMLSelectElement)=>element.selectedOptions[0].textContent)).toBe('Emergency fund');
+ await expect(dialog.getByRole('combobox',{name:'Goal',exact:true})).toContainText('Emergency fund');
  await dialog.getByLabel('Milestone',{exact:true}).fill('Build first buffer');
  await dialog.getByRole('button',{name:'Create milestone'}).click();
  await expect(dialog).toHaveCount(0);
@@ -16,7 +16,7 @@ test('money entry uses normal currency amounts and links use names',async({page}
  await page.goto('/meals');
  await page.getByRole('tab',{name:'Plan'}).click();await page.getByRole('button',{name:/^Thu 1,/}).click();await page.locator('.plan-slot').first().getByRole('button',{name:'Plan meal',exact:true}).click();
  await expect(dialog.getByLabel('Date',{exact:true})).toHaveValue('2026-10-01');
- await expect(dialog.getByLabel('Meal',{exact:true})).toHaveValue('Breakfast');
+ await expect(dialog.getByRole('combobox',{name:'Meal',exact:true})).toContainText('Breakfast');
  await dialog.getByLabel('Meal name',{exact:true}).fill('October breakfast');
  await dialog.getByRole('button',{name:'Create meal'}).click();
  await expect(dialog).toHaveCount(0);
@@ -24,7 +24,7 @@ test('money entry uses normal currency amounts and links use names',async({page}
  await page.getByRole('tab',{name:'Groceries'}).click();await page.getByRole('button',{name:'Add item',exact:true}).click();
  await dialog.getByLabel('Grocery item',{exact:true}).fill('Test oats');
  await dialog.getByLabel('Estimated cost',{exact:true}).fill('1.99');
- await dialog.getByLabel('Linked meal (optional)').selectOption({label:'October breakfast · 2026-10-01'});
+ await dialog.getByRole('combobox',{name:'Linked meal (optional)'}).click();await page.getByRole('option',{name:'October breakfast · 2026-10-01'}).click();
  await dialog.getByRole('button',{name:'Create grocery'}).click();
  await expect(dialog).toHaveCount(0);
  const item=page.locator('.task-detail').filter({hasText:'Test oats'});

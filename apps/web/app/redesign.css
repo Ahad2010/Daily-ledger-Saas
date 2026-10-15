@@ -865,7 +865,7 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
 .ui-select-caret{flex:0 0 auto;color:var(--muted);transition:transform .18s}
 .ui-select.open .ui-select-caret{transform:rotate(180deg);color:#b6f26b}
 .ui-select-icon{display:inline-grid;place-items:center;flex:0 0 auto}
-.ui-select-menu{position:fixed;z-index:200;max-height:320px;overflow:auto;padding:6px;border:1px solid #2c3630;border-radius:14px;background:#0f1311f2;backdrop-filter:blur(14px);box-shadow:0 18px 50px #000a,0 0 0 1px #ffffff06;animation:select-in .14s ease-out;scrollbar-width:thin}
+.ui-select-menu{position:fixed;z-index:1000;pointer-events:auto;max-height:320px;overflow:auto;padding:6px;border:1px solid #2c3630;border-radius:14px;background:#0f1311f2;backdrop-filter:blur(14px);box-shadow:0 18px 50px #000a,0 0 0 1px #ffffff06;animation:select-in .14s ease-out;scrollbar-width:thin}
 @keyframes select-in{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
 .ui-select-option{display:flex;align-items:center;gap:10px;min-height:40px;padding:8px 10px;border-radius:10px;cursor:pointer;color:var(--foreground);font-size:14px}
 .ui-select-option.active{background:#ffffff0c}

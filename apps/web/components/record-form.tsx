@@ -5,6 +5,7 @@ import { schemas,parseMoneyInput,recordsOf,money, type Kind, type LedgerRecord }
 import {CurrencyPicker} from './currency-picker';
 import { Button } from './ui/button';
 import {Sparkles} from 'lucide-react';
+import {Select} from './ui/select';
 import {transactionHint,taskHint} from '../lib/suggest';
 type Field={key:string;label:string;type?:string;options?:string[];default?:unknown};
 export const fields:Partial<Record<Kind,Field[]>>={
@@ -39,9 +40,9 @@ export function RecordForm({kind,record,initial,records=[],date,currency,plan='F
   if(f.key==='linkedCategory'){if(watch('tracking')==='steps')return null;return plan==='Free'?<p key={f.key} className="wide form-hint">Pro can fill this goal automatically from a Finance category such as Savings. <a href="/plans">See Pro</a></p>:<label key={f.key} className="wide"><span>{f.label}</span><input placeholder="For example Savings" {...register(f.key)}/><small className="form-hint">Transfers and income in this category count towards the goal. Leave empty to update it yourself.</small></label>;}
   if(f.type==='hidden')return <input key={f.key} type="hidden" {...register(f.key)}/>;
   return <label key={f.key} className={f.type==='textarea'||f.type==='days'?'wide':''}><span>{f.label}</span>
-   {related?<select aria-label={f.label} {...register(f.key,{setValueAs:v=>v||undefined})}><option value="">{f.key==='mealId'?'Not linked to a meal':'Choose a goal'}</option>{related.map(r=><option key={r.id} value={r.id}>{r.data.title}{r.kind==='meal'?` · ${r.data.date}`:''}</option>)}</select>
+   {related?<Select label={f.label} value={String(watch(f.key)??'')} onChange={v=>setValue(f.key,v||undefined,{shouldDirty:true})} options={[{value:'',label:f.key==='mealId'?'Not linked to a meal':'Choose a goal'},...related.map(r=>({value:r.id,label:r.data.title+(r.kind==='meal'?` · ${r.data.date}`:'')}))]}/>
     :f.key==='currency'?<><input type="hidden" {...register(f.key)}/><CurrencyPicker value={watch(f.key)} disabled={pending} onChange={code=>setValue(f.key,code,{shouldDirty:true,shouldValidate:true})}/></>
-    :f.options?<select aria-label={f.label} {...register(f.key)}>{f.options.map(o=><option key={o} value={o}>{f.key==='tracking'?(o==='steps'?'Completed steps':'Amount or number'):o}</option>)}</select>
+    :f.options?<Select label={f.label} value={String(watch(f.key)??f.options[0])} onChange={v=>setValue(f.key,v,{shouldDirty:true})} options={f.options.map(o=>({value:o,label:f.key==='tracking'?(o==='steps'?'Completed steps':'Amount or number'):o.charAt(0).toUpperCase()+o.slice(1)}))}/>
     :f.type==='textarea'?<textarea {...register(f.key)}/>
     :f.type==='days'?<div className="weekday-picker">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d,i)=><Button key={d} type="button" aria-pressed={(watch('days')||[]).includes(i)} className={(watch('days')||[]).includes(i)?'selected':''} onClick={()=>{const days=watch('days')||[];setValue('days',days.includes(i)?days.filter((v:number)=>v!==i):[...days,i],{shouldValidate:true});}}>{d}</Button>)}</div>
     :f.type==='money'?<div className="money-input"><input aria-label={f.label} type="text" inputMode="decimal" autoComplete="off" {...register(f.key,{setValueAs:v=>parseMoneyInput(String(v))})}/><span aria-hidden="true">{watch('currency')||currency}</span></div>
