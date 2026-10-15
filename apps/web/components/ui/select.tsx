@@ -27,7 +27,7 @@ export function Select<T extends string>({value,options,onChange,label,className
   <button ref={button} type="button" className={`ui-select ${compact?'compact':''} ${open?'open':''} ${className}`} role="combobox" aria-label={label} aria-haspopup="listbox" aria-expanded={open} aria-controls={id} onClick={()=>open?setOpen(false):openMenu()} onKeyDown={key}>
    {current.icon&&<span className="ui-select-icon">{current.icon}</span>}<span className="ui-select-value">{current.label}</span><ChevronDown size={15} className="ui-select-caret"/>
   </button>
-  {open&&pos&&createPortal(<div ref={menu} id={id} role="listbox" aria-label={label} className="ui-select-menu" style={{left:pos.left,width:pos.width,top:pos.top,bottom:pos.bottom}}>
+  {open&&pos&&createPortal(<div ref={menu} id={id} role="listbox" aria-label={label} className="ui-select-menu" onPointerDown={e=>e.stopPropagation()} style={{left:pos.left,width:pos.width,top:pos.top,bottom:pos.bottom}}>
    {options.map((o,i)=><div key={o.value} role="option" aria-selected={o.value===value} className={`ui-select-option ${i===active?'active':''} ${o.value===value?'selected':''}`} onPointerEnter={()=>setActive(i)} onPointerDown={e=>{e.preventDefault();pick(o.value);}}>
     {o.icon&&<span className="ui-select-icon">{o.icon}</span>}<span className="ui-select-text"><strong>{o.label}</strong>{o.hint&&<small>{o.hint}</small>}</span>{o.value===value&&<Check size={15}/>}
    </div>)}

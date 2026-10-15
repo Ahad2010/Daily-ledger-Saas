@@ -18,6 +18,6 @@ export function CancelSubscription({trial,onDone}:{trial:boolean;onDone:()=>void
    <ul className="cancel-list"><li>You return to the Free plan immediately.</li><li>No further charges are made once you cancel.</li><li>Your tasks, goals, meals and finance records stay. Free limits apply to new items only.</li><li>Paid tools such as guides, PDF reports and history lock until you upgrade again.</li></ul>
    {cancel.isError&&<p className="error" role="alert">{cancel.error.message}</p>}
    <div className="dialog-actions"><Button onClick={()=>setOpen(false)} disabled={cancel.isPending}>Keep my plan</Button>
-    <HoldButton size="md" radius={10} holdTime={1300} releaseTime={180} backgroundColor="#1d1411" fillColor="#e5533d" textColor="#ffb4a8" fillTextColor="#ffffff" waveAmplitude={5} resetAfter={0} disabled={cancel.isPending} icon={<XCircle size={15}/>} doneLabel="Cancelling…" onHold={()=>cancel.mutate()}>Hold to cancel plan</HoldButton></div>
+    <HoldButton key={cancel.isError?`failed-${cancel.failureCount}`:'ready'} size="md" radius={10} holdTime={1300} releaseTime={180} backgroundColor="#1d1411" fillColor="#e5533d" textColor="#ffb4a8" fillTextColor="#ffffff" waveAmplitude={5} resetAfter={0} disabled={cancel.isPending} icon={<XCircle size={15}/>} doneLabel="Cancelling…" onHold={()=>cancel.mutate()}>Hold to cancel plan</HoldButton></div>
   </Dialog></div>;
 }
