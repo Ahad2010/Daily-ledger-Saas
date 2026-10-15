@@ -767,3 +767,14 @@ html{scrollbar-gutter:stable}
 .goal-checkins time{color:var(--muted);font-variant-numeric:tabular-nums}
 .goal-checkins span{color:var(--muted);min-width:0;overflow-wrap:anywhere}
 @media(max-width:640px){.goal-setup-row{grid-template-columns:minmax(0,1fr)}.goal-checkins li{grid-template-columns:84px 1fr}.goal-checkins li span{grid-column:1/-1}.goal-types{grid-template-columns:minmax(0,1fr)}}
+/* Spacing: one rhythm. Tab bars breathe, and grids use their gap instead of gap plus card margin. */
+.fit-tabs,.fin-tabs{margin-bottom:16px}
+.fitness-workspace>.fitness-planner+.insight-grid,.fitness-workspace>.fitness-planner+*{margin-top:0}
+.fitness-planner>.panel,.today-view>.panel,.today-grid>.panel,.calendar-view>.panel,.meals-panel>.panel,.goal-block>.panel,.goal-block>.goal-history{margin-bottom:0!important}
+.fin-kpis>*,.fin-main>*,.fin-bottom>*,.finance-overview-grid>*,.chart-grid>*,.widgets-grid>*,.insight-grid>.panel{margin-bottom:0!important}
+.fitness-workspace{display:grid;gap:16px;align-content:start}
+.fitness-workspace>*{margin-bottom:0}
+@media(max-width:700px){
+ .fin-kpis{gap:12px}
+ .today-view,.calendar-view,.fitness-planner,.meals-panel{gap:14px}
+}
