@@ -1,7 +1,7 @@
 'use client';
 import {useMemo,useState,type ReactNode} from 'react';
 import Link from 'next/link';
-import {Area,AreaChart,Bar,BarChart,CartesianGrid,Cell,ComposedChart,Line,ResponsiveContainer,Tooltip,XAxis,YAxis} from 'recharts';
+import {Area,AreaChart,Bar,BarChart,CartesianGrid,Cell,ComposedChart,Line,ReferenceLine,ResponsiveContainer,Tooltip,XAxis,YAxis} from 'recharts';
 import {ArrowRight,PiggyBank,Receipt,Wallet} from 'lucide-react';
 import {money,monthDates,type Snapshot,type metrics,dateLocale} from '@ledger/shared';
 import {Panel,Empty,monthLabel} from './dashboard-charts';
@@ -15,11 +15,11 @@ function weekly(m:Metrics){const out:{expenses:number;net:number}[]=[];m.cash.fo
 function Kpi({icon,title,value,caption,children}:{icon:ReactNode;title:string;value:string;caption:ReactNode;children:ReactNode}){return <Panel className="fin-kpi"><div className="fin-kpi-head"><span className="fin-kpi-icon">{icon}</span><span>{title}</span></div><div className="fin-kpi-body"><div className="fin-kpi-figure"><strong>{value}</strong><small>{caption}</small></div><div className="fin-kpi-chart" aria-hidden="true">{children}</div></div></Panel>;}
 export function FinanceKpis({m,month}:{m:Metrics;month:string}){
  const reduced=useReducedMotion();const weeks=useMemo(()=>weekly(m),[m]);
- const bars=(key:'expenses'|'net')=><ResponsiveContainer width="100%" height="100%"><BarChart data={weeks} margin={{top:2,right:0,left:0,bottom:0}}><Bar dataKey={key} radius={[3,3,0,0]} isAnimationActive={!reduced} animationDuration={900}>{weeks.map((_,i)=><Cell key={i} fill={i===weeks.length-1?LIME:MUTED}/>)}</Bar></BarChart></ResponsiveContainer>;
+ const bars=(key:'expenses'|'net')=><ResponsiveContainer width="100%" height="100%"><BarChart data={weeks} margin={{top:2,right:0,left:0,bottom:2}}><YAxis hide domain={[(min:number)=>Math.min(min,0),(max:number)=>Math.max(max,0)]}/>{key==='net'&&<ReferenceLine y={0} stroke="#3a4a42" strokeDasharray="3 3"/>}<Bar dataKey={key} radius={[3,3,3,3]} isAnimationActive={!reduced} animationDuration={900}>{weeks.map((w,i)=>{const last=i===weeks.length-1,negative=key==='net'&&(w.net as number)<0;return <Cell key={i} fill={negative?(last?CORAL:'#5a3a33'):last?LIME:MUTED}/>;})}</Bar></BarChart></ResponsiveContainer>;
  return <div className="fin-kpis">
   <Kpi icon={<Wallet size={16}/>} title="Monthly budget" value={m.budget?money(m.budget,m.currency):'Not set'} caption={m.budget?`${money(Math.max(m.budget-m.expenses,0),m.currency)} left this month`:<Link href={`/finance/budgets?month=${month}`}>Set a budget</Link>}>{bars('expenses')}</Kpi>
   <Kpi icon={<Receipt size={16}/>} title="Actual spending" value={money(m.expenses,m.currency)} caption={m.budget?<span className={(m.budgetUsage||0)>=80?'budget-hot':undefined}>{pct(m.budgetUsage)} of budget</span>:'No budget to compare'}><ResponsiveContainer width="100%" height="100%"><AreaChart data={m.cash} margin={{top:4,right:0,left:0,bottom:0}}><defs><linearGradient id="kpi-spend" x1="0" y1="0" x2="0" y2="1"><stop stopColor={CORAL} stopOpacity={.35}/><stop offset="1" stopColor={CORAL} stopOpacity={0}/></linearGradient></defs><Area type="monotone" dataKey="expenses" stroke={CORAL} strokeWidth={2.4} fill="url(#kpi-spend)" isAnimationActive={!reduced} animationDuration={900}/></AreaChart></ResponsiveContainer></Kpi>
-  <Kpi icon={<PiggyBank size={16}/>} title="Savings rate" value={pct(m.savingsRate)} caption={m.income?`${money(m.saved,m.currency)} kept of ${money(m.income,m.currency)}`:'Add income to calculate'}>{bars('net')}</Kpi>
+  <Kpi icon={<PiggyBank size={16}/>} title="Savings rate" value={pct(m.savingsRate)} caption={m.income?(m.saved<0?<span className="budget-hot">Overspent by {money(-m.saved,m.currency)} on {money(m.income,m.currency)} income</span>:`${money(m.saved,m.currency)} kept of ${money(m.income,m.currency)}`):'Add income to calculate'}>{bars('net')}</Kpi>
  </div>;
 }
 function PaceTooltip({active,payload,label,m}:{active?:boolean;payload?:readonly any[];label?:any;m:Metrics}){if(!active||!payload?.length)return null;return <div className="dark-tooltip"><strong>{label} {monthLabel(m.month)}</strong>{payload.filter(p=>p.value!==undefined&&p.value!==null).map(p=><div key={p.dataKey}><i style={{background:p.color}}/><span>{p.dataKey==='budget'?'Budget pace':'Actual'}</span><b>{money(Number(p.value)*100,m.currency)}</b></div>)}</div>;}
