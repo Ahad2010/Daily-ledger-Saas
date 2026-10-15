@@ -55,3 +55,11 @@ test('AI chat: capabilities reach the model; only validated, confirmable actions
   assert.equal((await u.json('/api/snapshot')).records.filter((r:any)=>r.kind==='task').length,0);
  }finally{const restore=previous?JSON.stringify(previous.data):null;await api.pool.query(restore?'UPDATE "PlatformConfig" SET data=$1 WHERE id=1':'DELETE FROM "PlatformConfig" WHERE id=1',restore?[restore]:[]);await api.stop();provider.close();}
 });
+
+test('a habit completion is accepted only for the member\'s own habit and only for today',()=>{
+ const ctx={currency:'USD',today:'2026-10-15',habits:{'h-1':'Reading'}};
+ const ok=sanitizeActions([{type:'create',kind:'completion',data:{habitId:'h-1'}}],ctx);
+ assert.equal(ok.length,1);assert.equal((ok[0] as any).label,'Mark habit "Reading" done on 2026-10-15');
+ assert.equal(sanitizeActions([{type:'create',kind:'completion',data:{habitId:'someone-elses'}}],ctx).length,0);
+ assert.equal(sanitizeActions([{type:'create',kind:'completion',data:{habitId:'h-1',date:'2026-10-10'}}],ctx).length,0);
+});
