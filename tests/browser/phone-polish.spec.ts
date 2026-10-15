@@ -5,3 +5,16 @@ for(const width of [360,390])test(`overview KPI cards keep their text inside ${w
  const spill=await page.$$eval('.metrics-grid .metric-card',els=>els.flatMap(c=>{const r=c.getBoundingClientRect();return [...c.querySelectorAll('.metric-content *')].filter(e=>{const b=e.getBoundingClientRect();return b.width&&(b.left<r.left-1||b.right>r.right+1);}).map(e=>(e.textContent||'').slice(0,28));}));
  expect(spill).toEqual([]);
 });
+test('plans comparison shows a value for every plan on a phone',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto('/plans');
+ const cells=page.locator('.plan-compare tbody td');await expect(cells.first()).toBeVisible();
+ const rows=await page.locator('.plan-compare tbody tr').count();expect(await cells.count()).toBe(rows*3);
+ const hidden=await cells.evaluateAll(els=>els.filter(e=>{const b=e.getBoundingClientRect();return !b.width||!b.height||b.right>innerWidth+1;}).length);expect(hidden).toBe(0);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+test('reports week table scrolls sideways instead of being cut on a phone',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto('/reports');
+ const wrap=page.locator('.report-weeks .table-scroll');await expect(wrap).toBeVisible();
+ expect(await wrap.evaluate(el=>el.scrollWidth>el.clientWidth&&getComputedStyle(el).overflowX==='auto')).toBe(true);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
