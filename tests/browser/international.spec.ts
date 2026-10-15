@@ -8,6 +8,8 @@ test('currency, units, week start and number style can be changed in Settings',a
  await page.getByRole('dialog').getByRole('button',{name:/EUR/}).first().click();
  await page.getByRole('button',{name:'Save',exact:true}).click();
  await expect(page.getByText('English, EUR')).toBeVisible();
+ await page.goto('/');await expect(page.locator('.metric-content strong').first()).toHaveText('€4,000');
+ await page.goto('/settings?tab=general');
  await page.getByRole('button',{name:'Edit units and formats'}).click();
  await page.getByRole('combobox',{name:'Units'}).click();await page.getByRole('option',{name:/Imperial/}).click();
  await page.getByRole('combobox',{name:'Week starts on'}).click();await page.getByRole('option',{name:'Sunday'}).click();

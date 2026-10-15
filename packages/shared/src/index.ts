@@ -11,6 +11,9 @@ export * from './display';
 export const currencyOptions=Intl.supportedValuesOf('currency');
 export const currencySchema=z.string().refine(value=>currencyOptions.includes(value),'Choose a supported currency');
 const currencyNames=new Intl.DisplayNames(['en'],{type:'currency'});
+// Changing the display currency re-labels amounts instead of hiding them: the numbers stay, only the currency code (and so the symbol) changes.
+export const currencyBoundKinds=['transaction','budget','cashPlan','recurring','grocery'] as const;
+export function relabelCurrency<T extends {kind:string;data:any}>(records:T[],from:string,to:string):T[]{if(from===to)return records;return records.map(r=>(currencyBoundKinds as readonly string[]).includes(r.kind)?{...r,data:{...r.data,currency:to}}:r.kind==='goal'&&r.data.unit===from?{...r,data:{...r.data,unit:to}}:r);}
 export function currencyLabel(code:string){return currencyNames.of(code)||code;}
 
 export const kinds = ['transaction','budget','cashPlan','financeCategory','recurring','task','habit','completion','workout','meal','grocery','goal','milestone','notification','announcement','automation','bodyMetric','nutritionTarget','waterLog','goalCheckin'] as const;
