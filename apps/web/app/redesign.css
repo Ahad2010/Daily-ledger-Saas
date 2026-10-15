@@ -653,3 +653,12 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:640px){.np-item{flex-wrap:wrap}.np-item>span{flex:1 1 100%}.np-save{grid-template-columns:1fr 1fr}}
 .np-log-card .np-chips button.selected{background:#b6f26b;border-color:#b6f26b;color:#0b0b0b;font-weight:600}
 .np-log-card .np-chips{margin-bottom:4px}
+/* Slide-over open: compositor-driven CSS so it starts on the first frame, plus no page jump from the scrollbar */
+html{scrollbar-gutter:stable}
+@keyframes drawer-in-x{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes drawer-in-y{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes overlay-in{from{opacity:0}to{opacity:1}}
+.dialog-drawer[data-state=open]{animation:drawer-in-x .5s cubic-bezier(.22,1,.36,1) both}
+.dialog-overlay[data-state=open]{animation:overlay-in .32s ease both}
+@media(max-width:640px){.dialog-drawer:not(.dialog-side)[data-state=open]{animation-name:drawer-in-y}}
+@media(prefers-reduced-motion:reduce){.dialog-drawer[data-state=open],.dialog-overlay[data-state=open]{animation:none}}
