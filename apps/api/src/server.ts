@@ -59,6 +59,7 @@ app.get('/auth/google/callback',(req,res,next)=>{if(!googleReady)return res.stat
 function identity(req:Request,res:Response,next:NextFunction){if(!req.isAuthenticated())return res.status(401).json({error:'Sign in to access your workspace.'});next();}
 async function auth(req:Request,res:Response,next:NextFunction){if(!req.isAuthenticated())return res.status(401).json({error:'Sign in to access your workspace.'});const u=req.user as User;if(u.status!=='active')return res.status(403).json({error:'This account is suspended. Contact support.'});if(!u.lastActiveAt||u.lastActiveAt.getTime()<Date.now()-300000)await db.user.update({where:{id:u.id},data:{lastActiveAt:new Date()}});next();}
 function csrf(req:Request,res:Response,next:NextFunction){const supplied=req.get('X-CSRF-Token')||'';const expected=req.session.csrf||'';const requestOrigin=req.get('Origin');if(!requestOrigin||!origins.includes(requestOrigin)||!expected||Buffer.byteLength(supplied)!==Buffer.byteLength(expected)||!timingSafeEqual(Buffer.from(supplied),Buffer.from(expected)))return res.status(403).json({error:'Invalid request origin or CSRF token. Reload and try again.'});next();}
+app.use('/auth',(_req,res,next)=>{res.setHeader('Cache-Control','no-store');next();});
 app.use('/auth',passwordAuth(csrf));
 app.use('/auth/admin',adminAuthentication(csrf));
 app.get('/auth/me',identity,(req,res)=>{req.session.csrf ||= randomBytes(32).toString('hex');const u=req.user as User;res.json({user:{name:u.name,email:u.email,status:u.status},csrf:req.session.csrf});});
