@@ -1295,3 +1295,21 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
 /* overview rhythm: one gap between every block on a phone */
 @media(max-width:850px){.metrics-grid{margin-bottom:14px}.chart-grid,.insight-grid,.widgets-grid{display:grid!important;grid-template-columns:minmax(0,1fr);gap:14px;margin-bottom:14px}.chart-grid>.panel,.insight-grid>.panel,.widgets-grid>.panel{margin:0!important;height:auto}.page-heading .page-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}.page-heading .page-controls .month-control{grid-column:1/-1}.page-heading .page-controls>.button{min-height:46px}.page-heading .page-controls .button{margin:0}}
 .tour-dots[data-many]{gap:3px}.tour-dots[data-many] i{width:5px;height:5px}.tour-dots[data-many] i.on{width:14px}
+/* Settings tabs share the look of the Fitness, Meals and Finance tab bars: dark rail, lime when selected. */
+.settings-shell{background:#0d0f0e;border-color:#232323}
+.settings-nav{background:#0f1110;border-right-color:#232323}
+.settings-nav a{color:var(--muted);font-weight:600}
+.settings-nav a:hover{background:#171a18;color:var(--foreground)}
+.settings-nav a.active{background:#b6f26b;color:#0b0b0b;box-shadow:none}
+@media(min-width:541px){.settings-nav a.active{border-radius:10px}}
+@media(max-width:540px){.settings-nav a.active{border-color:#b6f26b}}
+.settings-section-head h2{letter-spacing:-.4px}
+.settings-row-main>strong{letter-spacing:-.1px}
+.settings-content .avatar{box-shadow:0 0 0 2px #0d0f0e,0 0 0 3px rgba(182,242,107,.45)}
+.settings-content .plan-badge{border-color:rgba(182,242,107,.55);color:#d6f7a3}
+@media(max-width:860px){
+ .settings-nav{background:#0f1110;border:1px solid #232323;border-radius:14px;padding:5px;gap:6px;margin:0 0 18px;-webkit-mask-image:none;mask-image:none}
+ .settings-nav a{border:0;background:transparent;border-radius:10px;padding:10px 14px}
+ .settings-nav a:hover{background:#171a18}
+ .settings-nav a.active{background:#b6f26b;color:#0b0b0b;border-radius:10px}
+}
