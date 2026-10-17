@@ -9,9 +9,9 @@ async function fresh(page:Page,onboardedAt:string){
 test('a newly onboarded account is walked through the main areas once',async({page})=>{
  await page.setViewportSize({width:1440,height:900});await fresh(page,new Date().toISOString());await page.goto('/');
  const tour=page.getByRole('dialog',{name:'Product tour'});await expect(tour).toBeVisible({timeout:15000});
- await expect(tour).toContainText('Step 1 of 6');
- for(let i=0;i<5;i++)await tour.getByRole('button',{name:'Next'}).click();
- await expect(tour).toContainText('Step 6 of 6');await tour.getByRole('button',{name:'Done'}).click();await expect(tour).toHaveCount(0);
+ await expect(tour).toContainText('Step 1 of 11');
+ for(let i=0;i<10;i++)await tour.getByRole('button',{name:'Next'}).click();
+ await expect(tour).toContainText('Step 11 of 11');await tour.getByRole('button',{name:'Done'}).click();await expect(tour).toHaveCount(0);
  await page.reload();await page.waitForTimeout(3500);await expect(page.getByRole('dialog',{name:'Product tour'})).toHaveCount(0);
 });
 test('skipping persists, long-time accounts are not interrupted, and Settings can replay it',async({page})=>{
