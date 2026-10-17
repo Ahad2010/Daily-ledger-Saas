@@ -31,7 +31,7 @@ test('real email signup opens an empty account, then logs in to the same workspa
   await expect(page.locator('.onboarding-shell')).toHaveCount(0);
   const saved=(await pool.query('SELECT persona,"focusAreas","onboardingCompletedAt" FROM "User" WHERE email=$1',[email])).rows[0];expect(saved.persona).toBe('Developer');expect(saved.focusAreas).toEqual(['finance']);expect(saved.onboardingCompletedAt).toBeTruthy();
   await expect(page.getByText('DEMO WORKSPACE',{exact:false})).toHaveCount(0);
-  await expect(page.getByLabel('Selected month')).toHaveValue(new Date().toISOString().slice(0,7));
+  await expect(page.getByLabel('Selected month')).toContainText(new Date().toLocaleString('en',{month:'long',year:'numeric'}));
   await expect(page.getByText('Ahad Noor',{exact:true})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'No spending yet',exact:true})).toBeVisible();
   await page.context().clearCookies();

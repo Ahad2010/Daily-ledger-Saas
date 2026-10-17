@@ -7,10 +7,10 @@ const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'UTC'}).format(new Dat
 const runWorker=()=>new Promise<void>((resolve,reject)=>{const child=spawn(process.execPath,['--import','tsx','apps/api/src/worker.ts'],{env:{...process.env,RESEND_API_KEY:'',VAPID_PUBLIC_KEY:'',VAPID_PRIVATE_KEY:'',SESSION_SECRET:'feature-session-secret-at-least-32-characters'},stdio:'pipe'});let errors='';child.stderr.on('data',d=>errors+=d);child.once('exit',code=>code===0?resolve():reject(new Error(errors)));});
 const expense=(amount:number,category='Food')=>({kind:'transaction',data:{title:'Spend',date:today(),amount,currency:'USD',type:'expense',category,account:'Cash',notes:''}});
 
-test('budget alerts: one in-app notification and push job per threshold, shared by Free, rechecked by the worker',{skip,timeout:180000},async()=>{
+test('budget alerts: one in-app notification and push job per threshold, for Pro members, rechecked by the worker',{skip,timeout:180000},async()=>{
  const api=await startApi(4043);
  try{
-  const free=await api.user({plan:'Free'}),month=today().slice(0,7);
+  const free=await api.user({plan:'Pro'}),month=today().slice(0,7);const basic=await api.user({plan:'Free'});assert.equal((await basic.request('/api/records','POST',{kind:'budget',data:{title:'Nope',month:today().slice(0,7),amount:10000,currency:'USD',category:'Food'}})).status,403,'budgets are a Pro feature');
   const budget=await free.json('/api/records','POST',{kind:'budget',data:{title:'Food budget',month,amount:10000,currency:'USD',category:'Food'}});
   const notes=async()=>(await free.json('/api/snapshot')).records.filter((r:any)=>r.kind==='notification'&&r.data.title.startsWith('Food:'));
   assert.equal((await notes()).length,0);

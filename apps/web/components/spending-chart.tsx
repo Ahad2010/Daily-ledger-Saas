@@ -38,7 +38,7 @@ export function SpendingChart({m,onCategory}:{m:Metrics;onCategory:(name:string)
    </svg>
    <div className="donut-center"><span>Total spent</span><strong className="donut-value" style={{fontSize:money(m.expenses,m.currency).length>12?16:22}}>{money(m.expenses,m.currency)}</strong><small>{m.categories.length} categories</small></div>
   </div>
-  <div className="donut-hover-details" role={active?'tooltip':undefined}>{active?<><span>{active.name}</span><strong>{money(active.amount,m.currency)}</strong><small>{percent(active.percentage)} of spending</small></>:<small>Hover a segment or select a category below</small>}</div>
+  <div className="donut-hover-details" role={active?'tooltip':undefined}>{active?<><span>{active.name}</span><strong>{money(active.amount,m.currency)}</strong><small>{percent(active.percentage)} of spending</small></>:<small>Select a category below to see its share</small>}</div>
   <div className="spending-legend refined-legend" aria-label="Spending categories">
    {m.categories.map((c,i)=><button key={c.name} onMouseEnter={()=>setHovered(c.name)} onMouseLeave={()=>setHovered(null)} onFocus={()=>setHovered(c.name)} onBlur={()=>setHovered(null)} onClick={()=>onCategory(c.name)} aria-label={`View ${c.name} transactions: ${money(c.amount,m.currency)}, ${percent(c.percentage)}`}><i style={{background:donutPalette[i%donutPalette.length]}}/><span>{c.name}</span><strong>{money(c.amount,m.currency)}</strong><small>{percent(c.percentage)}</small></button>)}
   </div>

@@ -20,10 +20,10 @@ test('CSV import API: idempotent, plan-limited, ownership-safe, edit-stable and 
   // Validation: bad rows are reported, not silently dropped.
   const mixed=await u.json('/api/import/transactions','POST',{rows:[{occurrence:0,data:{title:'x',date:'2026-02-31',amount:100,currency:'USD',type:'expense',category:'A',account:'B',notes:''}},{occurrence:0,data:{title:'neg',date:today(),amount:-5,currency:'USD',type:'expense',category:'A',account:'B',notes:''}},row('Valid one',100)]});
   assert.deepEqual([mixed.imported,mixed.rejectedCount],[1,2]);assert.ok(mixed.rejected.every((r:any)=>typeof r.message==='string'));
-  // Free plan: 100 transactions per month. 4 exist now (3 + Valid one); the rest of 120 distinct rows are limited.
+  // Free plan: 30 transactions per month. 4 exist now (3 + Valid one); the rest of 120 distinct rows are limited.
   const bulk=await u.json('/api/import/transactions','POST',{rows:Array.from({length:120},(_,i)=>row('Bulk '+i,100+i))});
-  assert.equal(bulk.imported,96);assert.equal(bulk.limited,24);
-  const count=(await api.pool.query('SELECT COUNT(*)::int AS n FROM "Record" WHERE "userId"=$1 AND kind=\'transaction\'',[u.id])).rows[0].n;assert.equal(count,100);
+  assert.equal(bulk.imported,26);assert.equal(bulk.limited,94);
+  const count=(await api.pool.query('SELECT COUNT(*)::int AS n FROM "Record" WHERE "userId"=$1 AND kind=\'transaction\'',[u.id])).rows[0].n;assert.equal(count,30);
   assert.equal((await u.request('/api/import/transactions','POST',{rows:Array.from({length:251},(_,i)=>row('X'+i,1))})).status,400);
   assert.equal((await u.request('/api/import/transactions','POST',{rows:[]})).status,400);
   // Budget alert from imported spending.

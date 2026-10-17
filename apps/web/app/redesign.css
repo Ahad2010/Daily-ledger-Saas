@@ -1284,3 +1284,14 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
 /* tab bars always breathe */
 .meals-tabs,.fit-tabs,.fin-tabs{margin-bottom:20px!important}
 .fitness-workspace>.meals-tabs{margin-bottom:20px!important}
+.fo-stat.fo-pro{display:inline-flex;align-items:center;gap:5px;color:#a8e8cc;background:#17261f;border:1px solid #2b4a3c;border-radius:20px;padding:3px 9px;font-size:10px;font-style:normal;letter-spacing:.4px;font-weight:600}
+.page-suggestions{margin:22px 0 6px}
+.ai-locked{margin:40px auto;max-width:640px}.ai-locked-list{list-style:none;padding:0;margin:4px 0 8px;display:grid;gap:10px;font-size:13px;color:#cfd8d4}.ai-locked-list li{display:flex;align-items:center;gap:9px}.ai-locked-list svg{color:var(--mint);flex-shrink:0}
+.tour-layer.is-sheet{background:rgba(0,0,0,.62);backdrop-filter:blur(1.5px)}
+.tour-tips{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}.tour-tips li{position:relative;padding-left:18px;font-size:13px;line-height:1.5;color:#cdd6d2}.tour-tips li:before{content:'';position:absolute;left:2px;top:.62em;width:6px;height:6px;border-radius:50%;background:#b6f26b}
+@media(max-width:640px){.tour-card{padding:18px 18px 16px;border-radius:18px}.tour-card h3{font-size:19px}.page-guide-button{width:38px;height:38px}}
+/* month stepper */
+.month-stepper{display:flex;align-items:center;gap:2px;padding:3px;min-height:42px}.month-stepper .icon-button{width:34px;height:34px;flex-shrink:0;color:#c5ccc9}.month-stepper .month-select{flex:1;min-width:0}.month-stepper .month-select button{border:0;background:transparent;min-height:34px;width:100%;justify-content:center;font-weight:600;padding:0 6px}
+/* overview rhythm: one gap between every block on a phone */
+@media(max-width:850px){.metrics-grid{margin-bottom:14px}.chart-grid,.insight-grid,.widgets-grid{display:grid!important;grid-template-columns:minmax(0,1fr);gap:14px;margin-bottom:14px}.chart-grid>.panel,.insight-grid>.panel,.widgets-grid>.panel{margin:0!important;height:auto}.page-heading .page-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}.page-heading .page-controls .month-control{grid-column:1/-1}.page-heading .page-controls>.button{min-height:46px}.page-heading .page-controls .button{margin:0}}
+.tour-dots[data-many]{gap:3px}.tour-dots[data-many] i{width:5px;height:5px}.tour-dots[data-many] i.on{width:14px}

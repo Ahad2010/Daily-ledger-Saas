@@ -6,7 +6,7 @@ import {platformSettings} from './platform.js';
 import {tokenHash} from './passwords.js';
 import {recordReferral} from './referrals.js';
 
-const lifetime=10*60000,cooldown=45000;
+const lifetime=5*60000,cooldown=45000;
 const digest=(id:string,code:string)=>createHmac('sha256',process.env.SESSION_SECRET!).update(`auth-otp:${id}:${code}`).digest('hex');
 export const otpConfigured=()=>!!(process.env.RESEND_API_KEY&&process.env.EMAIL_FROM);
 export function otpView(row:{id:string;email:string;purpose:string;expiresAt:Date;sentAt:Date}){return {id:row.id,email:row.email,purpose:row.purpose,expiresAt:row.expiresAt.toISOString(),resendAt:new Date(row.sentAt.getTime()+cooldown).toISOString()};}
@@ -29,7 +29,7 @@ export async function issueOtp(input:{email:string;purpose:'signup'|'reset';name
   const row=await tx.authChallenge.upsert({where:{email_purpose:{email:input.email,purpose:input.purpose}},create:{id,email:input.email,purpose:input.purpose,...data},update:{...data,id}});
   // Keep the response identical for unknown reset emails; no account information is exposed.
   if(input.purpose==='signup'||credential){
-   const result=await new Resend(process.env.RESEND_API_KEY).emails.send({from:process.env.EMAIL_FROM!,to:input.email,subject:input.purpose==='signup'?'Verify your Daily Ledger email':'Your Daily Ledger password reset code',text:`Your Daily Ledger verification code is: ${code}\n\nIt expires in 10 minutes. Never share this code. If you did not request it, ignore this email.`},{idempotencyKey:`auth-otp:${id}:${now.getTime()}`});
+   const result=await new Resend(process.env.RESEND_API_KEY).emails.send({from:process.env.EMAIL_FROM!,to:input.email,subject:input.purpose==='signup'?'Verify your Daily Ledger email':'Your Daily Ledger password reset code',text:`Your Daily Ledger verification code is: ${code}\n\nIt expires in 5 minutes. Never share this code. If you did not request it, ignore this email.`},{idempotencyKey:`auth-otp:${id}:${now.getTime()}`});
    if(result.error)throw new HttpError(502,'The verification email could not be sent. Please retry shortly.');
   }
   return otpView(row);

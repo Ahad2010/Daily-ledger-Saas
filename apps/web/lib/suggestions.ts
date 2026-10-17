@@ -19,9 +19,9 @@ export function pageSuggestions(page:string,s:Snapshot,today:string):Suggestion[
  if(page==='finance'||page===''){
   const budgets=recordsOf(s.records,'budget').filter(b=>b.data.currency===s.profile.currency);
   const income=recordsOf(s.records,'transaction').some(t=>t.data.type==='income'&&t.data.date.startsWith(month));
-  if(!budgets.length)out.push({id:'no-budget',tone:'tip',text:'Set a monthly budget to see your spending pace.',action:{label:'Set a budget',href:`/finance/budgets?month=${month}`}});
+  if(limits.finance&&!budgets.length)out.push({id:'no-budget',tone:'tip',text:'Set a monthly budget to see your spending pace.',action:{label:'Set a budget',href:`/finance/budgets?month=${month}`}});
   if(page==='finance'&&!income)out.push({id:'no-income',tone:'tip',text:'No income recorded this month. Add it to see your savings rate.',action:{label:'Add income',kind:'transaction',initial:{type:'income',category:'Salary'}}});
-  if(page==='finance'&&!recordsOf(s.records,'cashPlan').some(p=>p.data.type==='expense'))out.push({id:'no-bills',tone:'tip',text:'Add your regular bills to see what is left after them.',action:{label:'Add bills',href:`/finance/bills?month=${month}`}});
+  if(page==='finance'&&limits.finance&&!recordsOf(s.records,'cashPlan').some(p=>p.data.type==='expense'))out.push({id:'no-bills',tone:'tip',text:'Add your regular bills to see what is left after them.',action:{label:'Add bills',href:`/finance/bills?month=${month}`}});
  }
  if(page==='fitness'){
   const week=shift(today,-6);const done=recordsOf(s.records,'workout').filter(w=>w.data.done&&w.data.date>=week&&w.data.date<=today).length;
@@ -39,5 +39,6 @@ export function pageSuggestions(page:string,s:Snapshot,today:string):Suggestion[
   if(soon)out.push({id:'goal-soon',tone:'nudge',text:`${soon.g.data.title} is due in ${soon.days} ${soon.days===1?'day':'days'} and is ${Math.round(soon.pct??0)}% there.`,action:{label:'Open goal',href:`/goals/${soon.g.id}`}});
   if(page==='goals'&&nearLimit(goals.length,limits.goals))upgrade('goals-limit',`You are using ${goals.length} of ${limits.goals} active goals on Free. Pro removes the limit.`);
  }
- return out.slice(0,3);
+ // Smart suggestions are a paid feature; Free keeps only the upgrade nudge that appears near a real limit.
+ return (limits.ai?out:out.filter(item=>item.tone==='upgrade')).slice(0,3);
 }
