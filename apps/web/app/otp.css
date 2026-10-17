@@ -12,3 +12,5 @@
 @media(prefers-reduced-motion:reduce){.recovery-state,.recovery-icon,.recovery-icon>span,.recovery-redirect i{animation:none}}
 .auth-notice{display:flex;align-items:center;justify-content:center;gap:9px;margin:0 auto 18px;max-width:380px;padding:11px 14px;border-radius:12px;background:#11201a;border:1px solid #2b4a3c;color:#b8ecd4;font-size:13px;animation:recovery-in .4s ease both}
 .recovery-state .auth-footer{text-align:center}.recovery-state .auth-footer p{margin:0 0 10px}.recovery-state .auth-retry{margin:0 auto}
+/* The grey waves behind the sign-in pages take on the app's deep emerald, so the page matches the dashboard. */
+.fold{filter:sepia(1) hue-rotate(105deg) saturate(1.25) brightness(.64) contrast(1.12)}
