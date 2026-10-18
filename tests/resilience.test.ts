@@ -2,6 +2,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {createHmac,randomUUID} from 'node:crypto';
+import {createRequire} from 'node:module';
+const signCookie=createRequire(import.meta.url)('cookie-signature').sign as (value:string,secret:string)=>string;
 import {startApi} from './support/api';
 const skip=!process.env.TEST_DATABASE_URL;
 const secret='ws_resilience_secret';
@@ -134,15 +136,36 @@ test('if the shared rate-limit table is unavailable, limits still apply locally 
  }finally{await api.pool.query('ALTER TABLE "RateLimitHit_off" RENAME TO "RateLimitHit"').catch(()=>undefined);await api.stop();}
 });
 
-test('with the whole database unreachable the API stays up, reports not-ready and recovers without a restart',{skip,timeout:120000},async()=>{
+test('with the whole database unreachable the API stays up, answers 503 without internals, and recovers on its own',{skip,timeout:120000},async()=>{
  const url=new URL(process.env.TEST_DATABASE_URL!);url.port='1';
  const api=await startApi(4092,{DATABASE_URL:url.toString()});
+ const close={connection:'close'},json={...close,'content-type':'application/json',origin:'http://localhost:3000','x-csrf-token':'c'.repeat(64),cookie:`ledger.sid=${encodeURIComponent('s:'+signCookie(randomUUID(),'feature-session-secret-at-least-32-characters'))}`};
  try{
-  assert.equal((await fetch(api.base+'/health',{headers:{connection:'close'}})).status,200,'liveness does not depend on the database');
-  assert.equal((await fetch(api.base+'/ready',{headers:{connection:'close'}})).status,503,'readiness reports the outage');
-  const login=await fetch(api.base+'/auth/csrf',{headers:{connection:'close'}}).catch(()=>({status:0}));assert.ok(login.status<600,'a failed session store may drop that one connection but never the process');
-  const protectedRoute=await fetch(api.base+'/api/snapshot',{headers:{connection:'close'}});assert.ok([401,500,503].includes(protectedRoute.status));
-  const alive=await fetch(api.base+'/health',{headers:{connection:'close'}}).then(r=>r.status,e=>`down: ${e.cause?.code||e.message}\n${api.logs().slice(-1500)}`);
-  assert.equal(alive,200,'the process survived');
+  assert.equal((await fetch(api.base+'/health',{headers:close})).status,200,'liveness does not depend on the database');
+  assert.equal((await fetch(api.base+'/ready',{headers:close})).status,503,'readiness reports the outage');
+  const probes=[['GET','/api/snapshot'],['POST','/auth/login'],['POST','/api/ai/chat'],['GET','/auth/me'],['POST','/api/records']] as const;
+  for(const [method,path] of probes){
+   const r=await fetch(api.base+path,{method,headers:json,...(method==='POST'?{body:JSON.stringify({email:'a@b.co',password:'x',requestId:'r',kind:'task',data:{}})}:{})});
+   const text=await r.text();
+   assert.equal(r.status,503,`${method} ${path} -> ${r.status} ${text.slice(0,120)}`);
+   assert.equal(r.headers.get('retry-after'),'5');
+   assert.equal((JSON.parse(text) as any).code,'SERVICE_UNAVAILABLE');
+   assert.ok(!/ECONNREFUSED|127\.0\.0\.1|localhost|SELECT|prisma|postgres|\n\s+at /i.test(text),`no internals leak: ${text}`);
+  }
+  assert.match(api.logs(),/\[db-unavailable\]/,'the operator log names the cause');
+  assert.equal((await fetch(api.base+'/health',{headers:close})).status,200,'the process survived');
+  assert.equal((await fetch(api.base+'/webhooks/whop',{method:'POST',body:'x',headers:close})).status,503);
+ }finally{await api.stop();}
+});
+
+test('unexpected non-database errors are not turned into 503 and the healthy path is unchanged',{skip,timeout:90000},async()=>{
+ const api=await startApi(4093);
+ try{
+  const u=await api.user({plan:'Free'});
+  assert.equal((await u.request('/api/snapshot')).status,200);
+  assert.equal((await u.request('/api/records/not-a-uuid','DELETE',{version:1})).status,404,'missing record stays 404');
+  assert.equal((await u.request('/api/records','POST',{kind:'task',data:{title:''}})).status,400,'validation stays 400');
+  assert.equal((await fetch(api.base+'/api/snapshot')).status,401,'signed out stays 401');
+  assert.equal((await fetch(api.base+'/ready')).status,200);
  }finally{await api.stop();}
 });
