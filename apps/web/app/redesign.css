@@ -1316,3 +1316,10 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
 
 /* Overview: the cash-flow row sat flush against the budget row (finance.css gave .chart-grid only 2px below). Match the 14px used between the other rows. */
 main[data-page=overview] .chart-grid{margin-bottom:14px}
+
+/* Tour invitation: a small card at the bottom of the screen; nothing is dimmed or blocked until "Yes, show me" is chosen. */
+.tour-offer{position:fixed;inset:0;z-index:300;pointer-events:none}
+.tour-offer .tour-card.tour-invite{pointer-events:auto;left:50%;top:auto;bottom:24px;transform:translateX(-50%);width:min(420px,calc(100vw - 24px));animation:tour-invite-in .35s ease-out}
+.tour-invite h3{margin:6px 0 6px}
+@keyframes tour-invite-in{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
+@media(prefers-reduced-motion:reduce){.tour-offer .tour-card.tour-invite{animation:none}}

@@ -86,6 +86,8 @@ function Workspace(){
  const access=useQuery({queryKey:['account-access'],queryFn:()=>request('/auth/me'),enabled:!demoMode&&!!s,refetchInterval:15000,refetchOnWindowFocus:true});
  useEffect(()=>{if(!demoMode&&s)void queryClient.invalidateQueries({queryKey:['account-access']});},[fullPath,queryClient,s?.profile.email]);
  useEffect(()=>{if(s&&!demoMode){const selected=new URLSearchParams(window.location.search).get('month');setMonth(selected&&/^\d{4}-(0[1-9]|1[0-2])$/.test(selected)?selected:localDate(new Date(),s.profile.timezone).slice(0,7));}},[s?.profile.email,s?.profile.timezone]);
+ // The product tour opens and closes the mobile drawer through this event.
+ useEffect(()=>{const handler=(e:Event)=>setDrawer(!!(e as CustomEvent<{open:boolean}>).detail?.open);window.addEventListener('ledger-drawer',handler);return()=>window.removeEventListener('ledger-drawer',handler);},[]);
  const drawerRef=useDrawer(drawer,()=>setDrawer(false),!!s&&(demoMode||!!s.profile.onboardingCompletedAt)&&!building);
  useEffect(()=>{if(!demoMode&&error instanceof ApiError&&error.status===401)router.replace('/login?returnTo='+encodeURIComponent(window.location.pathname+window.location.search));},[error,router]);
  useEffect(()=>{setDrawer(false);const params=new URLSearchParams(window.location.search);setCategory(params.get('category')||'');const selected=params.get('month');if(selected&&/^\d{4}-(0[1-9]|1[0-2])$/.test(selected))setMonth(selected);},[fullPath]);

@@ -2,11 +2,15 @@
 import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import gsap from 'gsap';
 import {ArrowLeft,ArrowRight,X} from 'lucide-react';
-type Def={find?:()=>Element|null;title:string;text:string;tips?:string[];sheet?:boolean};
+type Def={find?:()=>Element|null;title:string;text:string;tips?:string[];sheet?:boolean;drawer?:boolean};
 const key='ledger-tour-v1';
-const byHref=(href:string)=>()=>document.querySelector(`.sidebar a[href="${href}"]`);
+const byHref=(href:string)=>()=>document.querySelector(`.sidebar a.nav-link[href="${href}"]`);
 const narrowScreen=()=>typeof window!=='undefined'&&window.innerWidth<=640;
-// Sidebar steps point at the real links on wide screens. On phones the sidebar is a hidden drawer, so they become a bottom sheet instead of a spotlight on nothing.
+// Below 800px the sidebar is a slide-in drawer (same breakpoint as useDrawer). The tour opens it itself and spotlights the real links inside it.
+const drawerMode=()=>typeof window!=='undefined'&&window.matchMedia('(max-width:800px)').matches;
+const setDrawer=(open:boolean)=>window.dispatchEvent(new CustomEvent('ledger-drawer',{detail:{open}}));
+const DRAWER_MS=420;
+// Sidebar steps point at the real links. On phones and small tablets the tour opens the drawer for them, then closes it for the steps that live outside it.
 const defs:Def[]=[
  {find:()=>document.querySelector('.mobile-menu'),title:'Your menu',text:'Tap here any time to move between Overview, Finance, Tasks, Fitness, Meals, Goals and Settings.'},
  {find:byHref('/'),sheet:true,title:'Overview',text:'Income, spending, savings and tasks in one calm view.',tips:['Change the month at the top to look back.','Tap any card to open the details.']},
@@ -41,20 +45,35 @@ const seen=()=>{try{return localStorage.getItem(key)==='done';}catch{return true
 const remember=()=>{try{localStorage.setItem(key,'done');}catch{/* the tour simply shows again next time */}};
 // Auto-starts once for an account that has just finished onboarding; Settings can replay it at any time.
 export function ProductTour({ready,onboardedAt}:{ready:boolean;onboardedAt:string|null|undefined}){
- const [steps,setSteps]=useState<Def[]>([]);const [index,setIndex]=useState(-1);
+ const [steps,setSteps]=useState<Def[]>([]);const [index,setIndex]=useState(-1);const [invite,setInvite]=useState(false);
  const layer=useRef<HTMLDivElement>(null),spot=useRef<HTMLDivElement>(null),card=useRef<HTMLDivElement>(null),first=useRef(true);
  const begin=useCallback((list:Def[])=>{if(list.length){first.current=true;setSteps(list);setIndex(0);}},[]);
  const start=useCallback((page?:string)=>{
   if(page!==undefined){begin(guides[page]||[]);return;}
-  const narrow=narrowScreen();
-  begin(defs.filter(d=>{const el=d.find?.();if(!el)return false;if(d.sheet&&narrow)return true;const r=el.getBoundingClientRect();return r.width>0&&r.height>0;}));
+  const visible=(d:Def)=>{const el=d.find?.();if(!el)return false;const r=el.getBoundingClientRect();return r.width>0&&r.height>0;};
+  if(drawerMode()){
+   // Drawer steps first (the drawer opens by itself), then the controls that sit outside it, ending on the menu button that reopens it.
+   const inDrawer=defs.filter(d=>d.sheet&&d.find?.()).map(d=>({...d,sheet:false,drawer:true}));
+   const outside=defs.filter(d=>!d.sheet&&d.title!=='Your menu'&&visible(d));
+   const menu=defs.filter(d=>d.title==='Your menu'&&visible(d));
+   begin([...inDrawer,...outside,...menu]);return;
+  }
+  begin(defs.filter(visible));
  },[begin]);
- const close=useCallback(()=>{remember();setIndex(-1);setSteps([]);},[]);
+ const drawerOpen=useRef(false),drawerReadyAt=useRef(0);
+ const close=useCallback(()=>{remember();if(drawerOpen.current){drawerOpen.current=false;setDrawer(false);}setIndex(-1);setSteps([]);},[]);
+ // A new account is first offered the tour (nothing starts by itself). The offer waits until any other dialog, such as a plan or trial pop-up, has been dealt with.
  useEffect(()=>{
   if(!ready)return;const recent=!!onboardedAt&&Date.now()-new Date(onboardedAt).getTime()<15*60*1000;
-  const timer=recent&&!seen()?setTimeout(()=>start(),2400):undefined;const replay=(e:Event)=>start((e as CustomEvent<{page?:string}>).detail?.page);window.addEventListener('ledger-tour',replay);
+  let timer:ReturnType<typeof setTimeout>|undefined,waits=0;
+  const offer=()=>{if(document.querySelector('[role="dialog"]:not(.tour-card),[role="alertdialog"]')&&waits++<75){timer=setTimeout(offer,800);return;}setInvite(true);};
+  if(recent&&!seen())timer=setTimeout(offer,2400);
+  const replay=(e:Event)=>{setInvite(false);start((e as CustomEvent<{page?:string}>).detail?.page);};window.addEventListener('ledger-tour',replay);
   return()=>{clearTimeout(timer);window.removeEventListener('ledger-tour',replay);};
  },[ready,onboardedAt,start]);
+ const accept=useCallback(()=>{setInvite(false);start();},[start]);
+ const decline=useCallback(()=>{remember();setInvite(false);},[]);
+ useEffect(()=>{if(!invite)return;const keys=(e:KeyboardEvent)=>{if(e.key==='Escape')decline();};window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);},[invite,decline]);
  const place=useCallback(()=>{
   const def=steps[index];const s=spot.current,c=card.current,l=layer.current;if(!def||!s||!c||!l)return;
   const narrow=window.innerWidth<=640,el=def.find?.()||null,sheet=!el||(!!def.sheet&&narrow),cw=Math.min(narrow?420:360,window.innerWidth-24);gsap.set(c,{width:cw});const ch=c.offsetHeight;
@@ -77,11 +96,22 @@ export function ProductTour({ready,onboardedAt}:{ready:boolean;onboardedAt:strin
   if(first.current||reduced){gsap.set(s,box);gsap.set(c,{left,top,width:cw});first.current=false;gsap.fromTo(c,{opacity:0,y:10},{opacity:1,y:0,duration:reduced?0:.35,ease:'power2.out'});}
   else{gsap.to(s,{...box,duration:.5,ease:'power3.inOut'});gsap.to(c,{left,top,width:cw,duration:.5,ease:'power3.inOut'});}
  },[steps,index]);
- useLayoutEffect(()=>{if(index<0)return;if(!(steps[index]?.sheet&&narrowScreen()))steps[index]?.find?.()?.scrollIntoView({block:'nearest'});place();},[index,steps,place]);
+ useLayoutEffect(()=>{
+  if(index<0)return;
+  // Open or close the drawer as the steps need it, and place the spotlight only once its slide animation has finished.
+  // The ready time lives in a ref, so a repeated effect run (React StrictMode in dev) still waits for the animation.
+  const mobile=drawerMode(),want=!!steps[index]?.drawer;
+  if(mobile&&want!==drawerOpen.current){drawerOpen.current=want;setDrawer(want);drawerReadyAt.current=Date.now()+(window.matchMedia('(prefers-reduced-motion: reduce)').matches?60:DRAWER_MS);}
+  const run=()=>{if(!(steps[index]?.sheet&&narrowScreen()))steps[index]?.find?.()?.scrollIntoView({block:'nearest'});place();};
+  const wait=mobile?drawerReadyAt.current-Date.now():0;
+  if(wait>0){const t=setTimeout(run,wait);return()=>clearTimeout(t);}
+  run();
+ },[index,steps,place]);
  useEffect(()=>{
   if(index<0)return;const resize=()=>place();const keys=(e:KeyboardEvent)=>{if(e.key==='Escape')close();else if(e.key==='ArrowRight')setIndex(i=>Math.min(i+1,steps.length-1));else if(e.key==='ArrowLeft')setIndex(i=>Math.max(i-1,0));};
   window.addEventListener('resize',resize);window.addEventListener('keydown',keys);return()=>{window.removeEventListener('resize',resize);window.removeEventListener('keydown',keys);};
  },[index,steps.length,place,close]);
+ if(invite&&index<0)return <div className="tour-offer"><div className="tour-card tour-invite" role="dialog" aria-label="Tour invitation" aria-live="polite"><button className="tour-close" aria-label="Not now" onClick={decline}><X size={15}/></button><span className="tour-count">Welcome</span><h3>Want a quick tour?</h3><p>A one-minute walkthrough of Daily Ledger: where everything lives and how to add your first task, expense or habit.</p><div className="tour-actions"><button className="tour-skip" onClick={decline}>Maybe later</button><button className="tour-next" onClick={accept}>Yes, show me<ArrowRight size={15}/></button></div></div></div>;
  if(index<0||!steps[index])return null;
  const step=steps[index],last=index===steps.length-1;
  return <div ref={layer} className="tour-layer"><div ref={spot} className="tour-spot" aria-hidden="true"/>
