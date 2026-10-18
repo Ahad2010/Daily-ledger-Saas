@@ -155,4 +155,13 @@ Referral links and codes live in Settings. A new verified signup through the lin
 
 Official Vercel monorepo setup: https://vercel.com/docs/monorepos/monorepo-faq
 
-Setup keys and one-phase-at-a-time Claude prompts: [KEY_SETUP.md](KEY_SETUP.md). Whop variable names in that guide are proposed implementation inputs, not an active integration. Cloudinary (profile photos) is implemented and activates when its three variables are set.
+Setup keys and one-phase-at-a-time Claude prompts: [KEY_SETUP.md](KEY_SETUP.md). Whop payments are built and activate when the four Whop variables in that guide are set. Cloudinary (profile photos) is implemented and activates when its three variables are set.
+
+
+## Production safety checks built into the API
+
+- On Railway the API refuses to start unless `NODE_ENV=production` (so session cookies get the Secure flag).
+- In production it refuses to start unless `TRUST_PROXY_HOPS` is set (use `2` behind the Vercel `/backend` rewrite).
+- Keep Railway at **one replica**: login and request limits are held in memory and reset on every deploy. Move them to a shared store before scaling out.
+- Turn on automated backups for the database in your Postgres host and do one test restore before launch.
+- Add an uptime check on `/ready` and an error tracker; neither is included in the code.

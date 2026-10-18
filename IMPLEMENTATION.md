@@ -10,7 +10,7 @@ Backend: Express/Prisma/PostgreSQL schema and migrations, stable Google provider
 
 Authentication: `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/terms`, and `/privacy` share the black reference layout with local folded silver SVG assets and the supplied Daily Ledger logo. Google and email/password use the same PostgreSQL session system. Signup has full name/email/password, live 12-character and letters/numbers/symbols indicators, server validation, and a disabled submit until requirements pass. The supplied name becomes the display name and can be edited in Settings. No GitHub authentication is included.
 
-Password hashes use salted scrypt. Authentication rotates sessions. Reset links expire after one hour, are single-use, and revoke existing sessions. Essential reset email jobs use the durable worker independently of optional reminder quotas. Missing delivery configuration produces an explicit error. The API does not simulate Google authentication or email delivery.
+Password hashes use salted scrypt. Authentication rotates sessions. Reset links expire after five minutes, are single-use, and revoke existing sessions. Essential reset email jobs use the durable worker independently of optional reminder quotas. Missing delivery configuration produces an explicit error. The API does not simulate Google authentication or email delivery.
 
 ## Checks performed
 
@@ -26,7 +26,7 @@ Password hashes use salted scrypt. Authentication rotates sessions. Reset links 
 
 Real Google consent/callback, Railway/Vercel deployment, Resend deliveries, and DNS remain dependent on external configuration; no live external integration is claimed verified. Supply Railway PostgreSQL/API variables, Google client/callback variables, Vercel API URLs, verified Resend sender/key, and a scheduled worker sharing the API's session secret. Detailed instructions are in README.md.
 
-Whop is the chosen provider but is not implemented; checkout is a clearly labeled, non-activating development stub. New email signups require a Resend OTP; a verified Google email reuses/links the existing account with the same email (ambiguous duplicates require support). Production legal pages require the operator's identity/contact and applicable commercial terms. Snapshot loading is an MVP adapter; larger workspaces should use the paginated API. Task recurrence currently preserves UTC time across DST. These limits are described in README.md.
+Whop payments are implemented but switched off until the four Whop variables are set on the API (see KEY_SETUP.md). Checkout creation and the signed webhook are covered by tests against a faked Whop; they have not yet been run against the real Whop sandbox. Without the variables, checkout returns 503 and grants nothing. New email signups require a Resend OTP; a verified Google email reuses/links the existing account with the same email (ambiguous duplicates require support). Production legal pages require the operator's identity/contact and applicable commercial terms. Snapshot loading is an MVP adapter; larger workspaces should use the paginated API. Task recurrence currently preserves UTC time across DST. These limits are described in README.md.
 
 ## Latest additions
 

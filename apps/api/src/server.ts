@@ -1,6 +1,7 @@
 import {googleAccount} from './google-account.js';
 import {referralRoutes,recordReferral,referralCodeSchema} from './referrals.js';
 import {billingRoutes} from './billing.js';
+import {whopWebhookRoutes,whopConfigured} from './whop.js';
 import {importRoutes} from './import.js';
 import {avatarRoutes} from './avatar.js';
 import {pushRoutes} from './push.js';
@@ -8,7 +9,7 @@ import 'dotenv/config';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import rateLimit,{ipKeyGenerator} from 'express-rate-limit';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 import passport from 'passport';
@@ -38,15 +39,21 @@ const origin=process.env.FRONTEND_ORIGIN||'http://localhost:3000';const secret=p
 if(!secret||secret.length<32)throw new Error('Set SESSION_SECRET to at least 32 random characters.');
 const origins=[origin,process.env.ADMIN_ORIGIN].filter((value):value is string=>!!value);
 for(const value of origins){const url=new URL(value);if(url.origin!==value||(production&&url.protocol!=='https:'))throw new Error('FRONTEND_ORIGIN and ADMIN_ORIGIN must be exact origins using HTTPS in production.');}
+// A hosted deploy (Railway sets RAILWAY_ENVIRONMENT) without NODE_ENV=production would send session cookies without the Secure flag and accept http origins.
+if(process.env.RAILWAY_ENVIRONMENT&&!production)throw new Error('Set NODE_ENV=production on the API service.');
+if(production&&process.env.TRUST_PROXY_HOPS===undefined)throw new Error('Set TRUST_PROXY_HOPS in production (2 when the Vercel /backend rewrite sits in front of Railway, 1 when clients call Railway directly). Rate limits depend on it.');
 // Proxy hops in front of the API: 1 = Railway only; 2 = Vercel /backend rewrite -> Railway (so rate limits key on the real client IP).
 const proxyHops=Number(process.env.TRUST_PROXY_HOPS??1);if(!Number.isInteger(proxyHops)||proxyHops<0||proxyHops>3)throw new Error('TRUST_PROXY_HOPS must be an integer from 0 to 3.');
-export const app=express();app.set('trust proxy',proxyHops);app.use(helmet());app.use(cors({origin:origins,credentials:true}));app.use(express.json({limit:'128kb'}));app.use((req,_res,next)=>{req.body??={};next();});app.use(rateLimit({windowMs:60000,limit:180,message:{error:"Too many requests. Please try again shortly."},standardHeaders:true,legacyHeaders:false}));
+export const app=express();app.set('trust proxy',proxyHops);app.use(helmet());
+// Payment webhooks need the untouched raw body for their signature, so they are mounted before the JSON parser. They are open only while payments are configured.
+app.use('/webhooks',whopWebhookRoutes());
+app.use(cors({origin:origins,credentials:true}));app.use(express.json({limit:'128kb'}));app.use((req,_res,next)=>{req.body??={};next();});app.use(rateLimit({windowMs:60000,limit:180,message:{error:"Too many requests. Please try again shortly."},standardHeaders:true,legacyHeaders:false}));
 const cookie={httpOnly:true,secure:production,sameSite:'lax' as const,maxAge:7*86400000,path:'/'};
 app.use(session({name:'ledger.sid',secret,resave:false,saveUninitialized:false,cookie,store:new (connectPg(session))({pool,tableName:'session',createTableIfMissing:false})}));app.use(passport.initialize());app.use(passport.session());
 passport.serializeUser((user,done)=>done(null,user.id));passport.deserializeUser(async(id:string,done)=>{try{const user=await db.user.findUnique({where:{id}});done(null,user||false);}catch(e){done(e);}});
 const googleReady=!!(process.env.GOOGLE_CLIENT_ID&&process.env.GOOGLE_CLIENT_SECRET&&process.env.GOOGLE_CALLBACK_URL);
 if(googleReady)passport.use(new GoogleStrategy({clientID:process.env.GOOGLE_CLIENT_ID!,clientSecret:process.env.GOOGLE_CLIENT_SECRET!,callbackURL:process.env.GOOGLE_CALLBACK_URL!,state:true},async(_access,_refresh,profile,done)=>{try{done(null,await googleAccount(profile));}catch(e){done(e as Error);}}));
-app.get('/health',(_req,res)=>res.json({status:'ok',googleConfigured:googleReady,passwordConfigured:true,signupConfigured:otpConfigured(),resetConfigured:!!(process.env.RESEND_API_KEY&&process.env.EMAIL_FROM),billing:!production&&process.env.BILLING_STUB_ENABLED==='true'?'development-stub':'not-configured'}));
+app.get('/health',(_req,res)=>res.json({status:'ok',googleConfigured:googleReady,passwordConfigured:true,signupConfigured:otpConfigured(),resetConfigured:!!(process.env.RESEND_API_KEY&&process.env.EMAIL_FROM),billing:whopConfigured()?'whop':!production&&process.env.BILLING_STUB_ENABLED==='true'?'development-stub':'not-configured'}));
 app.get('/ready',async(_req,res)=>{try{await db.$queryRaw`SELECT 1`;res.json({status:'ready'});}catch{res.status(503).json({status:'unavailable',message:'Database connection is not ready.'});}});
 // Maintenance mode: administrators switch it on in Platform Settings. Customers get a 503 with the admin's message; the admin tools,
 // health checks and the public status endpoint stay reachable so the site can be switched back on.
@@ -66,7 +73,11 @@ app.use('/auth/admin',adminAuthentication(csrf));
 app.get('/auth/me',identity,(req,res)=>{req.session.csrf ||= randomBytes(32).toString('hex');const u=req.user as User;res.json({user:{name:u.name,email:u.email,status:u.status},csrf:req.session.csrf});});
 app.post('/auth/logout',identity,csrf,(req,res,next)=>{void logActivity(req,{userId:(req.user as User).id,type:'auth.logout'});req.logout(e=>{if(e)return next(e);req.session.destroy(err=>{if(err)return next(err);res.clearCookie('ledger.sid',{httpOnly:true,secure:production,sameSite:'lax',path:'/'}).status(204).end();});});});
 app.use('/api/support',identity,(req,res,next)=>['GET','HEAD','OPTIONS'].includes(req.method)?next():csrf(req,res,next),supportRoutes());
+app.use('/api',(_req,res,next)=>{res.setHeader('Cache-Control','no-store');next();});
 app.use('/api',auth);app.use('/api',(req,res,next)=>['GET','HEAD','OPTIONS'].includes(req.method)?next():csrf(req,res,next));
+// Reads that load or scan a whole workspace get their own per-account allowance on top of the global per-IP one.
+const heavy=rateLimit({windowMs:60000,limit:90,message:{error:'Too many requests. Please try again shortly.'},standardHeaders:true,legacyHeaders:false,keyGenerator:req=>'u:'+(req.user?.id??ipKeyGenerator(req.ip||'127.0.0.1')),validate:{keyGeneratorIpFallback:false}});
+for(const path of ['/snapshot','/records','/export','/reports','/summary'])app.use('/api'+path,(req,res,next)=>req.method==='GET'?heavy(req,res,next):next());
 app.use('/api/admin',adminRoutes());
 app.use('/api/ai',aiRoutes());
 app.use('/api/push',pushRoutes());
@@ -75,7 +86,14 @@ app.use('/api/billing',billingRoutes());
 app.use('/api/import',importRoutes());
 app.use('/api/profile/avatar',avatarRoutes());
 app.get('/api/snapshot',async(req,res)=>{res.json(await snapshot(req.user as User));});
-app.get('/api/records',async(req,res)=>{const page=z.coerce.number().int().min(1).default(1).parse(req.query.page);const limit=z.coerce.number().int().min(1).max(100).default(50).parse(req.query.limit);const kind=req.query.kind?kindSchema.parse(req.query.kind):undefined;const q=z.string().max(160).default('').parse(req.query.q);const where={userId:req.user!.id,...(kind?{kind}:{}),...(typeof req.query.from==='string'?{recordDate:{gte:req.query.from,...(typeof req.query.to==='string'?{lt:req.query.to}:{})}}:{})};const rows=await db.record.findMany({where,orderBy:{recordDate:'desc'}});const filtered=q?rows.filter(r=>JSON.stringify(r.data).toLowerCase().includes(q.toLowerCase())):rows;res.json({records:filtered.slice((page-1)*limit,page*limit).map(dto),page,limit,total:filtered.length});});
+app.get('/api/records',async(req,res)=>{const page=z.coerce.number().int().min(1).max(10000).default(1).parse(req.query.page);const limit=z.coerce.number().int().min(1).max(100).default(50).parse(req.query.limit);const kind=req.query.kind?kindSchema.parse(req.query.kind):undefined;const q=z.string().max(160).default('').parse(req.query.q);const where={userId:req.user!.id,...(kind?{kind}:{}),...(typeof req.query.from==='string'?{recordDate:{gte:req.query.from,...(typeof req.query.to==='string'?{lt:req.query.to}:{})}}:{})};
+ if(!q){const [rows,total]=await Promise.all([db.record.findMany({where,orderBy:[{recordDate:'desc'},{id:'asc'}],skip:(page-1)*limit,take:limit}),db.record.count({where})]);return res.json({records:rows.map(dto),page,limit,total});}
+ // Search runs in the database (case-insensitive match on the stored JSON) so only one page of rows is ever loaded.
+ const like='%'+q.toLowerCase().replace(/[\\%_]/g,'\\$&')+'%';
+ const matches=await db.$queryRaw<{id:string}[]>`SELECT id FROM "Record" WHERE "userId"=${req.user!.id} AND (${kind??null}::text IS NULL OR kind=${kind??null}) AND (${typeof req.query.from==='string'?req.query.from:null}::text IS NULL OR "recordDate">=${typeof req.query.from==='string'?req.query.from:null}) AND (${typeof req.query.to==='string'&&typeof req.query.from==='string'?req.query.to:null}::text IS NULL OR "recordDate"<${typeof req.query.to==='string'&&typeof req.query.from==='string'?req.query.to:null}) AND lower(data::text) LIKE ${like} ORDER BY "recordDate" DESC,id ASC LIMIT ${limit} OFFSET ${(page-1)*limit}`;
+ const [{count}]=await db.$queryRaw<{count:bigint}[]>`SELECT COUNT(*) AS count FROM "Record" WHERE "userId"=${req.user!.id} AND (${kind??null}::text IS NULL OR kind=${kind??null}) AND (${typeof req.query.from==='string'?req.query.from:null}::text IS NULL OR "recordDate">=${typeof req.query.from==='string'?req.query.from:null}) AND (${typeof req.query.to==='string'&&typeof req.query.from==='string'?req.query.to:null}::text IS NULL OR "recordDate"<${typeof req.query.to==='string'&&typeof req.query.from==='string'?req.query.to:null}) AND lower(data::text) LIKE ${like}`;
+ const rows=await db.record.findMany({where:{id:{in:matches.map(m=>m.id)},userId:req.user!.id}});const order=new Map(matches.map((m,i)=>[m.id,i]));rows.sort((a,b)=>(order.get(a.id)??0)-(order.get(b.id)??0));
+ res.json({records:rows.map(dto),page,limit,total:Number(count)});});
 const mutationSchema=z.object({kind:kindSchema,data:z.unknown(),version:z.number().int().positive().optional()});
 app.post('/api/records',async(req,res)=>{const input=mutationSchema.parse(req.body);const saved=await saveRecord(req.user!.id,input);void logActivity(req,{userId:req.user!.id,type:'record.created',meta:{kind:input.kind}});res.status(201).json(saved);});
 app.post('/api/finance/plans/:id/settle',async(req,res)=>{const {month,date,version}=z.object({month:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),date:schemas.transaction.shape.date,version:z.number().int().positive()}).parse(req.body);res.json(await settlePlan(req.user!.id,String(req.params.id),month,date,version));});
@@ -88,9 +106,10 @@ app.get('/api/export',async(req,res)=>{const data=await snapshot(req.user as Use
 app.get('/api/reports/:file',async(req,res)=>{const file=z.string().regex(/^\d{4}-(0[1-9]|1[0-2])\.(csv|pdf)$/).parse(req.params.file);const month=file.slice(0,7);const s=await snapshot(req.user as User);const plan=plans[s.profile.plan];if(!plan.history&&month!==localDate(new Date(),s.profile.timezone).slice(0,7))throw new HttpError(403,'Historical monthly reports require Pro or Lifetime. Your records and full export remain available.','UPGRADE_REQUIRED');if(file.endsWith('.pdf')&&!plan.pdf)throw new HttpError(403,'PDF export requires Pro or Lifetime.','UPGRADE_REQUIRED');res.setHeader('Content-Disposition',`attachment; filename="daily-ledger-${file}"`);if(file.endsWith('.csv'))return res.type('text/csv').send(csv(fullReportRows(s,month)));res.type('application/pdf');renderReportPdf(res,s,month);});
 app.post('/api/announcements/:id/dismiss',async(req,res)=>{const {version}=z.object({version:z.number().int().positive()}).parse(req.body);const user=req.user as User;const effective=await policy(user);const a=await db.announcement.findFirst({where:{id:String(req.params.id),version,status:'published',audience:{in:['Everyone',effective.plan]},publishAt:{lte:new Date()},expiresAt:{gt:new Date()}}});if(!a)throw new HttpError(404,'Announcement not found.');await db.announcementDismissal.upsert({where:{userId_announcementId_version:{userId:user.id,announcementId:a.id,version}},create:{userId:user.id,announcementId:a.id,version},update:{}});res.json({ok:true});});
 app.post('/api/announcements/:id/read',async(req,res)=>{const id=String(req.params.id);const version=z.number().int().positive().parse(req.body.version);const a=await db.announcement.findUnique({where:{id}});const s=await snapshot(req.user as User);if(!a||a.status!=='published'||a.version!==version||a.publishAt>new Date()||a.expiresAt<=new Date()||(a.audience!=='Everyone'&&a.audience!==s.profile.plan))throw new HttpError(404,'Announcement not available.');await db.announcementRead.upsert({where:{userId_announcementId_version:{userId:req.user!.id,announcementId:id,version}},create:{userId:req.user!.id,announcementId:id,version},update:{}});res.json({ok:true});});
-app.post('/api/billing/checkout',(req,res)=>{z.enum(['Pro','Lifetime']).parse(req.body.plan);if(production||process.env.BILLING_STUB_ENABLED!=='true')return res.status(503).json({error:'Payments are not configured. No charge or plan activation occurred.'});res.json({mode:'development-stub',message:'Development stub only. No payment was collected and no entitlement was activated.'});});
-app.use((error:any,_req:Request,res:Response,_next:NextFunction)=>{if(error instanceof z.ZodError)return res.status(400).json({error:'Validation failed',details:error.issues});if(error.code==='P2002')return res.status(409).json({error:'This occurrence or record already exists.'});if(error.code==='P2025')return res.status(404).json({error:'Record not found.'});console.error(error instanceof HttpError?error.message:error);res.status(error.status||500).json({error:error instanceof HttpError?error.message:'The server could not complete this request.',...(error instanceof HttpError&&error.code?{code:error.code}:{})});});
+app.use((error:any,_req:Request,res:Response,_next:NextFunction)=>{if(error instanceof z.ZodError)return res.status(400).json({error:'Validation failed',details:error.issues.slice(0,10).map(i=>({path:i.path.join('.'),message:i.message}))});if(error.code==='P2002')return res.status(409).json({error:'This occurrence or record already exists.'});if(error.code==='P2025')return res.status(404).json({error:'Record not found.'});console.error(error instanceof HttpError?error.message:error);res.status(error.status||500).json({error:error instanceof HttpError?error.message:'The server could not complete this request.',...(error instanceof HttpError&&error.code?{code:error.code}:{})});});
 const server=app.listen(Number(process.env.PORT||4000),()=>console.log('Daily Ledger API listening'));
+// Slow or stalled clients are cut off instead of holding sockets open.
+server.requestTimeout=60000;server.headersTimeout=20000;
 async function stop(){server.close();await db.$disconnect();await pool.end();}
 process.on('SIGTERM',stop);process.on('SIGINT',stop);
 

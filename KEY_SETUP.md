@@ -116,24 +116,32 @@ AI_OUTPUT_COST_PER_MILLION=
 
 The last two are optional verified pricing values, not secrets; blank means no cost estimate. OpenRouter offers free models with limits; check [current pricing](https://openrouter.ai/pricing). Alternatives: [Google AI Studio](https://aistudio.google.com/) using `https://generativelanguage.googleapis.com/v1beta/openai`, or OpenAI using `https://api.openai.com/v1`. Use the provider's exact current model ID. Gemini free-tier data may be used to improve Google products; review [pricing/data-use terms](https://ai.google.dev/gemini-api/docs/pricing) before sending personal records.
 
-## Whop: prepare credentials; implementation still pending
+## Whop payments (built, switched off until you add the keys)
 
-The SDK is installed, but checkout is still an unavailable/development stub. **Keys alone currently do not collect payments or activate Pro.** Paid requests create support tickets; admin grants plans manually.
-
-Prepare a Whop business/account ID (`biz_...`), business API credential with checkout creation and payment/membership read permissions, Pro recurring plan ID, Lifetime one-time plan ID, and webhook signing secret. Use separate sandbox credentials/plans first.
-
-These are proposed names for the implementation phase, NOT variables currently consumed by the app:
+The code for checkout, the signed webhook, plan activation, refunds and cancellation is in `apps/api/src/whop.ts`. It stays off until **all four** variables below exist on the **API service** (never on Vercel). With any of them missing, checkout returns 503, the webhook returns 503, and no plan can be granted.
 
 ```dotenv
-WHOP_API_KEY=YOUR-WHOP-KEY
-WHOP_ACCOUNT_ID=biz_YOUR-ACCOUNT
-WHOP_PRO_PLAN_ID=plan_YOUR-PRO-PLAN
-WHOP_LIFETIME_PLAN_ID=plan_YOUR-LIFETIME-PLAN
-WHOP_WEBHOOK_SECRET=YOUR-SIGNING-SECRET
-WHOP_SANDBOX=true
+WHOP_API_KEY=your-company-api-key
+WHOP_PRO_PLAN_ID=plan_...        # recurring monthly plan, $20
+WHOP_LIFETIME_PLAN_ID=plan_...   # one-time plan, $100
+WHOP_WEBHOOK_SECRET=ws_...       # signing secret shown when you create the webhook
+WHOP_SANDBOX=true                # remove or set false for live payments
 ```
 
-Keep these on the API. Implement/test the handler before registering a webhook URL. Planned endpoint: `https://YOUR-API-DOMAIN/webhooks/whop`. Returning to the app must never activate a plan by itself; activation needs verified server-side payment evidence. Duplicate events, refunds, subscription expiry, owner binding, delayed webhooks and Pro-to-Lifetime recurring-charge cancellation need tests. [Whop webhook guide](https://docs.whop.com/developer/guides/webhooks).
+Steps, in order:
+
+1. In Whop, create the two plans (Pro monthly, Lifetime one-time). Copy each plan id.
+2. Create an API key for your company with permission to create checkout configurations and manage memberships.
+3. Deploy the API to Railway first so it has a public URL, and set the three variables above plus `WHOP_SANDBOX=true`.
+4. In Whop add a webhook pointing to `https://YOUR-API-DOMAIN/webhooks/whop` with these events: `payment.succeeded`, `payment.failed`, `membership.activated`, `membership.deactivated`, `membership.cancel_at_period_end_changed`, `refund.created`, `dispute.created`. Copy the signing secret into `WHOP_WEBHOOK_SECRET` and redeploy.
+5. Test in the sandbox with a test card: buy Pro, check the account becomes Pro; cancel; buy Lifetime; refund it. Look at the `WebhookEvent` table to see each delivery and its outcome.
+6. Only then switch to live: live plan ids, live key, new live webhook secret, `WHOP_SANDBOX` removed. Sandbox and live use different keys and secrets.
+
+What the code guarantees: a plan is granted only by a signed, fresh (5-minute window) webhook; the same event id is applied once; the buyer is identified by the user id the server put in the checkout, never by anything in the browser; a Pro event never downgrades Lifetime; a refunded Lifetime returns to Free.
+
+**Not yet verified against real Whop:** the exact field names in Whop's webhook payloads and checkout response were written from their docs and a faked server, not from live traffic. Sandbox step 5 is how you confirm them. If a field name differs, the symptom is a `WebhookEvent` row whose outcome starts with `unmatched` or `ignored`. Send me that row and I will fix the mapping.
+
+Also set `TRIAL_MODE=off` only if you later replace the built-in 7-day trial with a Whop card-required trial. Leave it alone for now.
 
 ## Cloudinary: profile photos (implemented, needs your account)
 

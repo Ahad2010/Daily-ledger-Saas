@@ -16,7 +16,7 @@ const folder='daily-ledger/avatars';
 export const avatarPublicIdPattern=(userId:string)=>new RegExp(`^${folder}/${userId}-[a-f0-9]{8}$`);
 // Only images stored in OUR Cloudinary account, under this user's own public ID, can become an avatar.
 export function validAvatar(userId:string,cloudName:string,url:string,publicId:string){
- if(!avatarPublicIdPattern(userId).test(publicId))return false;
+ if(!avatarPublicIdPattern(userId).test(publicId)||url.split('/').some(part=>part==='.'||part==='..'))return false;
  const escaped=publicId.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
  return new RegExp(`^https://res\\.cloudinary\\.com/${cloudName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}/image/upload/(?:[a-z0-9_,.:-]+/)*(?:v\\d+/)?${escaped}\\.(?:jpg|jpeg|png|webp)$`,'i').test(url);
 }

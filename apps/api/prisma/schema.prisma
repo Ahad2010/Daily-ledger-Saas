@@ -22,6 +22,7 @@ model User {
   focusAreas Json @default("[]")
   referralSource String?
   trialStartedAt DateTime?
+  trialKey String? @unique
   avatarUrl String?
   avatarPublicId String?
   referralCode String? @unique
@@ -302,4 +303,13 @@ model SupportMessage {
  body String
  createdAt DateTime @default(now())
  @@index([ticketId,createdAt])
+}
+
+model WebhookEvent {
+  id String @id
+  provider String
+  type String
+  outcome String
+  receivedAt DateTime @default(now())
+  @@index([provider,receivedAt])
 }
