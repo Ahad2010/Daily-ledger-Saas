@@ -1313,3 +1313,6 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
  .settings-nav a:hover{background:#171a18}
  .settings-nav a.active{background:#b6f26b;color:#0b0b0b;border-radius:10px}
 }
+
+/* Overview: the cash-flow row sat flush against the budget row (finance.css gave .chart-grid only 2px below). Match the 14px used between the other rows. */
+main[data-page=overview] .chart-grid{margin-bottom:14px}
