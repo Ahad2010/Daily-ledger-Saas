@@ -16,6 +16,6 @@ export function BudgetPulse({m}:{m:Metrics}){
 export function SpendingInsights({s,m,stack=false}:{s:Snapshot;m:Metrics;stack?:boolean}){
  const items:Insight[]=buildInsights(s.records,m);
  return <Panel className={`insights-panel${stack?' insights-stack':''}`}><div className="panel-heading"><div><h2>Smart insights</h2><p>Based only on your recorded transactions</p></div><Sparkles size={18} aria-hidden="true"/></div>
-  {items.length?<ul className="insight-list">{items.map(item=>{const Icon=item.tone==='warn'?CircleAlert:icons[item.id];return <li key={item.id} data-tone={item.tone}><span className="insight-icon"><Icon size={17}/></span><div><strong>{item.title}</strong><p>{item.text}</p></div></li>;})}</ul>:<p className="muted">Log at least 3 expenses this month and your personal insights appear here: where your money goes, your savings rate and your biggest spend.</p>}
+  {items.length?<ul className="insight-list">{items.map(item=>{const Icon=item.tone==='warn'?CircleAlert:icons[item.id];return <li key={item.id} data-tone={item.tone}><span className="insight-icon"><Icon size={17}/></span><div><strong>{item.title}</strong><p>{item.text}</p></div></li>;})}</ul>:<p className="muted">Log a couple of expenses this month and your personal insights appear here: where your money goes, your savings rate and your biggest spend.</p>}
  </Panel>;
 }

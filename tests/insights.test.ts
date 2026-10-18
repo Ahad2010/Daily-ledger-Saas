@@ -20,3 +20,8 @@ test('weekend spending is only flagged when the daily average really differs',()
  const even=[tx('1','2026-09-05',10000,'Fun'),tx('2','2026-09-08',10000,'Food'),tx('3','2026-09-09',10000,'Food'),tx('4','2026-09-10',10000,'Food'),tx('5','2026-09-11',10000,'Food'),tx('6','2026-09-12',10000,'Fun')];
  assert.ok(!buildInsights(even,metrics(even,'2026-09','USD','UTC',asOf)).some(i=>i.id==='weekend'&&i.tone!=='info'));
 });
+test('one lone expense does not produce a "100% of everything" insight',()=>{
+ const records=[tx('1','2026-09-01',400000,'Salary','income'),tx('2','2026-09-18',90000,'Essentials','expense','Bill')];
+ const ids=buildInsights(records,metrics(records,'2026-09','USD','UTC',asOf)).map(i=>i.id);
+ assert.ok(!ids.includes('category')&&!ids.includes('largest'));
+});

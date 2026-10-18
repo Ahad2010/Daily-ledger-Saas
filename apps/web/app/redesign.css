@@ -1325,3 +1325,8 @@ main[data-page=overview] .chart-grid{margin-bottom:14px}
 @media(prefers-reduced-motion:reduce){.tour-offer .tour-card.tour-invite{animation:none}}
 
 .dialog-content.dialog-drawer:not(.dialog-side) .dialog-body{padding-top:22px}
+
+/* Delete controls read as destructive at a glance; edit stays neutral. */
+button:has(>svg.lucide-trash-2),button:has(>svg.lucide-trash),a:has(>svg.lucide-trash-2){color:#d98880!important}
+button:has(>svg.lucide-trash-2):hover:not(:disabled),button:has(>svg.lucide-trash):hover:not(:disabled){color:#ff9a90!important;background:rgba(242,144,138,.12);border-color:rgba(242,144,138,.35)}
+button:has(>svg.lucide-trash-2):focus-visible,button:has(>svg.lucide-trash):focus-visible{outline-color:#f2908a}
