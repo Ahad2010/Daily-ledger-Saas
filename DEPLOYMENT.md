@@ -2,6 +2,10 @@
 
 The frontend is configured for Vercel. The Express API, PostgreSQL and scheduled notification worker run on an external host such as Railway. No deployment or payment connection has been made.
 
+## Local sign-in first
+
+`npm run dev` now starts the frontends in account mode: opening `/` sends a signed-out visitor to `/login`, and every account sees only its own records. Use `npm run dev:demo` for the sample workspace with no sign-in. Stop any old `next dev` on port 3000 first, or the old mode is reused.
+
 ## Go live: Railway (API + PostgreSQL + worker) and Vercel (app + admin)
 
 One backend serves both frontends:

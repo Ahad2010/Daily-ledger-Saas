@@ -121,6 +121,7 @@ function Workspace(){
  if(access.data?.user.status==='suspended'||error instanceof ApiError&&error.status===403)return <BannedAccount/>;
  if(building)return <DashboardBuilding persona={building.persona} ready={building.ready} error={building.error} onRetry={loadBuiltDashboard} onComplete={()=>setBuilding(null)}/>;
  if(isPending)return <AccountLoading/>;
+ if(!demoMode&&error instanceof ApiError&&error.status===401)return <div className="boot" role="status"><RefreshCw size={22} className="spin"/><p>Taking you to sign in…</p></div>;
  if(isError||!s)return <div className="boot"><div className="brand"><span className="logo-mark"><BrandMark/></span> Daily Ledger</div><h1>{error instanceof ApiError&&error.status===401?'A little more balance.':'Your workspace is unavailable'}</h1><p>{error instanceof ApiError&&error.status===401?'One place for your money, routines, and progress. Sign in to your personal workspace.':(error as Error)?.message}</p>{!demoMode&&<Button asChild variant="primary"><a href={`${apiBase}/auth/google`}>Continue with Google</a></Button>}<Button onClick={()=>refetch()}><RefreshCw size={16}/>Retry connection</Button><small>No Gmail access is requested.</small></div>;
  if(!demoMode&&!s.profile.onboardingCompletedAt)return <Onboarding profile={s.profile} onSaved={onboardingSaved}/>;
  const m=dashboardMetrics!;const ignite=!s.records.some(r=>['transaction','task','habit','goal'].includes(r.kind));

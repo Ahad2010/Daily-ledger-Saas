@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "dev": "node scripts/dev.mjs",
+    "dev:demo": "node scripts/dev.mjs --demo",
     "dev:web": "npm run dev -w @ledger/web",
     "dev:api": "npm run dev -w @ledger/api",
     "build": "npm run build -w @ledger/web && npm run build -w @ledger/admin && npm run build -w @ledger/api",
