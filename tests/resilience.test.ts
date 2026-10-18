@@ -117,3 +117,32 @@ test('login throttling is shared between API replicas',{skip,timeout:120000},asy
   assert.deepEqual(codes.slice(0,5),[401,401,401,401,401]);assert.deepEqual(codes.slice(5),[429,429],`attempts split across two replicas still hit one shared limit: ${codes}`);
  }finally{await a.pool.query(`DELETE FROM "RateLimitHit"`);await a.stop();await b.stop();}
 });
+
+test('if the shared rate-limit table is unavailable, limits still apply locally and the rest of the app is unaffected',{skip,timeout:120000},async()=>{
+ const api=await startApi(4091);
+ try{
+  await api.pool.query('ALTER TABLE "RateLimitHit" RENAME TO "RateLimitHit_off"');
+  const u=await api.user({plan:'Free'});
+  const email=`outage-${randomUUID()}@example.com`;
+  const post=async()=>{const first=await fetch(api.base+'/auth/csrf');const {csrf}=await first.json() as any;const cookie=(first.headers.get('set-cookie')||'').split(';')[0];return fetch(api.base+'/auth/login',{method:'POST',headers:{'content-type':'application/json',origin:'http://localhost:3000','x-csrf-token':csrf,cookie},body:JSON.stringify({email,password:'wrong password 123!'})}).then(r=>r.status);};
+  const started=Date.now(),codes:number[]=[];for(let i=0;i<7;i++)codes.push(await post());
+  assert.deepEqual(codes.slice(0,5),[401,401,401,401,401],'wrong passwords are still refused normally');
+  assert.deepEqual(codes.slice(5),[429,429],`the failed-login limit still applies without the shared store: ${codes}`);
+  assert.ok(Date.now()-started<15000,'an unavailable store does not slow requests');
+  assert.equal((await u.request('/api/snapshot')).status,200);assert.equal((await fetch(api.base+'/ready')).status,200);
+  assert.match(api.logs(),/Rate-limit store unavailable/);
+ }finally{await api.pool.query('ALTER TABLE "RateLimitHit_off" RENAME TO "RateLimitHit"').catch(()=>undefined);await api.stop();}
+});
+
+test('with the whole database unreachable the API stays up, reports not-ready and recovers without a restart',{skip,timeout:120000},async()=>{
+ const url=new URL(process.env.TEST_DATABASE_URL!);url.port='1';
+ const api=await startApi(4092,{DATABASE_URL:url.toString()});
+ try{
+  assert.equal((await fetch(api.base+'/health',{headers:{connection:'close'}})).status,200,'liveness does not depend on the database');
+  assert.equal((await fetch(api.base+'/ready',{headers:{connection:'close'}})).status,503,'readiness reports the outage');
+  const login=await fetch(api.base+'/auth/csrf',{headers:{connection:'close'}}).catch(()=>({status:0}));assert.ok(login.status<600,'a failed session store may drop that one connection but never the process');
+  const protectedRoute=await fetch(api.base+'/api/snapshot',{headers:{connection:'close'}});assert.ok([401,500,503].includes(protectedRoute.status));
+  const alive=await fetch(api.base+'/health',{headers:{connection:'close'}}).then(r=>r.status,e=>`down: ${e.cause?.code||e.message}\n${api.logs().slice(-1500)}`);
+  assert.equal(alive,200,'the process survived');
+ }finally{await api.stop();}
+});

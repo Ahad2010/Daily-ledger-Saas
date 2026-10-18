@@ -36,7 +36,7 @@ test('no optional integration configured: core app, password login and free plan
 
 test('invalid or unreachable providers fail only their own feature, and no secret reaches a response or the log',{skip,timeout:150000},async()=>{
  const api=await startApi(4101,{...SECRETS,GOOGLE_CLIENT_ID:'bad-client-id',GOOGLE_CALLBACK_URL:'not a url',EMAIL_FROM:'nobody@invalid.invalid',AI_PROVIDER:'openai-compatible',AI_BASE_URL:'http://127.0.0.1:9',AI_MODEL:'m',VAPID_PUBLIC_KEY:'not-a-key',VAPID_SUBJECT:'nonsense',WHOP_ENABLED:'true',CLOUDINARY_CLOUD_NAME:'x',CLOUDINARY_API_KEY:'y'});
- const bodies:string[]=[];
+ const bodies:string[]=[];let restored=false;
  const grab=async(r:Response)=>{const t=await r.text();bodies.push(t);return {status:r.status,text:t};};
  const previous=(await api.pool.query('SELECT * FROM "PlatformConfig" WHERE id=1')).rows[0];
  await api.pool.query('INSERT INTO "PlatformConfig" (id,data,version,"updatedAt") VALUES (1,$1,1,NOW()) ON CONFLICT (id) DO UPDATE SET data=$1',[JSON.stringify(aiSettings)]);
@@ -57,10 +57,14 @@ test('invalid or unreachable providers fail only their own feature, and no secre
   const all=bodies.join('\n');
   for(const [name,value] of Object.entries(SECRETS))assert.ok(!all.includes(value),`${name} leaked into a response`);
   assert.ok(!all.includes('feature-session-secret'),'session secret leaked into a response');
+  // Restore shared test state BEFORE the pool is closed by stop().
+  await api.pool.query('DELETE FROM "AiUsage"');
+  if(previous)await api.pool.query('UPDATE "PlatformConfig" SET data=$1 WHERE id=1',[JSON.stringify(previous.data)]);else await api.pool.query('DELETE FROM "PlatformConfig" WHERE id=1');
+  restored=true;
   await api.stop();
   for(const [name,value] of Object.entries(SECRETS))assert.ok(!api.logs().includes(value),`${name} leaked into the server log`);
   assert.ok(!api.logs().includes('feature-session-secret'),'session secret leaked into the log');
- }finally{await api.pool.query('DELETE FROM "AiUsage"').catch(()=>undefined);if(previous)await api.pool.query('UPDATE "PlatformConfig" SET data=$1 WHERE id=1',[JSON.stringify(previous.data)]).catch(()=>undefined);else await api.pool.query('DELETE FROM "PlatformConfig" WHERE id=1').catch(()=>undefined);await api.stop().catch(()=>undefined);}
+ }finally{if(!restored){await api.pool.query('DELETE FROM "AiUsage"');if(previous)await api.pool.query('UPDATE "PlatformConfig" SET data=$1 WHERE id=1',[JSON.stringify(previous.data)]);else await api.pool.query('DELETE FROM "PlatformConfig" WHERE id=1');await api.stop();}}
 });
 
 test('core configuration is still validated at startup',{skip,timeout:60000},()=>{

@@ -13,7 +13,7 @@
     "build": "npm run build -w @ledger/web && npm run build -w @ledger/admin && npm run build -w @ledger/api",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint apps packages tests",
-    "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
+    "test": "tsx --test --test-concurrency=1 --import ./tests/support/clear-limits.mjs tests/*.test.ts",
     "db:generate": "npm run db:generate -w @ledger/api",
     "db:migrate": "npm run db:migrate -w @ledger/api",
     "worker": "npm run worker -w @ledger/api",
