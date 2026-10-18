@@ -165,3 +165,14 @@ Setup keys and one-phase-at-a-time Claude prompts: [KEY_SETUP.md](KEY_SETUP.md).
 - Keep Railway at **one replica**: login and request limits are held in memory and reset on every deploy. Move them to a shared store before scaling out.
 - Turn on automated backups for the database in your Postgres host and do one test restore before launch.
 - Add an uptime check on `/ready` and an error tracker; neither is included in the code.
+
+## Starting over with the same email (local only)
+
+To delete a test account and sign up with the same email again, with the local database running:
+
+```
+npm run dev:delete-user -- someone@example.com        # shows what would be deleted
+npm run dev:delete-user -- someone@example.com --yes  # deletes it
+```
+
+It removes the account, all of its data, its sessions and any pending sign-up codes. It refuses to run against any database that is not on this computer, in production, or on the administrator account.
