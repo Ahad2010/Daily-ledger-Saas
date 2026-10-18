@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {parseAssistantReply,sanitizeActions,assistantLinks} from '../apps/api/src/ai-actions';
+import {parseAssistantReply,sanitizeActions,assistantLinks,ASSISTANT_CAPABILITIES} from '../apps/api/src/ai-actions';
 import {startApi} from './support/api';
 const ctx={currency:'USD',today:'2026-10-08'};
 
@@ -54,6 +54,16 @@ test('AI chat: capabilities reach the model; only validated, confirmable actions
   // Nothing was created by the assistant itself.
   assert.equal((await u.json('/api/snapshot')).records.filter((r:any)=>r.kind==='task').length,0);
  }finally{const restore=previous?JSON.stringify(previous.data):null;await api.pool.query(restore?'UPDATE "PlatformConfig" SET data=$1 WHERE id=1':'DELETE FROM "PlatformConfig" WHERE id=1',restore?[restore]:[]);await api.stop();provider.close();}
+});
+
+test('a habit with no days defaults to every day instead of stalling; explicit days and bad days are respected',()=>{
+ const ctx={currency:'USD',today:'2026-10-18'};
+ const none=sanitizeActions([{type:'create',kind:'habit',data:{title:'development'}}],ctx) as any[];
+ assert.equal(none.length,1);assert.deepEqual(none[0].data.days,[0,1,2,3,4,5,6]);assert.equal(none[0].label,'Add habit "development" every day');
+ const some=sanitizeActions([{type:'create',kind:'habit',data:{title:'Read',days:[1,3,5]}}],ctx) as any[];assert.equal(some[0].label,'Add habit "Read" on Mon, Wed, Fri');
+ assert.equal(sanitizeActions([{type:'create',kind:'habit',data:{title:'x',days:[]}}],ctx).length,0,'an explicit empty list is still rejected');
+ assert.equal(sanitizeActions([{type:'create',kind:'habit',data:{title:'x',days:[9]}}],ctx).length,0,'an invalid weekday is still rejected');
+ assert.match(ASSISTANT_CAPABILITIES,/Ask at most once/);
 });
 
 test('a habit completion is accepted only for the member\'s own habit and only for today',()=>{
