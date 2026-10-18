@@ -40,8 +40,10 @@ async function summary(user:User,rankingPage=false){
    ), ranked AS (
     SELECT id,name,total,ROW_NUMBER() OVER (ORDER BY total DESC,"createdAt" ASC,id ASC) AS rank FROM counts
    ) SELECT * FROM ranked WHERE rank<=50 OR id=${owner.id} ORDER BY rank`;
-  leaders=rows.map(row=>({name:row.name,total:Number(row.total),rank:Number(row.rank),you:row.id===owner.id}));
+  leaders=rows.map(row=>({name:row.id===owner.id?row.name:displayName(row.name),total:Number(row.total),rank:Number(row.rank),you:row.id===owner.id}));
  }
  return {code:owner.referralCode,link:`${process.env.FRONTEND_ORIGIN||'http://localhost:3000'}/signup?ref=${encodeURIComponent(owner.referralCode!)}`,total,paid,rankingActive,rank:leaders.find(row=>row.you)?.rank??null,leaders};
 }
+// Other members appear as first name plus an initial, so a ranking never publishes a full name.
+const displayName=(name:string)=>{const parts=name.trim().split(/\s+/).filter(Boolean);return parts.length>1?`${parts[0]} ${parts[parts.length-1][0].toUpperCase()}.`:parts[0]||'Member';};
 export function referralRoutes(){const router=Router();router.get('/',async(req,res)=>res.json(await summary(req.user as User)));router.get('/ranking',async(req,res)=>res.json(await summary(req.user as User,true)));return router;}

@@ -9,6 +9,7 @@ export const origin='http://localhost:3000';
 export async function startApi(port:number,env:Record<string,string>={}){
  const url=process.env.TEST_DATABASE_URL!,secret='feature-session-secret-at-least-32-characters',csrf='c'.repeat(64);
  const pool=new pg.Pool({connectionString:url}),users:string[]=[],sessions:string[]=[];
+ await pool.query('DELETE FROM "RateLimitHit"').catch(()=>undefined);
  const child:ChildProcess=spawn(process.execPath,['--import','tsx','apps/api/src/server.ts'],{env:{...process.env,DATABASE_URL:url,SESSION_SECRET:secret,FRONTEND_ORIGIN:origin,PORT:String(port),NODE_ENV:'development',RESEND_API_KEY:'',EMAIL_FROM:'',...env},stdio:'pipe'});
  let logs='';child.stdout?.on('data',d=>logs+=d);child.stderr?.on('data',d=>logs+=d);
  const base=`http://localhost:${port}`;let ready=false;

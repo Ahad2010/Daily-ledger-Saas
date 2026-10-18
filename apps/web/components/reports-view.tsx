@@ -9,7 +9,7 @@ import {Entrance,AnimatedProgress,AnimatedText,Ring,useReducedMotion} from './an
 import {CashFlow,Spending} from './dashboard-charts';
 import {Button} from './ui/button';
 import {UsageMeter} from './usage-meter';
-import {adapter,demoMode,download} from '../lib/data';
+import {adapter,download} from '../lib/data';
 
 const monthLabel=(month:string)=>new Date(`${month}-01T12:00:00Z`).toLocaleDateString(dateLocale(),{month:'long',year:'numeric',timeZone:'UTC'});
 const dayLabel=(date:string)=>new Date(`${date}T12:00:00Z`).toLocaleDateString(dateLocale(),{month:'short',day:'numeric',timeZone:'UTC'});

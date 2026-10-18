@@ -5,6 +5,7 @@ import { localDate, nextOccurrence, reminderEligible, budgetAlerts, budgetAlertE
 import { db,pool } from './db.js';
 import { dto,metadata } from './service.js';
 import { resetToken } from './passwords.js';
+import { renderEmail } from './email-template.js';
 import {policy,allowed} from './platform.js';
 import {sendBrowser,habitReminderDate,localHour,zonedHour,recordReminder,notificationEmailAllowed,morningDigest,weeklyDigest} from './push.js';
 const resend=process.env.RESEND_API_KEY?new Resend(process.env.RESEND_API_KEY):null;
@@ -88,7 +89,7 @@ async function deliver(jobId:string){
   // Never retry beyond its 24-hour key window: uncertain deliveries require operator review.
   const first=await tx.deliveryAttempt.findFirst({where:{jobId:job.id},orderBy:{createdAt:'asc'}});
   if(first&&Date.now()-first.createdAt.getTime()>23*3600000)throw new Error('Delivery idempotency window expired; operator review required.');
-  const result=await resend.emails.send({from:process.env.EMAIL_FROM!,to:user.email,subject:title,text:`${title}\n\nOpen your Daily Ledger workspace: ${process.env.FRONTEND_ORIGIN}\nManage reminder preferences in Settings.`},{idempotencyKey:job.key});
+  const result=await resend.emails.send({from:process.env.EMAIL_FROM!,to:user.email,subject:title,text:`${title}\n\nOpen your Daily Ledger workspace: ${process.env.FRONTEND_ORIGIN}\nManage reminder preferences in Settings.`,html:renderEmail({preheader:title,heading:title,blocks:[{type:'p',text:'A quick nudge from your Daily Ledger workspace.'},{type:'note',text:'You can change which reminders you get in Settings, Notifications.'}],cta:{label:'Open Daily Ledger',url:process.env.FRONTEND_ORIGIN||''},footer:'You are receiving this reminder because email reminders are on for your account.'})},{idempotencyKey:job.key});
   if(result.error)throw new Error(result.error.message);
   await tx.deliveryAttempt.upsert({where:{jobId_attempt:{jobId:job.id,attempt:job.attempts}},create:{jobId:job.id,attempt:job.attempts,status:'sent',providerId:result.data?.id},update:{status:'sent',providerId:result.data?.id}});
   await tx.job.update({where:{id:job.id},data:{status:'done',leaseUntil:null,deliveredAt:new Date(),lastError:null}});

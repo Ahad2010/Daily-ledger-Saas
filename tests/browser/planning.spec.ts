@@ -34,11 +34,11 @@ test('transaction paging and category drill-down preserve the selected month',as
  await page.goto('/finance/transactions');await expect(page.locator('tbody tr')).toHaveCount(12);
  await page.getByRole('button',{name:'Next transaction page'}).click();await expect(page.locator('.transaction-pagination')).toContainText('Showing 13–24');
  await page.getByRole('combobox',{name:'Transaction category'}).click();await page.getByRole('option',{name:'Food',exact:true}).click();await expect(page.locator('.transaction-pagination')).toContainText('Showing 1–12');
- await page.goto('/');await page.getByLabel('Selected month').fill('2026-08');
+ await page.goto('/');await page.getByLabel('Selected month').click();await page.getByRole('option',{name:'August 2026'}).click();
  await page.getByRole('button',{name:'Quick add',exact:true}).click();await page.getByRole('button',{name:'Transaction',exact:true}).click();
  await page.getByRole('dialog').getByLabel('Description',{exact:true}).fill('August expense');await page.getByRole('dialog').getByLabel('Amount',{exact:true}).fill('50.00');await page.getByRole('button',{name:'Create transaction'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.locator('.spending-legend button').filter({hasText:'Essentials'}).click();
- await expect(page.getByLabel('Selected month')).toHaveValue('2026-08');await expect(page.getByRole('combobox',{name:'Transaction category'})).toContainText('Essentials');
+ await expect(page.getByLabel('Selected month')).toContainText('August 2026');await expect(page.getByRole('combobox',{name:'Transaction category'})).toContainText('Essentials');
 });
 test('mobile transactions use readable rows with working edit controls',async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto('/finance/transactions');await page.getByRole('combobox',{name:'Transaction category'}).click();await page.getByRole('option',{name:'Food',exact:true}).click();

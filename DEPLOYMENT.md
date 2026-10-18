@@ -2,6 +2,10 @@
 
 The frontend is configured for Vercel. The Express API, PostgreSQL and scheduled notification worker run on an external host such as Railway. No deployment or payment connection has been made.
 
+## Local sign-in first
+
+`npm run dev` now starts the frontends in account mode: opening `/` sends a signed-out visitor to `/login`, and every account sees only its own records. Use `npm run dev:demo` for the sample workspace with no sign-in. Stop any old `next dev` on port 3000 first, or the old mode is reused.
+
 ## Go live: Railway (API + PostgreSQL + worker) and Vercel (app + admin)
 
 One backend serves both frontends:
@@ -151,4 +155,13 @@ Referral links and codes live in Settings. A new verified signup through the lin
 
 Official Vercel monorepo setup: https://vercel.com/docs/monorepos/monorepo-faq
 
-Setup keys and one-phase-at-a-time Claude prompts: [KEY_SETUP.md](KEY_SETUP.md). Whop variable names in that guide are proposed implementation inputs, not an active integration. Cloudinary (profile photos) is implemented and activates when its three variables are set.
+Setup keys and one-phase-at-a-time Claude prompts: [KEY_SETUP.md](KEY_SETUP.md). Whop payments are built and activate when the four Whop variables in that guide are set. Cloudinary (profile photos) is implemented and activates when its three variables are set.
+
+
+## Production safety checks built into the API
+
+- On Railway the API refuses to start unless `NODE_ENV=production` (so session cookies get the Secure flag).
+- In production it refuses to start unless `TRUST_PROXY_HOPS` is set (use `2` behind the Vercel `/backend` rewrite).
+- Keep Railway at **one replica**: login and request limits are held in memory and reset on every deploy. Move them to a shared store before scaling out.
+- Turn on automated backups for the database in your Postgres host and do one test restore before launch.
+- Add an uptime check on `/ready` and an error tracker; neither is included in the code.

@@ -9,7 +9,7 @@ import {demoMode,request} from '../lib/data';
 import {CancelSubscription} from './cancel-subscription';
 
 interface Payment{id:string;provider:string;kind:string;description:string|null;currency:string;amount:number;status:string;receiptUrl:string|null;createdAt:string}
-interface Details{plan:string;source:string;trial:{available:boolean;used:boolean;endsAt:string|null};accessUntil:string|null;cancelledAt:string|null;canCancel:boolean;paymentsConfigured:boolean;payments:Payment[]}
+interface Details{plan:string;source:string;trial:{available:boolean;used:boolean;endsAt:string|null};accessUntil:string|null;cancelledAt:string|null;canCancel:boolean;endsAtPeriodEnd?:boolean;paymentsConfigured:boolean;payments:Payment[]}
 const date=(value:string)=>new Date(value).toLocaleDateString(dateLocale(),{year:'numeric',month:'short',day:'numeric'});
 const safeReceipt=(value:string|null)=>value&&/^https:\/\//i.test(value)?value:null;
 
@@ -23,8 +23,8 @@ export function BillingPanel({s}:{s:Snapshot}){
   :query.isError?<p role="alert" className="error">{query.error.message} <button className="plain-button" onClick={()=>void query.refetch()}>Retry</button></p>
   :<>
    <div className="billing-summary"><div><small>Plan</small><strong>{s.profile.plan}</strong></div><div><small>Status</small><strong>{access}</strong></div></div>
-   {cancelled&&<p className="notice-inline" role="status">Your plan was cancelled. You are on Free and will not be charged again.</p>}
-   {details!.canCancel&&!cancelled&&<CancelSubscription trial={!!details!.trial.endsAt} onDone={()=>setCancelled(true)}/>}
+   {cancelled&&!details!.endsAtPeriodEnd&&<p className="notice-inline" role="status">Your plan was cancelled. You are on Free and will not be charged again.</p>}{details!.endsAtPeriodEnd&&<p className="notice-inline" role="status">Your subscription will not renew. You keep Pro until the end of the period you already paid for.</p>}
+   {details!.canCancel&&!cancelled&&<CancelSubscription trial={!!details!.trial.endsAt} period={details!.paymentsConfigured&&details!.source==='provider'} onDone={()=>{setCancelled(true);void query.refetch();}}/>}
    {details!.cancelledAt&&!details!.canCancel&&details!.plan==='Free'&&<p className="plan-small">Subscription cancelled on {date(details!.cancelledAt)}. No further charges.</p>}
    {details!.payments.length?<div className="table-scroll"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th><th>Receipt</th></tr></thead><tbody>{details!.payments.map(p=>{const receipt=safeReceipt(p.receiptUrl);return <tr key={p.id}><td>{date(p.createdAt)}</td><td>{p.description||(p.kind==='lifetime'?'Lifetime membership':'Pro membership')}</td><td>{money(p.amount,p.currency)}</td><td><span className="tag">{p.status}</span></td><td>{receipt?<a className="billing-receipt" href={receipt} target="_blank" rel="noopener noreferrer">View<ExternalLink size={12}/></a>:'—'}</td></tr>;})}</tbody></table></div>
    :<p className="muted">{details!.paymentsConfigured?'No payments yet. Receipts and invoices will appear here.':'Online payments are not connected yet. Plan changes are handled by support, and every payment will appear here with its receipt once checkout is available.'}</p>}

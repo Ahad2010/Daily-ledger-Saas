@@ -7,8 +7,12 @@ const children=[];
 const config=existsSync('apps/api/.env')?parse(readFileSync('apps/api/.env')):{};
 const apiPort=Number(config.PORT||4000);
 function listening(port,host='127.0.0.1'){return new Promise(resolve=>{const socket=createConnection({port,host});socket.setTimeout(500);socket.once('connect',()=>{socket.destroy();resolve(true);});socket.once('error',()=>{socket.destroy();resolve(false);});socket.once('timeout',()=>{socket.destroy();resolve(false);});});}
-function run(args){const child=spawn(process.execPath,args,{stdio:'inherit',windowsHide:true});children.push(child);child.on('error',error=>console.error(error.message));return child;}
+function run(args,env={}){const child=spawn(process.execPath,args,{stdio:'inherit',windowsHide:true,env:{...process.env,...env}});children.push(child);child.on('error',error=>console.error(error.message));return child;}
 const npm=process.env.npm_execpath;
+// Real accounts by default: / sends visitors to /login and every account sees only its own data. `npm run dev:demo` keeps the sample workspace.
+const demo=process.argv.includes('--demo')||process.env.DEMO==='1';
+const frontEnv=demo?{NEXT_PUBLIC_DATA_MODE:'demo'}:{NEXT_PUBLIC_DATA_MODE:'api',NEXT_PUBLIC_API_URL:'/backend',API_INTERNAL_URL:`http://localhost:${process.env.PORT||config.PORT||4000}`};
+console.log(demo?'Frontend mode: demo (sample data, no sign-in).':'Frontend mode: accounts (sign in first; each account has its own data).');
 if(!npm)throw new Error('Start this script with npm run dev.');
 let stopping=false;
 function stop(){if(stopping)return;stopping=true;for(const child of children)if(child.pid&&!child.killed&&child.exitCode===null&&child.signalCode===null){if(process.platform==='win32')spawnSync('taskkill',['/pid',String(child.pid),'/t','/f'],{stdio:'ignore',windowsHide:true});else child.kill('SIGTERM');}process.exit();}
@@ -21,9 +25,9 @@ if(!(await listening(apiPort))){
  console.log('Starting Daily Ledger API…');run([npm,'run','dev','-w','@ledger/api']);
 }else console.log('Using the existing local API.');
 if(await listening(3000))console.log('Using the existing frontend on http://localhost:3000.');
-else{const web=run([npm,'run','dev','-w','@ledger/web']);web.on('exit',()=>stop());}
+else{const web=run([npm,'run','dev','-w','@ledger/web'],frontEnv);web.on('exit',()=>stop());}
 if(await listening(3003))console.log('Using the existing administrator frontend on http://localhost:3003/admin.');
-else run([npm,'run','dev','-w','@ledger/admin']);
+else run([npm,'run','dev','-w','@ledger/admin'],frontEnv);
 run(['scripts/dev-worker.mjs']);
 async function ready(url){const deadline=Date.now()+180000;while(Date.now()<deadline){try{const response=await fetch(url,{signal:AbortSignal.timeout(5000)});if(response.ok)return true;}catch{/* Startup/first route compilation can still be pending. */}await new Promise(resolve=>setTimeout(resolve,1000));}return false;}
 const [apiReady,webReady,adminReady]=await Promise.all([ready(`http://127.0.0.1:${apiPort}/ready`),ready('http://127.0.0.1:3000/login'),ready('http://127.0.0.1:3003/admin/login')]);

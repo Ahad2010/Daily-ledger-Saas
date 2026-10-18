@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
-import {useState,type ReactNode} from 'react';
-import {ArrowDownLeft,ArrowRight,ArrowUpRight,Calculator,Clock,Flame,Landmark,PieChart,Receipt,Repeat2,ShieldCheck,Split,Sparkles,Target,TrendingUp,Wallet} from 'lucide-react';
+import {useState} from 'react';
+import {ArrowDownLeft,ArrowRight,ArrowUpRight,Calculator,Clock,Flame,PieChart,Receipt,Repeat2,ShieldCheck,Split,Sparkles,Target,TrendingUp,Wallet} from 'lucide-react';
 import {debtEstimate,loanEstimate,money,savingsEstimate} from '@ledger/shared';
 import {Entrance} from './animation';
 import {EmptyState} from './empty-state';
@@ -16,7 +16,6 @@ interface Calc{slug:string;title:string;description:string;icon:typeof Calculato
 
 const ok=(...v:number[])=>v.every(Number.isFinite)&&Math.min(...v)>=0;
 const pct=(v:number)=>`${(Math.round(v*10)/10).toLocaleString()}%`;
-const round=(v:number)=>Math.max(0,Math.round(v*100)/100);
 
 export const calculatorGroups=['Borrow and repay','Save and grow','Plan your money','Everyday tools'] as const;
 export const calculators:Calc[]=[

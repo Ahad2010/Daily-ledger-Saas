@@ -3,7 +3,7 @@ import {useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
 import {useQueryClient} from '@tanstack/react-query';
 import {FileUp,Check,TriangleAlert} from 'lucide-react';
-import {parseCsv,guessColumns,detectDateFormat,mapTransactions,withOccurrences,money,currencyOptions,IMPORT_CHUNK,type ColumnMap,type DateFormat,type DecimalMark,type Snapshot} from '@ledger/shared';
+import {plans,parseCsv,guessColumns,detectDateFormat,mapTransactions,withOccurrences,money,currencyOptions,IMPORT_CHUNK,type ColumnMap,type DateFormat,type DecimalMark,type Snapshot} from '@ledger/shared';
 import {Dialog} from './ui/dialog';
 import {Button} from './ui/button';
 import {request} from '../lib/data';
@@ -51,7 +51,7 @@ export function CsvImport({open,onOpenChange,s}:{open:boolean;onOpenChange:(open
  return <Dialog open={open} onOpenChange={next=>{if(busy)return;onOpenChange(next);if(!next)reset();}} title="Import bank transactions" description="Upload a CSV exported from your bank or card. You review everything before it is saved.">
   {totals?<div className="import-result" role="status"><span className="import-check"><Check size={20}/></span><h3>{totals.imported} transaction{totals.imported===1?'':'s'} imported</h3>
    <div className="import-summary"><span>{totals.duplicates} already existed</span>{totals.rejected>0&&<span>{totals.rejected} could not be read</span>}{totals.limited>0&&<span className="warn">{totals.limited} over your plan allowance</span>}</div>
-   {totals.limited>0&&<p className="import-note">Free accounts keep up to 100 transactions per month. Import a smaller range or <Link href="/plans" onClick={()=>onOpenChange(false)}>explore Pro</Link>.</p>}
+   {totals.limited>0&&<p className="import-note">Free accounts keep up to {plans.Free.transactions} transactions per month. Import a smaller range or <Link href="/plans" onClick={()=>onOpenChange(false)}>explore Pro</Link>.</p>}
    <div className="dialog-actions"><Button onClick={()=>{reset();}}>Import another file</Button><Link className="button primary" href={`/finance/transactions?month=${latestMonth}`} onClick={()=>onOpenChange(false)}>View transactions</Link></div></div>
   :!rows?<div className="import-start"><label className="import-drop"><FileUp size={26}/><strong>Choose a CSV file</strong><span>Columns are detected automatically. Debit/credit and single amount columns both work. Up to 5,000 rows or 2 MB.</span><input ref={input} type="file" accept=".csv,.tsv,.txt,text/csv" aria-label="CSV file" onChange={e=>void choose(e.target.files?.[0])}/></label>{error&&<p role="alert" className="error">{error}</p>}<p className="import-note">Import adds records only. Rows you have already imported are skipped, so re-uploading the same file is safe. Transfers can be marked with a type column.</p></div>
   :<div className="import-map"><p className="import-file"><strong>{fileName}</strong> · {rows.length-1} rows</p>
