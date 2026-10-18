@@ -7,10 +7,16 @@ import {platformSettings} from './platform.js';
 import {tokenHash} from './passwords.js';
 import {recordReferral} from './referrals.js';
 
-const lifetime=5*60000,cooldown=45000;
+const lifetime=5*60000;
+// Each further code requested for the same email within 30 minutes waits longer: 45 s, 2 min, 5 min, 10 min, then 15 min.
+// This is per email, never per IP address, so many people on one network (a home, an office, a mobile carrier) do not block each other.
+const waits=[45,120,300,600,900].map(s=>s*1000),sendWindow=30*60000;
+export const resendWait=(sends:number)=>waits[Math.min(Math.max(sends,1),waits.length)-1];
+const human=(ms:number)=>{const s=Math.ceil(ms/1000);return s<90?`${s} seconds`:`${Math.ceil(s/60)} minutes`;};
+const withTimeout=<T>(work:Promise<T>,ms:number)=>Promise.race([work,new Promise<never>((_,reject)=>setTimeout(()=>reject(new HttpError(502,'The verification email could not be sent. Please retry shortly.')),ms).unref())]);
 const digest=(id:string,code:string)=>createHmac('sha256',process.env.SESSION_SECRET!).update(`auth-otp:${id}:${code}`).digest('hex');
 export const otpConfigured=()=>!!(process.env.RESEND_API_KEY&&process.env.EMAIL_FROM);
-export function otpView(row:{id:string;email:string;purpose:string;expiresAt:Date;sentAt:Date}){return {id:row.id,email:row.email,purpose:row.purpose,expiresAt:row.expiresAt.toISOString(),resendAt:new Date(row.sentAt.getTime()+cooldown).toISOString()};}
+export function otpView(row:{id:string;email:string;purpose:string;expiresAt:Date;sentAt:Date;sends:number}){return {id:row.id,email:row.email,purpose:row.purpose,expiresAt:row.expiresAt.toISOString(),resendAt:new Date(row.sentAt.getTime()+resendWait(row.sends)).toISOString()};}
 
 export async function issueOtp(input:{email:string;purpose:'signup'|'reset';name?:string;passwordHash?:string;returnTo?:string;referralCode?:string},resendId?:string){
  if(!otpConfigured())throw new HttpError(503,'Verification email is not configured. Please contact your workspace operator.');
@@ -18,19 +24,20 @@ export async function issueOtp(input:{email:string;purpose:'signup'|'reset';name
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${input.email}))`;
   const now=new Date(),old=await tx.authChallenge.findUnique({where:{email_purpose:{email:input.email,purpose:input.purpose}}});
   if(resendId&&(!old||old.id!==resendId||old.usedAt||old.verifiedAt))throw new HttpError(400,'Start a new verification request.');
-  if(old&&now.getTime()-old.sentAt.getTime()<cooldown)throw new HttpError(429,'Wait 45 seconds before requesting another code.');
+  if(old){const need=resendWait(old.sends),passed=now.getTime()-old.sentAt.getTime();if(passed<need)throw new HttpError(429,`Please wait ${human(need-passed)} before requesting another code.`);}
   if(old&&old.expiresAt>now&&old.attempts>=5)throw new HttpError(429,'Too many incorrect codes. Start again after this code expires.');
   const account=await tx.user.findFirst({where:{email:input.email}});
   if(input.purpose==='signup'&&account)throw new HttpError(409,'An account already uses this email. Use your original sign-in method.');
   const credential=input.purpose==='reset'?await tx.passwordCredential.findUnique({where:{email:input.email}}):null;
   // A fresh challenge ID also invalidates other browsers holding an older signup request.
   const id=randomUUID(),code=String(randomInt(0,1000000)).padStart(6,'0');
-  const data={codeHash:digest(id,code),proofHash:null,expiresAt:new Date(now.getTime()+lifetime),sentAt:now,verifiedAt:null,usedAt:null,attempts:old&&old.expiresAt>now?old.attempts:0,
+  const inWindow=!!old&&now.getTime()-old.sendsSince.getTime()<sendWindow,sends=inWindow?old!.sends+1:1,sendsSince=inWindow?old!.sendsSince:now;
+  const data={sends,sendsSince,codeHash:digest(id,code),proofHash:null,expiresAt:new Date(now.getTime()+lifetime),sentAt:now,verifiedAt:null,usedAt:null,attempts:old&&old.expiresAt>now?old.attempts:0,
    name:input.name??old?.name??null,passwordHash:input.passwordHash??old?.passwordHash??null,returnTo:input.returnTo??old?.returnTo??'/',referralCode:input.referralCode??old?.referralCode??null};
   const row=await tx.authChallenge.upsert({where:{email_purpose:{email:input.email,purpose:input.purpose}},create:{id,email:input.email,purpose:input.purpose,...data},update:{...data,id}});
   // Keep the response identical for unknown reset emails; no account information is exposed.
   if(input.purpose==='signup'||credential){
-   const result=await new Resend(process.env.RESEND_API_KEY).emails.send({from:process.env.EMAIL_FROM!,to:input.email,subject:input.purpose==='signup'?'Verify your Daily Ledger email':'Your Daily Ledger password reset code',text:`Your Daily Ledger verification code is: ${code}\n\nIt expires in 5 minutes. Never share this code. If you did not request it, ignore this email.`,html:renderEmail({preheader:`Your code is ${code}. It expires in 5 minutes.`,heading:input.purpose==='signup'?'Confirm your email':'Your verification code',blocks:[{type:'p',text:input.purpose==='signup'?'Enter this code on the sign-up page to finish creating your Daily Ledger account.':'Enter this code to continue.'},{type:'code',text:code},{type:'note',text:'The code expires in 5 minutes. Never share it with anyone, including Daily Ledger. If you did not ask for it, you can ignore this email.'}]})},{idempotencyKey:`auth-otp:${id}:${now.getTime()}`});
+   const result=await withTimeout(new Resend(process.env.RESEND_API_KEY).emails.send({from:process.env.EMAIL_FROM!,to:input.email,subject:input.purpose==='signup'?'Verify your Daily Ledger email':'Your Daily Ledger password reset code',text:`Your Daily Ledger verification code is: ${code}\n\nIt expires in 5 minutes. Never share this code. If you did not request it, ignore this email.`,html:renderEmail({preheader:`Your code is ${code}. It expires in 5 minutes.`,heading:input.purpose==='signup'?'Confirm your email':'Your verification code',blocks:[{type:'p',text:input.purpose==='signup'?'Enter this code on the sign-up page to finish creating your Daily Ledger account.':'Enter this code to continue.'},{type:'code',text:code},{type:'note',text:'The code expires in 5 minutes. Never share it with anyone, including Daily Ledger. If you did not ask for it, you can ignore this email.'}]})},{idempotencyKey:`auth-otp:${id}:${now.getTime()}`}),12000);
    if(result.error)throw new HttpError(502,'The verification email could not be sent. Please retry shortly.');
   }
   return otpView(row);

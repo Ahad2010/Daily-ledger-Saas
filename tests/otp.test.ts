@@ -45,5 +45,17 @@ test('OTP signup → onboarding, reset, cooldown, expiry, attempts, CSRF and sin
   const absent=`${prefix}-missing@example.com`,missingSession=await session(),before=readFileSync(mailbox,'utf8');assert.equal((await post(missingSession,'/auth/forgot-password',{email:absent})).status,200);await new Promise(r=>setTimeout(r,600));assert.equal(readFileSync(mailbox,'utf8'),before);
   const lockedEmail=`${prefix}-locked@example.com`,locked=await session();await post(locked,'/auth/signup',{name:'Locked user',email:lockedEmail,password});const lockedCode=code(lockedEmail);for(let i=0;i<5;i++)assert.equal((await post(locked,'/auth/otp/verify',{code:lockedCode==='000000'?'000001':'000000'})).status,i===4?429:400);assert.equal((await post(locked,'/auth/otp/verify',{code:lockedCode})).status,429);
   await pool.query('UPDATE "AuthChallenge" SET "expiresAt"=$2::timestamp WHERE email=$1',[lockedEmail,new Date(Date.now()-60000).toISOString()]);assert.equal((await post(locked,'/auth/otp/verify',{code:lockedCode})).status,400);
+  // Many people behind one IP address (a home, an office, a mobile carrier) can all sign up: limits follow the email, not the network.
+  const shared={ip:'127.0.9.9'};let accepted=0;
+  for(let i=0;i<30;i++){const own=await session();const r=await post({...own,...shared},'/auth/signup',{name:'Shared network',email:`${prefix}-shared${i}@example.com`,password});if(r.status===200)accepted++;}
+  assert.equal(accepted,30,'30 different accounts from one IP all succeed');
+  // Asking again and again for the same email waits longer each time: 45 s, 2 min, 5 min, 10 min.
+  const repeatEmail=`${prefix}-repeat@example.com`,repeat=await session();await post(repeat,'/auth/signup',{name:'Repeat',email:repeatEmail,password});
+  const age=(seconds:number)=>pool.query('UPDATE "AuthChallenge" SET "sentAt"=$2::timestamp WHERE email=$1',[repeatEmail,new Date(Date.now()-seconds*1000).toISOString()]);
+  await age(46);assert.equal((await post(repeat,'/auth/otp/resend',{})).status,200);
+  await age(60);const second=await post(repeat,'/auth/otp/resend',{});assert.equal(second.status,429);assert.match(JSON.stringify(await second.json()),/Please wait/);
+  await age(121);assert.equal((await post(repeat,'/auth/otp/resend',{})).status,200);
+  await age(200);assert.equal((await post(repeat,'/auth/otp/resend',{})).status,429);
+  await age(301);assert.equal((await post(repeat,'/auth/otp/resend',{})).status,200);
  }finally{child.kill();await pool.query('DELETE FROM session WHERE sess->>\'authChallenge\' IN (SELECT id FROM "AuthChallenge" WHERE email LIKE $1)',[prefix+'%']);await pool.query('DELETE FROM session WHERE sess->\'passport\'->>\'user\' IN (SELECT id FROM "User" WHERE email LIKE $1)',[prefix+'%']);await pool.query('DELETE FROM "AuthChallenge" WHERE email LIKE $1',[prefix+'%']);await pool.query('DELETE FROM "User" WHERE email LIKE $1',[prefix+'%']);await pool.end();unlinkSync(mailbox);}
 });

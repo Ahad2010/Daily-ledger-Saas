@@ -80,6 +80,8 @@ model AuthChallenge {
   sentAt DateTime @default(now())
   verifiedAt DateTime?
   usedAt DateTime?
+  sends Int @default(1)
+  sendsSince DateTime @default(now())
   @@unique([email,purpose])
   @@index([expiresAt])
 }

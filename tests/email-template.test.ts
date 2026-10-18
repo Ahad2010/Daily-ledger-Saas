@@ -2,11 +2,11 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {renderEmail,renderText} from '../apps/api/src/email-template';
 
-test('the verification code is one selectable block, with no remote images and no script',()=>{
+test('the verification code is one selectable block, with no script',()=>{
  const html=renderEmail({preheader:'Your code is 719879.',heading:'Confirm your email',blocks:[{type:'code',text:'719879'}]});
  assert.match(html,/<table/);assert.match(html,/user-select:all/);assert.ok(html.includes('>719879<'),'the code is a single text node, so one double-click selects all of it');
  assert.match(html,/Double-click, or tap and hold, the code to copy it/);
- assert.ok(!/<img/i.test(html),'nothing depends on remote images');assert.ok(!/<script/i.test(html));
+ assert.ok(!/<img/i.test(html),'local development has no public logo address, so the CSS badge is used');assert.ok(!/<script/i.test(html));
 });
 
 test('all text is escaped and the call to action keeps its link and a fallback',()=>{
@@ -18,4 +18,10 @@ test('all text is escaped and the call to action keeps its link and a fallback',
 test('the plain-text twin carries the same content',()=>{
  const text=renderText({preheader:'x',heading:'Welcome',blocks:[{type:'p',text:'Hello'},{type:'list',items:['a','b']}],cta:{label:'Open',url:'https://x.test'}});
  assert.match(text,/Welcome/);assert.match(text,/- a/);assert.match(text,/Open: https:\/\/x\.test/);
+});
+
+test('a public site gets the real logo in the header',()=>{
+ const before=process.env.FRONTEND_ORIGIN;process.env.FRONTEND_ORIGIN='https://app.example.com';
+ try{const html=renderEmail({preheader:'x',heading:'Hi',blocks:[]});assert.match(html,/<img src="https:\/\/app\.example\.com\/daily-ledger-logo\.png"/);}
+ finally{if(before===undefined)delete process.env.FRONTEND_ORIGIN;else process.env.FRONTEND_ORIGIN=before;}
 });

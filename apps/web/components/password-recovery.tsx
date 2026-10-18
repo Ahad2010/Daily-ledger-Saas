@@ -5,7 +5,7 @@ import { useEffect,useRef,useState } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ArrowRight,Check,LoaderCircle,Mail,ShieldCheck,TriangleAlert } from 'lucide-react';
-import { apiBase } from '../lib/data';
+import { apiBase,readJson } from '../lib/data';
 import { PasswordRequirements } from './password-requirements';
 import { passwordChecks } from '@ledger/shared';
 const cooldownSeconds=45,redirectSeconds=3;
@@ -22,7 +22,7 @@ export function PasswordRecovery({reset=false}:{reset?:boolean}){
  useEffect(()=>{void session();if(reset){if(read.current)return;read.current=true;const params=new URLSearchParams(window.location.search);setId(params.get('id')||'');setToken(params.get('token')||'');setLinkChecked(true);window.history.replaceState(null,'','/reset-password');}else emailRef.current?.focus();},[reset]);
  useEffect(()=>{if(wait<=0)return;const timer=setTimeout(()=>setWait(w=>w-1),1000);return()=>clearTimeout(timer);},[wait]);
  useEffect(()=>{if(stage!=='done'||!reset)return;const timer=setTimeout(()=>window.location.assign('/login?reset=1'),redirectSeconds*1000);return()=>clearTimeout(timer);},[stage,reset]);
- async function call(path:string,body:object){const response=await fetch(`${apiBase}/auth/${path}`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw new Error(data.details?.[0]?.message||data.error||'Something went wrong. Please try again.');return data;}
+ async function call(path:string,body:object){const response=await fetch(`${apiBase}/auth/${path}`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(body)});const data=await readJson(response);if(!response.ok)throw new Error(data.details?.[0]?.message||data.error||'Something went wrong. Please try again.');return data;}
  async function requestLink(address:string){setPending(true);setMessage('');try{await call('forgot-password',{email:address});setEmail(address);setStage('sent');setWait(cooldownSeconds);}catch(error){setMessage((error as Error).message);}finally{setPending(false);}}
  async function submit(e:React.FormEvent<HTMLFormElement>){e.preventDefault();if(pending)return;const form=new FormData(e.currentTarget);if(!reset){await requestLink(String(form.get('email')||'').trim());return;}setPending(true);setMessage('');try{await call('reset-password',{id,token,password:form.get('password')});setStage('done');}catch(error){setMessage((error as Error).message);}finally{setPending(false);}}
  const invalidLink=reset&&linkChecked&&(!id||!token)&&stage==='form';

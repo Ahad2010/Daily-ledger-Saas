@@ -1,6 +1,8 @@
 import { relabelCurrency, demoSnapshot, kindSchema, preferenceSchema, schemas, planTransaction, settledTransaction, quotaAllowed,effectiveLimits,type Snapshot, type Kind, type LedgerRecord } from '@ledger/shared';
 export let demoMode=process.env.NEXT_PUBLIC_DATA_MODE!=='api';
 export const apiBase=process.env.NEXT_PUBLIC_API_URL || '/backend';
+// A slow or restarting server can answer with an HTML error page instead of JSON; show a plain message instead of a parser error.
+export async function readJson(response:Response){try{return await response.json();}catch{throw new Error(response.ok?'The server sent an unexpected reply. Please try again.':'The server took too long to answer. Please wait a moment and try again.');}}
 const key='daily-ledger-demo-v1';
 let csrf='';
 export class ApiError extends Error {constructor(message:string,public status:number,public code?:string){super(message);}}

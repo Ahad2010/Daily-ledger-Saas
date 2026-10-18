@@ -16,3 +16,17 @@ test('login retry recovers when the API returns and clears the stale connection 
  await expect(page.getByText('The authentication service could not be reached. Please retry.',{exact:true})).toHaveCount(0);
  await expect(page.getByText('Google authentication is not configured in this environment.',{exact:true})).toBeVisible();
 });
+
+test('a slow or restarting server shows a plain message, not a JSON parser error',async({page})=>{
+ await page.route('**/backend/auth/me',r=>r.fulfill({status:401,json:{error:'Sign in'}}));
+ await page.route('**/backend/health',r=>r.fulfill({json:{googleConfigured:false,passwordConfigured:true,signupConfigured:true}}));
+ await page.route('**/backend/auth/csrf',r=>r.fulfill({json:{csrf:'fixture-csrf'}}));
+ // The dev proxy answers with an HTML error page when the API takes too long.
+ await page.route('**/backend/auth/signup',r=>r.fulfill({status:500,contentType:'text/html',body:'<html><body>Internal Server Error</body></html>'}));
+ await page.goto('/signup');
+ await page.locator('input[name=name]').fill('Slow Server');await page.locator('input[name=email]').fill('slow@example.com');await page.locator('input[name=password]').fill('correct horse battery 42!');
+ await page.getByRole('button',{name:'Create account'}).click();
+ await expect(page.getByText('The server took too long to answer. Please wait a moment and try again.')).toBeVisible();
+ await expect(page.getByText(/JSON\.parse|unexpected character/i)).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Create account'})).toBeEnabled();
+});
