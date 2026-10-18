@@ -37,7 +37,7 @@ test('without Whop settings, payments stay off and the webhook grants nothing',{
 });
 
 test('Whop webhooks: signed events grant, repeat safely, downgrade, refund and never trust the redirect',{skip,timeout:120000},async()=>{
- const api=await startApi(4061,{WHOP_API_KEY:'test-key',WHOP_PRO_PLAN_ID:'plan_pro',WHOP_LIFETIME_PLAN_ID:'plan_life',WHOP_WEBHOOK_SECRET:secret,WHOP_SANDBOX:'true'});
+ const api=await startApi(4061,{WHOP_API_KEY:'test-key',WHOP_PRO_PLAN_ID:'plan_pro',WHOP_LIFETIME_PLAN_ID:'plan_life',WHOP_WEBHOOK_SECRET:secret,WHOP_SANDBOX:'true',WHOP_ENABLED:'true'});
  let n=0;
  const send=async(type:string,data:object,opts:{id?:string;sig?:string;ts?:number}={})=>{
   const id=opts.id||`msg_${Date.now()}_${n++}`,ts=opts.ts??Math.floor(Date.now()/1000),body=JSON.stringify({type,data});

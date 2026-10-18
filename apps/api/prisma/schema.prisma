@@ -313,3 +313,10 @@ model WebhookEvent {
   receivedAt DateTime @default(now())
   @@index([provider,receivedAt])
 }
+
+model RateLimitHit {
+  key String @id
+  hits Int
+  resetAt DateTime
+  @@index([resetAt])
+}

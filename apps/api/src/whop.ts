@@ -3,14 +3,24 @@ import rateLimit from 'express-rate-limit';
 import {createHmac, timingSafeEqual} from 'node:crypto';
 import type {Prisma, User} from '@prisma/client';
 import {db} from './db.js';
+import {PgStore} from './pg-rate-limit.js';
 import {HttpError} from './service.js';
 
 // Whop payments. Everything here stays switched off until the four required variables exist on the API:
 //   WHOP_API_KEY, WHOP_PRO_PLAN_ID, WHOP_LIFETIME_PLAN_ID, WHOP_WEBHOOK_SECRET   (optional: WHOP_SANDBOX=true for sandbox)
 // A plan is only ever granted by a signed webhook. Returning from checkout never activates anything by itself.
 const env = (name: string) => (process.env[name] || '').trim();
-export const whopConfigured = () => !!(env('WHOP_API_KEY') && env('WHOP_PRO_PLAN_ID') && env('WHOP_LIFETIME_PLAN_ID') && env('WHOP_WEBHOOK_SECRET'));
-const base = () => (env('WHOP_SANDBOX') === 'true' ? 'https://sandbox-api.whop.com' : 'https://api.whop.com');
+// Opt-in: WHOP_ENABLED must be exactly "true" AND every credential must be present and distinct. Anything else switches off payments only.
+export const whopConfigured = () => env('WHOP_ENABLED') === 'true' && !!(env('WHOP_API_KEY') && env('WHOP_PRO_PLAN_ID') && env('WHOP_LIFETIME_PLAN_ID') && env('WHOP_WEBHOOK_SECRET')) && env('WHOP_PRO_PLAN_ID') !== env('WHOP_LIFETIME_PLAN_ID');
+// A short reason for the operator (names only, never values), shown in the startup log and the admin-visible health flag.
+export function whopStatus() {
+  if (env('WHOP_ENABLED') !== 'true') return {state: 'disabled' as const, missing: [] as string[]};
+  const missing = ['WHOP_API_KEY', 'WHOP_PRO_PLAN_ID', 'WHOP_LIFETIME_PLAN_ID', 'WHOP_WEBHOOK_SECRET'].filter(name => !env(name));
+  if (!missing.length && env('WHOP_PRO_PLAN_ID') === env('WHOP_LIFETIME_PLAN_ID')) missing.push('WHOP_PRO_PLAN_ID must differ from WHOP_LIFETIME_PLAN_ID');
+  return {state: missing.length ? 'incomplete' as const : 'enabled' as const, missing};
+}
+// WHOP_API_BASE exists only so automated tests can point at a local fake; it is ignored in production.
+const base = () => (process.env.NODE_ENV !== 'production' && env('WHOP_API_BASE')) || (env('WHOP_SANDBOX') === 'true' ? 'https://sandbox-api.whop.com' : 'https://api.whop.com');
 const TOLERANCE_SECONDS = 5 * 60;
 
 function planFor(planId: string | undefined): 'Pro' | 'Lifetime' | null {
@@ -117,6 +127,9 @@ async function apply(tx: Prisma.TransactionClient, type: string, data: Obj): Pro
     const user = await ownerOf(tx, data, membershipId);
     if (!user) return {outcome: 'unmatched: no owner'};
     const values = {userId: user.id, provider: 'whop', subscriptionReference: plan === 'Pro' ? membershipId ?? null : null, kind: plan === 'Lifetime' ? 'lifetime' : 'recurring', currency: (str(data.currency) || 'usd').toUpperCase(), amount: BigInt(minor(data.total ?? data.final_amount ?? data.subtotal)), status: 'paid', verified: true, receiptUrl: str(data.receipt_url) || null, description: plan === 'Lifetime' ? 'Daily Ledger Lifetime' : 'Daily Ledger Pro'};
+    const prior = await tx.billingRecord.findUnique({where: {reference}});
+    // A late or repeated "succeeded" must not undo a refund or dispute that was already processed.
+    if (prior && (prior.status === 'refunded' || prior.status === 'disputed')) return {outcome: `ignored: payment already ${prior.status}`};
     await tx.billingRecord.upsert({where: {reference}, create: {reference, ...values}, update: {status: 'paid', verified: true, amount: values.amount, currency: values.currency}});
     const granted = await grant(tx, user, plan);
     const previous = plan === 'Lifetime' ? await activeMembership(user.id, tx) : null;
@@ -208,6 +221,6 @@ export async function handleWebhook(req: Request, res: Response) {
 // Mounted before the JSON parser: the signature covers the exact raw bytes.
 export function whopWebhookRoutes() {
   const router = Router();
-  router.post('/whop', rateLimit({windowMs: 60000, limit: 300, standardHeaders: true, legacyHeaders: false}), express.raw({type: () => true, limit: '256kb'}), handleWebhook);
+  router.post('/whop', rateLimit({store: new PgStore('whop-webhook'), windowMs: 60000, limit: 300, standardHeaders: true, legacyHeaders: false}), express.raw({type: () => true, limit: '256kb'}), handleWebhook);
   return router;
 }

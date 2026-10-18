@@ -118,9 +118,10 @@ The last two are optional verified pricing values, not secrets; blank means no c
 
 ## Whop payments (built, switched off until you add the keys)
 
-The code for checkout, the signed webhook, plan activation, refunds and cancellation is in `apps/api/src/whop.ts`. It stays off until **all four** variables below exist on the **API service** (never on Vercel). With any of them missing, checkout returns 503, the webhook returns 503, and no plan can be granted.
+The code for checkout, the signed webhook, plan activation, refunds and cancellation is in `apps/api/src/whop.ts`. It is **opt-in**: payments switch on only when `WHOP_ENABLED=true` **and** all four credentials below exist on the **API service** (never on Vercel). With `WHOP_ENABLED` unset/false, or any credential missing, or the two plan ids identical, checkout and the webhook both return 503 and no plan can be granted. The rest of the app keeps working, and the API logs which variable names are missing (never values).
 
 ```dotenv
+WHOP_ENABLED=true
 WHOP_API_KEY=your-company-api-key
 WHOP_PRO_PLAN_ID=plan_...        # recurring monthly plan, $20
 WHOP_LIFETIME_PLAN_ID=plan_...   # one-time plan, $100

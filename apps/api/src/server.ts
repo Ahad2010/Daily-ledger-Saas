@@ -1,7 +1,8 @@
 import {googleAccount} from './google-account.js';
 import {referralRoutes,recordReferral,referralCodeSchema} from './referrals.js';
+import {PgStore} from './pg-rate-limit.js';
 import {billingRoutes} from './billing.js';
-import {whopWebhookRoutes,whopConfigured} from './whop.js';
+import {whopWebhookRoutes,whopConfigured,whopStatus} from './whop.js';
 import {importRoutes} from './import.js';
 import {avatarRoutes} from './avatar.js';
 import {pushRoutes} from './push.js';
@@ -62,7 +63,7 @@ async function maintenanceState(){if(Date.now()-maintenanceCache.at<3000)return 
 app.get('/status',async(_req,res)=>{res.set('Cache-Control','no-store');res.json({maintenance:await maintenanceState()});});
 const maintenanceOpen=/^\/(health|ready|status|auth\/csrf|auth\/admin|api\/admin|webhooks)(\/|$)/;
 app.use(async(req,res,next)=>{const m=await maintenanceState();if(!m.enabled||maintenanceOpen.test(req.path)||req.session?.adminUserId)return next();res.status(503).set('Retry-After','300').json({error:m.message||'Daily Ledger is down for maintenance. Please check back soon.',code:'MAINTENANCE',until:m.until});});
-app.get('/auth/google',rateLimit({windowMs:60000,limit:20,message:{error:"Too many Google sign-in attempts. Please try again shortly."}}), (req,res,next)=>{if(!googleReady)return res.status(503).json({error:'Google sign-in is not configured. Set the backend OAuth environment variables.'});req.session.returnTo=safeReturnTo(req.query.returnTo);req.session.referralCode=req.query.ref?referralCodeSchema.parse(req.query.ref):undefined;passport.authenticate('google',{scope:['profile','email']})(req,res,next);});
+app.get('/auth/google',rateLimit({store:new PgStore('google'),windowMs:60000,limit:20,message:{error:"Too many Google sign-in attempts. Please try again shortly."}}), (req,res,next)=>{if(!googleReady)return res.status(503).json({error:'Google sign-in is not configured. Set the backend OAuth environment variables.'});req.session.returnTo=safeReturnTo(req.query.returnTo);req.session.referralCode=req.query.ref?referralCodeSchema.parse(req.query.ref):undefined;passport.authenticate('google',{scope:['profile','email']})(req,res,next);});
 app.get('/auth/google/callback',(req,res,next)=>{if(!googleReady)return res.status(503).json({error:'Google sign-in is not configured.'});const returnTo=safeReturnTo(req.session.returnTo),referralCode=req.session.referralCode;passport.authenticate('google',async(error:Error,user:(Express.User&{email?:string;referralNew?:boolean})|false)=>{if(error||!user)return res.redirect(`${origin}/login?auth=failed&returnTo=${encodeURIComponent(returnTo)}`);try{if(user.referralNew&&user.email)await recordReferral(db,{id:user.id,email:user.email},referralCode);}catch(e){return next(e);}if(user.referralNew&&user.email)void sendWelcomeEmail(user as {id:string;email:string;name:string});req.session.regenerate(err=>{if(err)return next(err);req.logIn(user,e=>{if(e)return next(e);void logActivity(req,{userId:user.id,type:user.referralNew?'auth.signup':'auth.login',meta:{via:'google'}});req.session.csrf=randomBytes(32).toString('hex');req.session.save(saveError=>saveError?next(saveError):res.redirect(origin+returnTo));});});})(req,res,next);});
 function identity(req:Request,res:Response,next:NextFunction){if(!req.isAuthenticated())return res.status(401).json({error:'Sign in to access your workspace.'});next();}
 async function auth(req:Request,res:Response,next:NextFunction){if(!req.isAuthenticated())return res.status(401).json({error:'Sign in to access your workspace.'});const u=req.user as User;if(u.status!=='active')return res.status(403).json({error:'This account is suspended. Contact support.'});if(!u.lastActiveAt||u.lastActiveAt.getTime()<Date.now()-300000)await db.user.update({where:{id:u.id},data:{lastActiveAt:new Date()}});next();}
@@ -76,7 +77,7 @@ app.use('/api/support',identity,(req,res,next)=>['GET','HEAD','OPTIONS'].include
 app.use('/api',(_req,res,next)=>{res.setHeader('Cache-Control','no-store');next();});
 app.use('/api',auth);app.use('/api',(req,res,next)=>['GET','HEAD','OPTIONS'].includes(req.method)?next():csrf(req,res,next));
 // Reads that load or scan a whole workspace get their own per-account allowance on top of the global per-IP one.
-const heavy=rateLimit({windowMs:60000,limit:90,message:{error:'Too many requests. Please try again shortly.'},standardHeaders:true,legacyHeaders:false,keyGenerator:req=>'u:'+(req.user?.id??ipKeyGenerator(req.ip||'127.0.0.1')),validate:{keyGeneratorIpFallback:false}});
+const heavy=rateLimit({store:new PgStore('heavy'),windowMs:60000,limit:90,message:{error:'Too many requests. Please try again shortly.'},standardHeaders:true,legacyHeaders:false,keyGenerator:req=>'u:'+(req.user?.id??ipKeyGenerator(req.ip||'127.0.0.1')),validate:{keyGeneratorIpFallback:false}});
 for(const path of ['/snapshot','/records','/export','/reports','/summary'])app.use('/api'+path,(req,res,next)=>req.method==='GET'?heavy(req,res,next):next());
 app.use('/api/admin',adminRoutes());
 app.use('/api/ai',aiRoutes());
@@ -107,9 +108,11 @@ app.get('/api/reports/:file',async(req,res)=>{const file=z.string().regex(/^\d{4
 app.post('/api/announcements/:id/dismiss',async(req,res)=>{const {version}=z.object({version:z.number().int().positive()}).parse(req.body);const user=req.user as User;const effective=await policy(user);const a=await db.announcement.findFirst({where:{id:String(req.params.id),version,status:'published',audience:{in:['Everyone',effective.plan]},publishAt:{lte:new Date()},expiresAt:{gt:new Date()}}});if(!a)throw new HttpError(404,'Announcement not found.');await db.announcementDismissal.upsert({where:{userId_announcementId_version:{userId:user.id,announcementId:a.id,version}},create:{userId:user.id,announcementId:a.id,version},update:{}});res.json({ok:true});});
 app.post('/api/announcements/:id/read',async(req,res)=>{const id=String(req.params.id);const version=z.number().int().positive().parse(req.body.version);const a=await db.announcement.findUnique({where:{id}});const s=await snapshot(req.user as User);if(!a||a.status!=='published'||a.version!==version||a.publishAt>new Date()||a.expiresAt<=new Date()||(a.audience!=='Everyone'&&a.audience!==s.profile.plan))throw new HttpError(404,'Announcement not available.');await db.announcementRead.upsert({where:{userId_announcementId_version:{userId:req.user!.id,announcementId:id,version}},create:{userId:req.user!.id,announcementId:id,version},update:{}});res.json({ok:true});});
 app.use((error:any,_req:Request,res:Response,_next:NextFunction)=>{if(error instanceof z.ZodError)return res.status(400).json({error:'Validation failed',details:error.issues.slice(0,10).map(i=>({path:i.path.join('.'),message:i.message}))});if(error.code==='P2002')return res.status(409).json({error:'This occurrence or record already exists.'});if(error.code==='P2025')return res.status(404).json({error:'Record not found.'});console.error(error instanceof HttpError?error.message:error);res.status(error.status||500).json({error:error instanceof HttpError?error.message:'The server could not complete this request.',...(error instanceof HttpError&&error.code?{code:error.code}:{})});});
+{const w=whopStatus();if(w.state==='incomplete')console.warn(`Whop payments are OFF: WHOP_ENABLED=true but missing/invalid: ${w.missing.join(', ')}`);else console.log(`Whop payments: ${w.state}`);}
 const server=app.listen(Number(process.env.PORT||4000),()=>console.log('Daily Ledger API listening'));
 // Slow or stalled clients are cut off instead of holding sockets open.
 server.requestTimeout=60000;server.headersTimeout=20000;
-async function stop(){server.close();await db.$disconnect();await pool.end();}
+// Stop taking new connections, let in-flight requests finish, and force the exit if something hangs so a deploy is never stuck.
+async function stop(){setTimeout(()=>process.exit(1),10000).unref();server.close();server.closeIdleConnections();await db.$disconnect();await pool.end();}
 process.on('SIGTERM',stop);process.on('SIGINT',stop);
 
