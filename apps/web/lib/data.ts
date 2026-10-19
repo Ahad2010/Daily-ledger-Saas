@@ -8,9 +8,11 @@ let csrf='';
 export class ApiError extends Error {constructor(message:string,public status:number,public code?:string){super(message);}}
 export function requireUpgrade(message:string){window.dispatchEvent(new CustomEvent('ledger-upgrade-required',{detail:{reason:message}}));}
 export async function request(path:string,options:RequestInit={}) {
-  const response=await fetch(`${apiBase}${path}`,{...options,credentials:'include',headers:{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf}:{}),...options.headers}});
+  let response:Response;
+  try{response=await fetch(`${apiBase}${path}`,{...options,credentials:'include',headers:{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf}:{}),...options.headers}});}
+  catch{throw new Error('Cannot reach the server. Check your connection and try again.');}
   if(!response.ok){const body=await response.json().catch(()=>({error:'Unable to connect to the API'}));if(body.code==='UPGRADE_REQUIRED')requireUpgrade(body.error);throw new ApiError(body.error||'Request failed',response.status,body.code);}
-  return response.status===204?null:response.json();
+  return response.status===204?null:readJson(response);
 }
 // The saved demo is validated once per distinct value; our own writes are already validated, so ticking a box does not re-parse every record.
 let checkedRaw='';
@@ -30,7 +32,7 @@ export const adapter={
   async logout(){if(!demoMode)await request('/auth/logout',{method:'POST'});csrf='';},
   async pdf(month:string){
     if(demoMode){const [{default:PDFDocument},{drawStatement}]=await Promise.all([import('pdfkit/js/pdfkit.standalone.js') as Promise<{default:any}>,import('@ledger/shared')]);const doc=new PDFDocument({size:'A4',margin:48,bufferPages:true,info:{Title:`Daily Ledger statement ${month}`,Author:'Daily Ledger'}});const chunks:Uint8Array[]=[];doc.on('data',(c:Uint8Array)=>chunks.push(c));const done=new Promise<Blob>(r=>doc.on('end',()=>r(new Blob(chunks as BlobPart[],{type:'application/pdf'}))));drawStatement(doc,readDemo(),month,new Date('2026-09-30T12:00:00Z'));doc.end();return done;}
-    const response=await fetch(`${apiBase}/api/reports/${month}.pdf`,{credentials:'include'});if(!response.ok){const body=await response.json();throw new Error(body.error);}return response.blob();},
+    const response=await fetch(`${apiBase}/api/reports/${month}.pdf`,{credentials:'include'});if(!response.ok){const body=await readJson(response);throw new Error(body.error);}return response.blob();},
   async billing(plan:string){return request('/api/billing/checkout',{method:'POST',body:JSON.stringify({plan})});}
 };
 export function download(content:string|Blob,name:string,type='text/csv;charset=utf-8'){const url=URL.createObjectURL(content instanceof Blob?content:new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
