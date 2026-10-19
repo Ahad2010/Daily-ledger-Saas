@@ -162,7 +162,7 @@ Setup keys and one-phase-at-a-time Claude prompts: [KEY_SETUP.md](KEY_SETUP.md).
 
 - On Railway the API refuses to start unless `NODE_ENV=production` (so session cookies get the Secure flag).
 - In production it refuses to start unless `TRUST_PROXY_HOPS` is set (use `2` behind the Vercel `/backend` rewrite).
-- Keep Railway at **one replica**: login and request limits are held in memory and reset on every deploy. Move them to a shared store before scaling out.
+- Keep Railway at **one replica** for now. Login, signup and OTP limits are stored in PostgreSQL (shared, survive deploys); only the coarse global flood limit is per-process.
 - Turn on automated backups for the database in your Postgres host and do one test restore before launch.
 - Add an uptime check on `/ready` and an error tracker; neither is included in the code.
 
