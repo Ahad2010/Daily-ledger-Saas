@@ -6,6 +6,8 @@ import {db} from './db.js';
 export async function savePreferences(userId:string,input:unknown,client:Prisma.TransactionClient|typeof db=db){
  const data=preferenceSchema.partial().parse(input);
  const run=async(tx:Prisma.TransactionClient)=>{
+  // A member who never touched units/formats has display={}. Keep what is stored and only overwrite the keys that were sent.
+  if(data.display){const stored=await tx.user.findUnique({where:{id:userId},select:{display:true}});data.display={...((stored?.display as Record<string,unknown>)||{}),...data.display} as typeof data.display;}
   if(data.currency){
    const user=await tx.user.findUnique({where:{id:userId},select:{currency:true}});
    if(user&&user.currency!==data.currency){

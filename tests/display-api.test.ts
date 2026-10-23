@@ -25,3 +25,20 @@ test('switching currency keeps every saved amount and only changes the code',{sk
   assert.equal(rent.data.currency,'AED');assert.equal(rent.data.amount,120000);assert.equal(after.profile.currency,'AED');
  }finally{await api.stop();}
 });
+
+test('a member who never set units and formats (display = {}) can still save any setting', {skip,timeout:90000},async()=>{
+ const api=await startApi(4063);
+ try{
+  const u=await api.user({plan:'Free'});const me=await u.json('/api/snapshot');
+  const base={name:me.profile.name,currency:me.profile.currency,timezone:me.profile.timezone,optionalEmails:false,productUpdates:false};
+  // exactly what the Settings screen sends for a brand-new account
+  assert.equal((await u.request('/api/preferences','PATCH',{...base,name:'Renamed Member',display:{}})).status,200);
+  assert.equal((await u.json('/api/snapshot')).profile.name,'Renamed Member');
+  // partial display keeps the keys that were not sent
+  assert.equal((await u.request('/api/preferences','PATCH',{...base,display:{units:'imperial'}})).status,200);
+  assert.equal((await u.request('/api/preferences','PATCH',{...base,display:{weekStart:0}})).status,200);
+  const after=await u.json('/api/snapshot');assert.equal(after.profile.display.units,'imperial');assert.equal(after.profile.display.weekStart,0);
+  // invalid values are still rejected
+  assert.equal((await u.request('/api/preferences','PATCH',{...base,display:{units:'furlongs'}})).status,400);
+ }finally{await api.stop();}
+});
