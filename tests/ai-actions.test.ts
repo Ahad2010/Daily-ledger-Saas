@@ -19,7 +19,7 @@ test('assistant proposals are validated against the record schemas and labelled 
   'not an object'
  ]})+'\n```',ctx);
  assert.equal(reply.answer,'Done — confirm below.');assert.equal(reply.actions.length,4);
- assert.deepEqual(reply.actions.map(a=>a.label),['Add task "Call the bank" · due 2026-10-09 · high priority','Record expense of $12.50 · Lunch (Food) on 2026-10-08','Add habit "Read" on Mon, Wed, Fri','Open Transactions']);
+ assert.deepEqual(reply.actions.map(a=>a.label),['Add task "Call the bank" · due 2026-10-09 · high priority','Record expense of $13 · Lunch (Food) on 2026-10-08','Add habit "Read" on Mon, Wed, Fri','Open Transactions']);
  const transaction=reply.actions[1] as {data:Record<string,unknown>};assert.equal(transaction.data.currency,'USD');assert.equal(transaction.data.account,'Cash');
  const habit=reply.actions[2] as {data:Record<string,unknown>};assert.equal(habit.data.startDate,'2026-10-08');
 });

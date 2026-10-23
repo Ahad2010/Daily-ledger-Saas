@@ -5,7 +5,7 @@ import {calendarWeeks,cmToFeetInches,defaultDisplay,displayToKg,feetInchesToCm,f
 test('defaults are metric, Monday, month-first and US numbers',()=>{
  setDisplay(null);
  assert.deepEqual(defaultDisplay,{units:'metric',weekStart:1,dateFormat:'mdy',numberFormat:'us'});
- assert.equal(money(123456,'USD'),'$1,234.56');assert.equal(formatWeight(70),'70 kg');assert.equal(calendarWeeks('2026-09')[0][0],'2026-08-31');
+ assert.equal(money(123456,'USD'),'$1,235');assert.equal(formatWeight(70),'70 kg');assert.equal(calendarWeeks('2026-09')[0][0],'2026-08-31');
 });
 test('imperial converts for display and back to kilograms for storage',()=>{
  setDisplay({units:'imperial'});
@@ -16,7 +16,7 @@ test('imperial converts for display and back to kilograms for storage',()=>{
 test('week start and date format change what is shown',()=>{
  setDisplay({weekStart:0,dateFormat:'dmy',numberFormat:'eu'});
  assert.equal(calendarWeeks('2026-09')[0][0],'2026-08-30');assert.equal(formatDate('2026-09-30'),'30 Sep 2026');
- assert.match(money(123456,'USD'),/1\.234,56/);
+ assert.match(money(123456,'USD'),/1\.235/);
  setDisplay({dateFormat:'iso'});assert.equal(formatDate('2026-09-30'),'2026-09-30');
  setDisplay(null);
 });

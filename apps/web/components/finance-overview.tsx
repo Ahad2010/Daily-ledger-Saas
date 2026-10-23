@@ -8,7 +8,7 @@ import {Panel,Empty,monthLabel} from './dashboard-charts';
 import {useReducedMotion} from './animation';
 import {buildRecommendations} from '../lib/recommendations';
 type Metrics=ReturnType<typeof metrics>;
-const LIME='#b6f26b',CORAL='#ff9b7a',MUTED='#27352f';
+const LIME='#7aa7ff',CORAL='#ff5d5d',MUTED='#27352f';
 const pct=(v:number|null)=>v===null?'—':`${Math.round(v)}%`;
 // Weekly totals derived from the cumulative daily series.
 function weekly(m:Metrics){const out:{expenses:number;net:number}[]=[];m.cash.forEach((d,i)=>{const prev=i?m.cash[i-1]:{income:0,expenses:0};const w=Math.floor(i/7);out[w]=out[w]||{expenses:0,net:0};out[w].expenses+=d.expenses-prev.expenses;out[w].net+=(d.income-prev.income)-(d.expenses-prev.expenses);});return out.slice(-8);}

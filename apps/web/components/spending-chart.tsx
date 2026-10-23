@@ -5,7 +5,8 @@ import {useGSAP} from '@gsap/react';
 import {money,type metrics} from '@ledger/shared';
 import {useReducedMotion} from './animation';
 // Vivid, high-contrast category colours that stay distinct on the dark surface.
-export const donutPalette=['#b6f26b','#2dd4a3','#4cc3ff','#9b8cff','#ffb072','#ff7eb6'];
+// Spending is money going out, so the donut never uses the green reserved for income.
+export const donutPalette=['#ff6b6b','#ffa94d','#f6d365','#9b8cff','#4cc3ff','#ff7eb6'];
 const percent=(v:number)=>v>0&&v<.1?'<0.1%':`${v<10?v.toFixed(1):Math.round(v)}%`;
 type Metrics=ReturnType<typeof metrics>;
 const R=74,C=2*Math.PI*R,TICKS=60,SWEEP=1.6;

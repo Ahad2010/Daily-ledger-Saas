@@ -1,7 +1,7 @@
 import {expect,test} from '@playwright/test';
 test('adding a transaction suggests a category and a task priority',async({page})=>{
  await page.goto('/');await page.getByRole('button',{name:'Quick add',exact:true}).click();await page.getByRole('button',{name:'Transaction',exact:true}).click();
- const dialog=page.getByRole('dialog');await dialog.getByLabel('Description',{exact:true}).fill('Uber ride to office');
+ const dialog=page.getByRole('dialog');await dialog.getByLabel('Name',{exact:true}).fill('Uber ride to office');
  const group=dialog.getByRole('group',{name:'Suggestions'});await expect(group).toBeVisible();
  await group.getByRole('button',{name:'Transport'}).click();await expect(dialog.getByLabel('Category')).toHaveValue('Transport');
  await page.keyboard.press('Escape');

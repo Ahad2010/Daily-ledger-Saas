@@ -1,9 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {currencyOptions,currencySchema,preferenceSchema,money} from '@ledger/shared';
-test('worldwide currency preferences share supported codes and preserve existing amount storage',()=>{assert.ok(currencyOptions.length>150);for(const code of ['USD','PKR','EUR','GBP','JPY','KWD','INR','AUD','SAR','AED','ZAR']){assert.ok(currencyOptions.includes(code));assert.ok(currencySchema.safeParse(code).success);assert.ok(preferenceSchema.safeParse({name:'Test',currency:code,timezone:'UTC',optionalEmails:false,productUpdates:false}).success);assert.ok(money(12345,code).includes('123.45'));}assert.equal(currencySchema.safeParse('ZZZ').success,false);assert.equal(currencySchema.safeParse('usd').success,false);});
+test('worldwide currency preferences share supported codes and preserve existing amount storage',()=>{assert.ok(currencyOptions.length>150);for(const code of ['USD','PKR','EUR','GBP','JPY','KWD','INR','AUD','SAR','AED','ZAR']){assert.ok(currencyOptions.includes(code));assert.ok(currencySchema.safeParse(code).success);assert.ok(preferenceSchema.safeParse({name:'Test',currency:code,timezone:'UTC',optionalEmails:false,productUpdates:false}).success);assert.ok(money(12345,code).includes('123'));}assert.equal(currencySchema.safeParse('ZZZ').success,false);assert.equal(currencySchema.safeParse('usd').success,false);});
 
-test('fractional money keeps both cent digits without adding decimals to whole amounts',()=>{assert.equal(money(150),'$1.50');assert.equal(money(100),'$1');assert.equal(money(-150),'-$1.50');});
+test('money is always shown in whole units while cents stay in storage',()=>{assert.equal(money(150),'$2');assert.equal(money(149),'$1');assert.equal(money(100),'$1');assert.equal(money(110522),'$1,105');assert.equal(money(0),'$0');});
 
 test('preferences accept an empty or partial display object but reject invalid values',()=>{
  const base={name:'Ada',currency:'USD',timezone:'Asia/Karachi',optionalEmails:false,productUpdates:false};

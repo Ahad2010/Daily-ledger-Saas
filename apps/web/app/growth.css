@@ -59,3 +59,50 @@
 
 .plan-locked{margin-top:16px;padding:14px 16px;border:1px dashed #2b3d34;border-radius:14px;background:rgba(255,255,255,.02)}.plan-locked .eyebrow{display:flex;align-items:center;gap:6px;margin-bottom:10px}.plan-locked ul{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}.plan-locked li{padding:5px 11px;border-radius:999px;background:#151b18;border:1px solid #232e28;font-size:12.5px;color:#a3b0a8}
 .pulse-empty{display:grid;gap:14px;justify-items:start}.pulse-empty p{margin:0}.pulse-empty .button{display:inline-flex;align-items:center;gap:6px}
+.pulse-preview{position:relative;width:100%;padding:12px 14px;border:1px dashed #2c3631;border-radius:12px;opacity:.55}.pulse-preview .pulse-figure{margin:4px 0 12px}.preview-tag{position:absolute;top:8px;right:10px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.insight-preview li{opacity:.78}.insight-cta{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:12px}.insight-cta p{margin:0;max-width:60ch}.insight-cta .button{display:inline-flex;align-items:center;gap:6px}
+.metric-add{position:absolute;top:12px;right:12px;z-index:3;display:grid;place-items:center;width:30px;height:30px;padding:0;border-radius:50%;border:1px solid rgba(182,242,107,.45);background:linear-gradient(145deg,rgba(182,242,107,.22),rgba(182,242,107,.06));color:#b6f26b;box-shadow:0 0 0 0 rgba(182,242,107,.35),inset 0 1px 0 rgba(255,255,255,.18);cursor:pointer;transition:transform .18s,box-shadow .18s,background .18s}
+.metric-add:hover{transform:scale(1.1);box-shadow:0 0 14px 1px rgba(182,242,107,.35),inset 0 1px 0 rgba(255,255,255,.25)}.metric-add:active{transform:scale(.94)}.metric-add:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.metric-hero .metric-add{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.22);color:#fff}.metric-hero .metric-add:hover{box-shadow:0 0 14px 1px rgba(255,255,255,.4)}
+.metric-expense .metric-add{border-color:rgba(255,93,93,.5);background:linear-gradient(145deg,rgba(255,93,93,.24),rgba(255,93,93,.06));color:#ff5d5d}.metric-expense .metric-add:hover{box-shadow:0 0 14px 1px rgba(255,93,93,.38),inset 0 1px 0 rgba(255,255,255,.25)}
+@media(prefers-reduced-motion:reduce){.metric-add{transition:none}}
+
+/* Quick-add sits in the corner, the sparkline moves down so the two never touch */
+.metrics-grid .metric-card .sparkline{top:46px;bottom:auto;height:28px;width:78px;right:14px}
+@media(max-width:1250px){.metrics-grid .metric-card .sparkline{width:60px;height:30px}}
+.metrics-grid .metric-hero .metric-content,.metrics-grid .metric-expense .metric-content{padding-right:36px}
+@media(max-width:800px){.metrics-grid .metric-add{top:10px;right:10px;width:28px;height:28px}.metrics-grid .metric-hero .metric-content,.metrics-grid .metric-expense .metric-content{padding-right:0}.metrics-grid .metric-card:has(.metric-add) .metric-icon{margin-right:34px}}
+/* Add / edit drawer, premium finish; income is green, expense is red, everywhere */
+.dialog-drawer .record-form{--tx:#9aa7a1;margin-top:18px;gap:18px}
+.dialog-drawer .record-form[data-tx=income]{--tx:#4ade80}.dialog-drawer .record-form[data-tx=expense]{--tx:#ff5d5d}.dialog-drawer .record-form[data-tx=transfer]{--tx:#7aa7ff}
+.dialog-content.dialog-drawer:has(.record-form[data-tx=income]){--tx-edge:#4ade80}.dialog-content.dialog-drawer:has(.record-form[data-tx=expense]){--tx-edge:#ff5d5d}.dialog-content.dialog-drawer:has(.record-form[data-tx=transfer]){--tx-edge:#7aa7ff}
+.dialog-drawer .record-form label>span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8d9a94;margin-bottom:8px}
+.dialog-drawer .record-form input:not([type=checkbox]):not([type=hidden]),.dialog-drawer .record-form select,.dialog-drawer .record-form textarea{min-height:48px;border-radius:12px;background:#0c0f0e;border:1px solid #2a332f;font-size:14px;transition:border-color .15s,box-shadow .15s}
+.dialog-drawer .record-form input:focus-visible,.dialog-drawer .record-form select:focus-visible,.dialog-drawer .record-form textarea:focus-visible{outline:none;border-color:var(--tx);box-shadow:0 0 0 3px color-mix(in srgb,var(--tx) 22%,transparent)}
+.dialog-drawer .record-form .money-input input{font-size:20px;font-weight:600;letter-spacing:.01em}
+.dialog-drawer .record-form[data-tx] .money-input input{color:var(--tx)}
+.tx-type{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:5px;border:1px solid #262e2a;border-radius:14px;background:#0a0d0c}
+.tx-type button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border:0;border-radius:10px;background:transparent;color:#9aa7a1;font-weight:600;font-size:13px;cursor:pointer;transition:background .15s,color .15s}
+.tx-type button:hover{color:#fff}.tx-type button:focus-visible{outline:2px solid #fff;outline-offset:1px}
+.tx-type button.selected[data-kind=income]{background:rgba(74,222,128,.16);color:#4ade80;box-shadow:inset 0 0 0 1px rgba(74,222,128,.45)}
+.tx-type button.selected[data-kind=expense]{background:rgba(255,93,93,.16);color:#ff6b6b;box-shadow:inset 0 0 0 1px rgba(255,93,93,.45)}
+.tx-type button.selected[data-kind=transfer]{background:rgba(122,167,255,.16);color:#7aa7ff;box-shadow:inset 0 0 0 1px rgba(122,167,255,.45)}
+.dialog-drawer .record-form[data-tx=income] .form-footer .button:last-child{background:linear-gradient(135deg,#4ade80,#22c55e);color:#04210f;border-color:transparent}
+.dialog-drawer .record-form[data-tx=expense] .form-footer .button:last-child{background:linear-gradient(135deg,#ff6b6b,#e5484d);color:#fff;border-color:transparent}
+.dialog-drawer .record-form .form-footer{border-top:1px solid #232b27}.dialog-drawer .record-form .form-footer .button{min-height:48px;font-size:13px;border-radius:12px}
+@media(max-width:640px){.dialog-drawer .record-form .form-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Light that travels around the whole drawer edge: green for income, red for expense, blue for transfer */
+@property --beam-angle{syntax:'<angle>';initial-value:0deg;inherits:false}
+.dialog-content.dialog-drawer:has(.record-form[data-tx])::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:2px;pointer-events:none;z-index:5;background:conic-gradient(from var(--beam-angle),transparent 0 62%,color-mix(in srgb,var(--tx-edge) 35%,transparent) 76%,var(--tx-edge) 92%,transparent 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);animation:beam-spin 3.6s linear infinite}
+@keyframes beam-spin{to{--beam-angle:360deg}}
+@media(prefers-reduced-motion:reduce){.dialog-content.dialog-drawer:has(.record-form[data-tx])::before{animation:none;--beam-angle:300deg}}
+/* Every ordinary button reads as a button: lifted fill, visible edge, hover and press feedback */
+.button:not(.primary):not(.ghost):not(.danger){background:linear-gradient(180deg,#1d2220,#141816);border-color:#3a4540;box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 2px 6px rgba(0,0,0,.35);cursor:pointer;transition:background .18s,border-color .18s,transform .15s,box-shadow .18s}
+.button:not(.primary):not(.ghost):not(.danger):hover{background:linear-gradient(180deg,#252b28,#1a1f1d);border-color:#5d6d65;transform:translateY(-1px);box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 6px 14px rgba(0,0,0,.4)}
+.button.primary{cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 4px 14px rgba(255,255,255,.12);transition:background .18s,transform .15s,box-shadow .18s}
+.button.primary:hover{transform:translateY(-1px);box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 8px 20px rgba(255,255,255,.18)}
+.button:not(:disabled):active{transform:translateY(0) scale(.98)}
+.button:focus-visible{outline:2px solid #b6f26b;outline-offset:2px}
+.button:disabled{cursor:not-allowed;opacity:.55;box-shadow:none}
+@media(prefers-reduced-motion:reduce){.button,.button:hover{transform:none!important;transition:none}}

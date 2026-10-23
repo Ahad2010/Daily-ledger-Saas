@@ -35,7 +35,7 @@ for(const width of [360,390,768,1024,1440,1920])test(`premium empty workspace ${
  const staticStart=await ring.evaluate(el=>getComputedStyle(el).transform);
  await page.getByRole('button',{name:'Add expense',exact:true}).click();
  await expect(ring).toHaveCSS('transform',staticStart);
- const form=page.getByRole('dialog');await form.getByLabel('Description',{exact:true}).fill('First expense');await form.getByLabel('Amount',{exact:true}).fill('50');
+ const form=page.getByRole('dialog');await form.getByLabel('Name',{exact:true}).fill('First expense');await form.getByLabel('Amount',{exact:true}).fill('50');
  await form.getByRole('button',{name:'Create transaction'}).click();await expect(form).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'No spending yet',exact:true})).toHaveCount(0);
  await expect(page.locator('.donut-center strong')).toHaveText('$50');
