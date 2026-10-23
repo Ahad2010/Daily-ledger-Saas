@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import {useRef,useState,type KeyboardEvent,type PointerEvent} from 'react';
+import {CountUp} from './animation';
 import {Bike,CalendarDays,Clock3,Dumbbell,Flame,Flower2,Footprints,Lock,Minus,Plus,Shapes,Sparkles,Waves,Zap} from 'lucide-react';
 import type {LedgerRecord} from '@ledger/shared';
 
@@ -35,7 +36,9 @@ export function DueDateTimePicker({reg,value,picks,smart}:{reg:any;value:unknown
  const monday=new Date(today);monday.setDate(today.getDate()+((8-today.getDay())%7||7));
  const days:[string,Date][]=[['Today',today],['Tomorrow',tomorrow],['Weekend',saturday],['Next week',monday]];
  const times:[string,number][]=[['Morning',9],['Noon',12],['Afternoon',14],['Evening',18],['Night',21]];
- const angle=mode==='hour'?(h12%12)*30:minute*6,R=74,hx=110+Math.sin(angle*Math.PI/180)*(R-14),hy=110-Math.cos(angle*Math.PI/180)*(R-14);
+ const target=mode==='hour'?(h12%12)*30:minute*6,R=74,turn=useRef(target);
+ // Rotate the hand by the shortest way round so 11 to 1 never spins the long way.
+ turn.current=turn.current+((target-turn.current%360+540)%360-180);const angle=turn.current;
  const labels=mode==='hour'?Array.from({length:12},(_,i)=>i+1):Array.from({length:12},(_,i)=>i*5);
  const pick=(e:PointerEvent<SVGSVGElement>)=>{if(e.type==='pointermove'&&e.buttons!==1)return;const r=e.currentTarget.getBoundingClientRect();let a=Math.atan2(e.clientY-r.top-r.height/2,e.clientX-r.left-r.width/2)*180/Math.PI+90;if(a<0)a+=360;if(mode==='hour')setHour(Math.round(a/30)%12||12);else setMinute((Math.round(a/30)*5)%60);};
  const key=(e:KeyboardEvent)=>{const step=e.key==='ArrowUp'||e.key==='ArrowRight'?1:e.key==='ArrowDown'||e.key==='ArrowLeft'?-1:0;if(!step)return;e.preventDefault();if(mode==='hour')setHour(((h12-1+step+12)%12)+1);else setMinute((minute+step*5+60)%60);};
@@ -44,10 +47,10 @@ export function DueDateTimePicker({reg,value,picks,smart}:{reg:any;value:unknown
   <div className="due-summary" aria-live="polite"><span><CalendarDays size={16}/>{d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})}</span><span><Clock3 size={16}/>{clock(d)}</span></div>
   <div className="due-chips" role="group" aria-label="Pick a day">{days.map(([label,day])=><button type="button" key={label} className={toDay(day)===toDay(d)?'selected':''} onClick={()=>setDay(day)}>{label}</button>)}<input type="date" aria-label="Choose another date" value={toDay(d)} onChange={e=>{if(e.target.value){const [y,m,dd]=e.target.value.split('-').map(Number);setDay(new Date(y,m-1,dd));}}}/></div>
   <div className="due-clock">
-   <div className="due-digital"><button type="button" className={mode==='hour'?'on':''} onClick={()=>setMode('hour')} aria-label={`Hour ${h12}`}>{pad(h12)}</button><b>:</b><button type="button" className={mode==='minute'?'on':''} onClick={()=>setMode('minute')} aria-label={`Minute ${pad(minute)}`}>{pad(minute)}</button><div className="due-ampm" role="group" aria-label="AM or PM"><button type="button" className={!pm?'on':''} onClick={()=>edit(x=>x.setHours(x.getHours()%12))}>AM</button><button type="button" className={pm?'on':''} onClick={()=>edit(x=>x.setHours((x.getHours()%12)+12))}>PM</button></div></div>
+   <div className="due-digital"><button type="button" className={mode==='hour'?'on':''} onClick={()=>setMode('hour')} aria-label={`Hour ${h12}`}><span key={h12} className="digit">{pad(h12)}</span></button><b>:</b><button type="button" className={mode==='minute'?'on':''} onClick={()=>setMode('minute')} aria-label={`Minute ${pad(minute)}`}><span key={minute} className="digit">{pad(minute)}</span></button><div className="due-ampm" role="group" aria-label="AM or PM"><button type="button" className={!pm?'on':''} onClick={()=>edit(x=>x.setHours(x.getHours()%12))}>AM</button><button type="button" className={pm?'on':''} onClick={()=>edit(x=>x.setHours((x.getHours()%12)+12))}>PM</button></div></div>
    <svg className="due-dial" viewBox="0 0 220 220" role="slider" tabIndex={0} aria-label={mode==='hour'?'Hour':'Minute'} aria-valuemin={mode==='hour'?1:0} aria-valuemax={mode==='hour'?12:55} aria-valuenow={mode==='hour'?h12:minute} onKeyDown={key} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);pick(e);}} onPointerMove={pick} onPointerUp={()=>{if(mode==='hour')setMode('minute');}}>
-    <circle cx="110" cy="110" r="104" className="due-face"/><line x1="110" y1="110" x2={hx} y2={hy} className="due-hand"/><circle cx="110" cy="110" r="4" className="due-pin"/><circle cx={hx} cy={hy} r="17" className="due-knob"/>
-    {labels.map((n,i)=>{const a=i*30*Math.PI/180,x=110+Math.sin(a)*R,y=110-Math.cos(a)*R,sel=mode==='hour'?n===h12:n===(Math.round(minute/5)*5)%60;return <text key={n} x={x} y={y} textAnchor="middle" dominantBaseline="central" className={sel?'due-num sel':'due-num'}>{mode==='hour'?n:pad(n)}</text>;})}
+    <circle cx="110" cy="110" r="104" className="due-face"/><g className="due-hand-wrap" style={{transform:`rotate(${angle}deg)`}}><line x1="110" y1="110" x2="110" y2={110-(R-14)} className="due-hand"/><circle cx="110" cy={110-(R-14)} r="17" className="due-knob"/></g><circle cx="110" cy="110" r="4" className="due-pin"/>
+    <g key={mode} className="due-nums">{labels.map((n,i)=>{const a=i*30*Math.PI/180,x=110+Math.sin(a)*R,y=110-Math.cos(a)*R,sel=mode==='hour'?n===h12:n===(Math.round(minute/5)*5)%60;return <text key={n} x={x} y={y} textAnchor="middle" dominantBaseline="central" className={sel?'due-num sel':'due-num'}>{mode==='hour'?n:pad(n)}</text>;})}</g>
    </svg>
   </div>
   <div className="due-chips" role="group" aria-label="Quick times">{times.map(([label,h])=><button type="button" key={label} className={d.getHours()===h&&minute===0?'selected':''} onClick={()=>edit(x=>x.setHours(h,0,0,0))}>{label}<small>{clock(new Date(2000,0,1,h))}</small></button>)}</div>
@@ -60,21 +63,35 @@ const effort:[string,number,string][]=[['Easy',.8,'Light, you can chat easily'],
 const KG=70;
 export const burnEstimate=(type:string,minutes:number,intensity:string)=>{const met=types.find(t=>t[0]===type)?.[2]??5,mult=effort.find(e=>e[0]===intensity)?.[1]??1;return Math.round(met*KG*(Math.max(0,minutes)/60)*mult);};
 
-export function WorkoutFields({register,watch,setValue,errors,records,smart}:{register:any;watch:any;setValue:any;errors:any;records:LedgerRecord[];smart:boolean}){
+export const WORKOUT_STEPS=['What','How','When'] as const;
+export function WorkoutFields({register,watch,setValue,errors,records,smart,step}:{register:any;watch:any;setValue:any;errors:any;records:LedgerRecord[];smart:boolean;step:number|null}){
  const type=String(watch('type')||'Strength'),intensity=String(watch('intensity')||'Moderate'),minutes=Number(watch('duration'))||0;
  const set=(k:string,v:unknown)=>setValue(k,v,{shouldDirty:true,shouldValidate:true});
  const recent=(()=>{const seen=new Set<string>(),out:LedgerRecord<'workout'>[]=[];for(const r of records.filter((x):x is LedgerRecord<'workout'>=>x.kind==='workout').sort((a,b)=>b.data.date.localeCompare(a.data.date))){const k=`${r.data.title}|${r.data.type}`;if(!seen.has(k)){seen.add(k);out.push(r);}if(out.length===3)break;}return out;})();
+ const show=(n:number)=>step===null||step===n;
+ const kcal=burnEstimate(type,minutes,intensity);
  return <>
-  {smart?(recent.length>0&&<div className="wide form-suggest" role="group" aria-label="Smart suggestions"><Sparkles size={14}/><span>Repeat a recent one</span>{recent.map(r=><button type="button" key={r.id} className="suggest-chip" onClick={()=>{set('title',r.data.title);set('type',r.data.type);set('duration',r.data.duration);if(r.data.intensity)set('intensity',r.data.intensity);}}>{r.data.title} · {r.data.duration} min</button>)}</div>):<div className="wide"><SmartNote what="Smart workout suggestions"/></div>}
-  <label className="wide"><span>Workout name</span><input aria-label="Workout name" placeholder="For example: Upper body strength" {...register('title')}/>{errors.title&&<small className="error">{String(errors.title.message||'Enter a name')}</small>}</label>
+  {step!==null&&<div className="wide wo-steps" role="list" aria-label="Workout steps">{WORKOUT_STEPS.map((label,i)=><div role="listitem" key={label} className={`wo-step${i===step?' now':i<step?' past':''}`} aria-current={i===step?'step':undefined}><i>{i<step?'✓':i+1}</i><span>{label}</span></div>)}</div>}
+  {show(0)&&<div className="wide wo-pane" key="p0">
+   {step===0&&<div className="wo-intro"><h3>What are you training?</h3><p>Pick a type, then give it a name.</p></div>}
+   {smart?(recent.length>0&&<div className="form-suggest" role="group" aria-label="Smart suggestions"><Sparkles size={14}/><span>Repeat a recent one</span>{recent.map(r=><button type="button" key={r.id} className="suggest-chip" onClick={()=>{set('title',r.data.title);set('type',r.data.type);set('duration',r.data.duration);if(r.data.intensity)set('intensity',r.data.intensity);}}>{r.data.title} · {r.data.duration} min</button>)}</div>):<SmartNote what="Smart workout suggestions"/>}
+   <div><span className="field-label">Type</span><div className="wo-types" role="radiogroup" aria-label="Workout type">{types.map(([name,Icon])=><button type="button" role="radio" aria-checked={type===name} key={name} className={type===name?'selected':''} onClick={()=>set('type',name)}><Icon size={20}/>{name}</button>)}</div></div>
+   <label><span>Workout name</span><input aria-label="Workout name" placeholder={`For example: ${type==='Strength'?'Upper body strength':type==='Running'?'Easy 5K':'Morning session'}`} {...register('title')}/>{errors.title&&<small className="error">{String(errors.title.message||'Enter a name')}</small>}</label>
+  </div>}
   <input type="hidden" {...register('type')}/><input type="hidden" {...register('intensity')}/>
-  <div className="wide"><span className="field-label">Type</span><div className="wo-types" role="radiogroup" aria-label="Workout type">{types.map(([name,Icon])=><button type="button" role="radio" aria-checked={type===name} key={name} className={type===name?'selected':''} onClick={()=>set('type',name)}><Icon size={18}/>{name}</button>)}</div></div>
-  <label><span>Date</span><input aria-label="Date" type="date" {...register('date')}/></label>
-  <div><span className="field-label">Duration</span><div className="wo-stepper"><button type="button" aria-label="5 minutes less" onClick={()=>set('duration',Math.max(5,minutes-5))}><Minus size={16}/></button><label><input aria-label="Duration (minutes)" type="number" min="1" max="1440" inputMode="numeric" {...register('duration',{valueAsNumber:true})}/><small>min</small></label><button type="button" aria-label="5 minutes more" onClick={()=>set('duration',Math.min(1440,minutes+5))}><Plus size={16}/></button></div></div>
-  <div className="wide wo-quick" role="group" aria-label="Quick durations">{[15,30,45,60,90].map(m=><button type="button" key={m} className={minutes===m?'selected':''} onClick={()=>set('duration',m)}>{m} min</button>)}</div>
-  <div className="wide"><span className="field-label">Effort</span><div className="wo-effort" role="radiogroup" aria-label="Effort">{effort.map(([name,,hint])=><button type="button" role="radio" aria-checked={intensity===name} data-effort={name} key={name} className={intensity===name?'selected':''} onClick={()=>set('intensity',name)}><strong>{name}</strong><small>{hint}</small></button>)}</div></div>
-  <div className="wide wo-burn"><Flame size={18}/><div><strong>≈ {burnEstimate(type,minutes,intensity)} kcal</strong><small>Rough estimate for a 70 kg adult. Your real burn varies.</small></div></div>
-  <label className="wide"><span>Notes</span><textarea placeholder="Sets, reps, weights, how it felt… (optional)" {...register('notes')}/></label>
-  <label className="wide check-label wo-done"><input type="checkbox" {...register('done')}/><span>Mark as completed</span></label>
+  {show(1)&&<div className="wide wo-pane" key="p1">
+   {step===1&&<div className="wo-intro"><h3>How long and how hard?</h3><p>We estimate the calories for you.</p></div>}
+   <div><span className="field-label">Duration</span><div className="wo-stepper"><button type="button" aria-label="5 minutes less" onClick={()=>set('duration',Math.max(5,minutes-5))}><Minus size={16}/></button><label><input aria-label="Duration (minutes)" type="number" min="1" max="1440" inputMode="numeric" {...register('duration',{valueAsNumber:true})}/><small>min</small></label><button type="button" aria-label="5 minutes more" onClick={()=>set('duration',Math.min(1440,minutes+5))}><Plus size={16}/></button></div></div>
+   <div className="wo-quick" role="group" aria-label="Quick durations">{[15,30,45,60,90].map(m=><button type="button" key={m} className={minutes===m?'selected':''} onClick={()=>set('duration',m)}>{m} min</button>)}</div>
+   <div><span className="field-label">Effort</span><div className="wo-effort" role="radiogroup" aria-label="Effort">{effort.map(([name,,hint])=><button type="button" role="radio" aria-checked={intensity===name} data-effort={name} key={name} className={intensity===name?'selected':''} onClick={()=>set('intensity',name)}><strong>{name}</strong><small>{hint}</small></button>)}</div></div>
+   <div className="wo-burn"><Flame size={18}/><div><strong><CountUp value={kcal} duration={.5} format={v=>`≈ ${v} kcal`}/></strong><small>Rough estimate for a 70 kg adult. Your real burn varies.</small></div></div>
+  </div>}
+  {show(2)&&<div className="wide wo-pane" key="p2">
+   {step===2&&<div className="wo-intro"><h3>Last details</h3><p>Check the summary, then save.</p></div>}
+   {step===2&&<div className="wo-summary"><strong>{String(watch('title')||'Workout')}</strong><span>{type} · {minutes} min · {intensity} · ≈{kcal} kcal</span></div>}
+   <label><span>Date</span><input aria-label="Date" type="date" {...register('date')}/></label>
+   <label><span>Notes</span><textarea placeholder="Sets, reps, weights, how it felt… (optional)" {...register('notes')}/></label>
+   <label className="check-label wo-done"><input type="checkbox" {...register('done')}/><span>Mark as completed</span></label>
+  </div>}
  </>;
 }

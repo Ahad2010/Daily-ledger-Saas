@@ -17,7 +17,7 @@ test('money entry uses normal currency amounts and links use names',async({page}
  await page.getByRole('tab',{name:'Plan'}).click();await page.getByRole('button',{name:/^Thu 1,/}).click();await page.locator('.plan-slot').first().getByRole('button',{name:'Plan meal',exact:true}).click();
  await expect(dialog.getByLabel('Date',{exact:true})).toHaveValue('2026-10-01');
  await expect(dialog.getByRole('combobox',{name:'Meal',exact:true})).toContainText('Breakfast');
- await dialog.getByLabel('Meal name',{exact:true}).fill('October breakfast');
+ await dialog.getByLabel('Meal name',{exact:true}).fill('October breakfast');await dialog.getByRole('button',{name:'Next',exact:true}).click();await dialog.getByRole('button',{name:'Next',exact:true}).click();
  await dialog.getByRole('button',{name:'Create meal'}).click();
  await expect(dialog).toHaveCount(0);
  await expect(page.getByText('October breakfast',{exact:true})).toBeVisible();
