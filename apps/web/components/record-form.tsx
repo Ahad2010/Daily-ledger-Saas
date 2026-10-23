@@ -38,6 +38,7 @@ export function RecordForm({kind,record,initial,records=[],date,currency,plan='F
  const defaults:Record<string,unknown>={};
  for(const f of config)defaults[f.key]=f.default??(f.type==='date'?date:f.type==='month'?date.slice(0,7):f.type==='datetime-local'?`${date}T14:00`:f.options?.[0]??'');
  defaults.currency=currency;if(kind==='transaction'){defaults.account='Checking';defaults.notes='';if(!record&&!initial?.category&&initial?.type==='income')defaults.category='Salary';}
+ if(kind==='goal'&&!record&&!initial?.deadline)defaults.deadline=new Date(new Date(`${date}T12:00:00Z`).getTime()+90*864e5).toISOString().slice(0,10);
  Object.assign(defaults,initial,record?.data);
  for(const f of config)if(f.type==='money'){const cents=Number(defaults[f.key]);defaults[f.key]=cents>0?String(Math.round(cents/100)):'';}
  if(record?.kind==='task'){const d=new Date(record.data.due);defaults.due=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
