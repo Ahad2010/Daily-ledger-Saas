@@ -1,0 +1,80 @@
+'use client';
+import Link from 'next/link';
+import {useRef,useState,type KeyboardEvent,type PointerEvent} from 'react';
+import {Bike,CalendarDays,Clock3,Dumbbell,Flame,Flower2,Footprints,Lock,Minus,Plus,Shapes,Sparkles,Waves,Zap} from 'lucide-react';
+import type {LedgerRecord} from '@ledger/shared';
+
+const pad=(n:number)=>String(n).padStart(2,'0');
+const toLocal=(d:Date)=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const toDay=(d:Date)=>toLocal(d).slice(0,10);
+const parse=(v:unknown)=>{const d=v?new Date(String(v)):new Date();return Number.isNaN(d.getTime())?new Date():d;};
+const clock=(d:Date)=>d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+const SmartNote=({what}:{what:string})=><p className="smart-locked"><Lock size={13}/>{what} come with Pro and Lifetime. <Link href="/plans">See plans</Link></p>;
+
+export type TimePick={label:string;date:Date};
+/** Usual hour of the person's own tasks plus a tomorrow-morning pick. Built only from their own records. */
+export function taskTimePicks(records:LedgerRecord[],now=new Date()):TimePick[]{
+ const hours=records.filter(r=>r.kind==='task').map(r=>new Date((r.data as any).due).getHours()),counts=new Map<number,number>();
+ hours.forEach(h=>counts.set(h,(counts.get(h)||0)+1));
+ const usual=[...counts.entries()].sort((a,b)=>b[1]-a[1])[0];const picks:TimePick[]=[];
+ if(usual&&usual[1]>=2){const d=new Date(now);d.setHours(usual[0],0,0,0);picks.push({label:`Your usual time · ${clock(d)}`,date:d});}
+ const tomorrow=new Date(now);tomorrow.setDate(tomorrow.getDate()+1);tomorrow.setHours(9,0,0,0);picks.push({label:'Tomorrow morning · 9:00 AM',date:tomorrow});
+ return picks;
+}
+
+export function DueDateTimePicker({reg,value,picks,smart}:{reg:any;value:unknown;picks:TimePick[];smart:boolean}){
+ const el=useRef<HTMLInputElement|null>(null);const [mode,setMode]=useState<'hour'|'minute'>('hour');
+ const d=parse(value),pm=d.getHours()>=12,h12=d.getHours()%12||12,minute=d.getMinutes();
+ // The hidden native input stays the source of truth so validation and saving behave exactly as before.
+ const commit=(next:Date)=>{const input=el.current;if(!input)return;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,toLocal(next));input.dispatchEvent(new Event('input',{bubbles:true}));};
+ const edit=(fn:(x:Date)=>void)=>{const x=new Date(d);fn(x);commit(x);};
+ const setHour=(h:number)=>edit(x=>x.setHours((h%12)+(pm?12:0)));const setMinute=(m:number)=>edit(x=>x.setMinutes(m));
+ const setDay=(day:Date)=>edit(x=>{x.setFullYear(day.getFullYear(),day.getMonth(),day.getDate());});
+ const today=new Date(),tomorrow=new Date(today);tomorrow.setDate(today.getDate()+1);
+ const saturday=new Date(today);saturday.setDate(today.getDate()+((6-today.getDay()+7)%7||7));
+ const monday=new Date(today);monday.setDate(today.getDate()+((8-today.getDay())%7||7));
+ const days:[string,Date][]=[['Today',today],['Tomorrow',tomorrow],['Weekend',saturday],['Next week',monday]];
+ const times:[string,number][]=[['Morning',9],['Noon',12],['Afternoon',14],['Evening',18],['Night',21]];
+ const angle=mode==='hour'?(h12%12)*30:minute*6,R=74,hx=110+Math.sin(angle*Math.PI/180)*(R-14),hy=110-Math.cos(angle*Math.PI/180)*(R-14);
+ const labels=mode==='hour'?Array.from({length:12},(_,i)=>i+1):Array.from({length:12},(_,i)=>i*5);
+ const pick=(e:PointerEvent<SVGSVGElement>)=>{if(e.type==='pointermove'&&e.buttons!==1)return;const r=e.currentTarget.getBoundingClientRect();let a=Math.atan2(e.clientY-r.top-r.height/2,e.clientX-r.left-r.width/2)*180/Math.PI+90;if(a<0)a+=360;if(mode==='hour')setHour(Math.round(a/30)%12||12);else setMinute((Math.round(a/30)*5)%60);};
+ const key=(e:KeyboardEvent)=>{const step=e.key==='ArrowUp'||e.key==='ArrowRight'?1:e.key==='ArrowDown'||e.key==='ArrowLeft'?-1:0;if(!step)return;e.preventDefault();if(mode==='hour')setHour(((h12-1+step+12)%12)+1);else setMinute((minute+step*5+60)%60);};
+ return <div className="due-picker">
+  <input type="datetime-local" className="due-native" tabIndex={-1} aria-hidden="true" {...reg} ref={(node:HTMLInputElement|null)=>{reg.ref(node);el.current=node;}}/>
+  <div className="due-summary" aria-live="polite"><span><CalendarDays size={16}/>{d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})}</span><span><Clock3 size={16}/>{clock(d)}</span></div>
+  <div className="due-chips" role="group" aria-label="Pick a day">{days.map(([label,day])=><button type="button" key={label} className={toDay(day)===toDay(d)?'selected':''} onClick={()=>setDay(day)}>{label}</button>)}<input type="date" aria-label="Choose another date" value={toDay(d)} onChange={e=>{if(e.target.value){const [y,m,dd]=e.target.value.split('-').map(Number);setDay(new Date(y,m-1,dd));}}}/></div>
+  <div className="due-clock">
+   <div className="due-digital"><button type="button" className={mode==='hour'?'on':''} onClick={()=>setMode('hour')} aria-label={`Hour ${h12}`}>{pad(h12)}</button><b>:</b><button type="button" className={mode==='minute'?'on':''} onClick={()=>setMode('minute')} aria-label={`Minute ${pad(minute)}`}>{pad(minute)}</button><div className="due-ampm" role="group" aria-label="AM or PM"><button type="button" className={!pm?'on':''} onClick={()=>edit(x=>x.setHours(x.getHours()%12))}>AM</button><button type="button" className={pm?'on':''} onClick={()=>edit(x=>x.setHours((x.getHours()%12)+12))}>PM</button></div></div>
+   <svg className="due-dial" viewBox="0 0 220 220" role="slider" tabIndex={0} aria-label={mode==='hour'?'Hour':'Minute'} aria-valuemin={mode==='hour'?1:0} aria-valuemax={mode==='hour'?12:55} aria-valuenow={mode==='hour'?h12:minute} onKeyDown={key} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);pick(e);}} onPointerMove={pick} onPointerUp={()=>{if(mode==='hour')setMode('minute');}}>
+    <circle cx="110" cy="110" r="104" className="due-face"/><line x1="110" y1="110" x2={hx} y2={hy} className="due-hand"/><circle cx="110" cy="110" r="4" className="due-pin"/><circle cx={hx} cy={hy} r="17" className="due-knob"/>
+    {labels.map((n,i)=>{const a=i*30*Math.PI/180,x=110+Math.sin(a)*R,y=110-Math.cos(a)*R,sel=mode==='hour'?n===h12:n===(Math.round(minute/5)*5)%60;return <text key={n} x={x} y={y} textAnchor="middle" dominantBaseline="central" className={sel?'due-num sel':'due-num'}>{mode==='hour'?n:pad(n)}</text>;})}
+   </svg>
+  </div>
+  <div className="due-chips" role="group" aria-label="Quick times">{times.map(([label,h])=><button type="button" key={label} className={d.getHours()===h&&minute===0?'selected':''} onClick={()=>edit(x=>x.setHours(h,0,0,0))}>{label}<small>{clock(new Date(2000,0,1,h))}</small></button>)}</div>
+  {smart?(picks.length>0&&<div className="due-smart" role="group" aria-label="Smart picks"><Sparkles size={14}/><span>Smart picks</span>{picks.map(p=><button type="button" key={p.label} className="suggest-chip" onClick={()=>commit(p.date)}>{p.label}</button>)}</div>):<SmartNote what="Smart time picks"/>}
+ </div>;
+}
+
+const types:[string,typeof Dumbbell,number][]=[['Strength',Dumbbell,5],['Running',Footprints,9.8],['Walking',Footprints,3.5],['Cycling',Bike,7.5],['Yoga',Flower2,3],['HIIT',Zap,9],['Swimming',Waves,7],['Other',Shapes,5]];
+const effort:[string,number,string][]=[['Easy',.8,'Light, you can chat easily'],['Moderate',1,'Steady, a little breathless'],['Hard',1.2,'Tough, hard to talk']];
+const KG=70;
+export const burnEstimate=(type:string,minutes:number,intensity:string)=>{const met=types.find(t=>t[0]===type)?.[2]??5,mult=effort.find(e=>e[0]===intensity)?.[1]??1;return Math.round(met*KG*(Math.max(0,minutes)/60)*mult);};
+
+export function WorkoutFields({register,watch,setValue,errors,records,smart}:{register:any;watch:any;setValue:any;errors:any;records:LedgerRecord[];smart:boolean}){
+ const type=String(watch('type')||'Strength'),intensity=String(watch('intensity')||'Moderate'),minutes=Number(watch('duration'))||0;
+ const set=(k:string,v:unknown)=>setValue(k,v,{shouldDirty:true,shouldValidate:true});
+ const recent=(()=>{const seen=new Set<string>(),out:LedgerRecord<'workout'>[]=[];for(const r of records.filter((x):x is LedgerRecord<'workout'>=>x.kind==='workout').sort((a,b)=>b.data.date.localeCompare(a.data.date))){const k=`${r.data.title}|${r.data.type}`;if(!seen.has(k)){seen.add(k);out.push(r);}if(out.length===3)break;}return out;})();
+ return <>
+  {smart?(recent.length>0&&<div className="wide form-suggest" role="group" aria-label="Smart suggestions"><Sparkles size={14}/><span>Repeat a recent one</span>{recent.map(r=><button type="button" key={r.id} className="suggest-chip" onClick={()=>{set('title',r.data.title);set('type',r.data.type);set('duration',r.data.duration);if(r.data.intensity)set('intensity',r.data.intensity);}}>{r.data.title} · {r.data.duration} min</button>)}</div>):<div className="wide"><SmartNote what="Smart workout suggestions"/></div>}
+  <label className="wide"><span>Workout name</span><input aria-label="Workout name" placeholder="For example: Upper body strength" {...register('title')}/>{errors.title&&<small className="error">{String(errors.title.message||'Enter a name')}</small>}</label>
+  <input type="hidden" {...register('type')}/><input type="hidden" {...register('intensity')}/>
+  <div className="wide"><span className="field-label">Type</span><div className="wo-types" role="radiogroup" aria-label="Workout type">{types.map(([name,Icon])=><button type="button" role="radio" aria-checked={type===name} key={name} className={type===name?'selected':''} onClick={()=>set('type',name)}><Icon size={18}/>{name}</button>)}</div></div>
+  <label><span>Date</span><input aria-label="Date" type="date" {...register('date')}/></label>
+  <div><span className="field-label">Duration</span><div className="wo-stepper"><button type="button" aria-label="5 minutes less" onClick={()=>set('duration',Math.max(5,minutes-5))}><Minus size={16}/></button><label><input aria-label="Duration (minutes)" type="number" min="1" max="1440" inputMode="numeric" {...register('duration',{valueAsNumber:true})}/><small>min</small></label><button type="button" aria-label="5 minutes more" onClick={()=>set('duration',Math.min(1440,minutes+5))}><Plus size={16}/></button></div></div>
+  <div className="wide wo-quick" role="group" aria-label="Quick durations">{[15,30,45,60,90].map(m=><button type="button" key={m} className={minutes===m?'selected':''} onClick={()=>set('duration',m)}>{m} min</button>)}</div>
+  <div className="wide"><span className="field-label">Effort</span><div className="wo-effort" role="radiogroup" aria-label="Effort">{effort.map(([name,,hint])=><button type="button" role="radio" aria-checked={intensity===name} data-effort={name} key={name} className={intensity===name?'selected':''} onClick={()=>set('intensity',name)}><strong>{name}</strong><small>{hint}</small></button>)}</div></div>
+  <div className="wide wo-burn"><Flame size={18}/><div><strong>≈ {burnEstimate(type,minutes,intensity)} kcal</strong><small>Rough estimate for a 70 kg adult. Your real burn varies.</small></div></div>
+  <label className="wide"><span>Notes</span><textarea placeholder="Sets, reps, weights, how it felt… (optional)" {...register('notes')}/></label>
+  <label className="wide check-label wo-done"><input type="checkbox" {...register('done')}/><span>Mark as completed</span></label>
+ </>;
+}

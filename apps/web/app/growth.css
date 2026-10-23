@@ -70,8 +70,7 @@
 /* Quick-add sits in the corner, the sparkline moves down so the two never touch */
 .metrics-grid .metric-card .sparkline{top:46px;bottom:auto;height:28px;width:78px;right:14px}
 @media(max-width:1250px){.metrics-grid .metric-card .sparkline{width:60px;height:30px}}
-.metrics-grid .metric-hero .metric-content,.metrics-grid .metric-expense .metric-content{padding-right:36px}
-@media(max-width:800px){.metrics-grid .metric-add{top:10px;right:10px;width:28px;height:28px}.metrics-grid .metric-hero .metric-content,.metrics-grid .metric-expense .metric-content{padding-right:0}.metrics-grid .metric-card:has(.metric-add) .metric-icon{margin-right:34px}}
+@media(max-width:800px){.metrics-grid .metric-add{top:10px;right:10px;width:28px;height:28px}.metrics-grid .metric-card:has(.metric-add) .metric-icon{margin-right:34px}}
 /* Add / edit drawer, premium finish; income is green, expense is red, everywhere */
 .dialog-drawer .record-form{--tx:#9aa7a1;margin-top:18px;gap:18px}
 .dialog-drawer .record-form[data-tx=income]{--tx:#4ade80}.dialog-drawer .record-form[data-tx=expense]{--tx:#ff5d5d}.dialog-drawer .record-form[data-tx=transfer]{--tx:#7aa7ff}
@@ -106,3 +105,38 @@
 .button:focus-visible{outline:2px solid #b6f26b;outline-offset:2px}
 .button:disabled{cursor:not-allowed;opacity:.55;box-shadow:none}
 @media(prefers-reduced-motion:reduce){.button,.button:hover{transform:none!important;transition:none}}
+
+/* KPI cards: sparkline sits bottom-right under the number, ring has its own space */
+.metrics-grid .metric-card .sparkline{top:auto;bottom:6px;right:8px;width:48%;height:34%;opacity:.32;z-index:1;pointer-events:none}
+.metrics-grid .metric-card:has(.task-ring) .metric-content{padding-right:74px}
+.metrics-grid .metric-card .task-ring{position:absolute;top:50%;right:16px;width:62px;height:62px;transform:translateY(-50%)}
+.metrics-grid .metric-card .task-ring span{font-size:12px}
+@media(max-width:800px){.metrics-grid .metric-card:has(.task-ring) .metric-content{padding-right:0}.metrics-grid .metric-card .task-ring{top:12px;right:12px;width:44px;height:44px;transform:none}.metrics-grid .metric-card .task-ring span{font-size:10px}}
+
+/* Drawer extras: due date/time clock, workout chips */
+.field-label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8d9a94;margin-bottom:8px}
+.smart-locked{display:flex;align-items:center;gap:7px;margin:0;font-size:12px;color:#8d9a94}.smart-locked a{color:#b6f26b;text-decoration:underline}
+.due-native{position:absolute!important;opacity:0;pointer-events:none;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;border:0!important}
+.due-picker{display:grid;gap:14px;padding:14px;border:1px solid #232b27;border-radius:16px;background:linear-gradient(160deg,#101412,#0b0d0c)}
+.due-summary{display:flex;gap:10px;flex-wrap:wrap}.due-summary span{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border-radius:12px;background:#0c0f0e;border:1px solid #2a332f;font-weight:600;font-size:15px}.due-summary svg{color:#b6f26b}
+.due-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.due-chips button,.wo-quick button{display:inline-flex;flex-direction:column;align-items:center;gap:1px;min-height:38px;padding:7px 13px;border-radius:999px;border:1px solid #2a332f;background:#0c0f0e;color:#cfd8d3;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.due-chips button small{font-size:10px;font-weight:500;color:#7f8b85}.due-chips button:hover,.wo-quick button:hover{border-color:#5d6d65}
+.due-chips button.selected,.wo-quick button.selected{background:rgba(182,242,107,.14);border-color:rgba(182,242,107,.6);color:#d8ff8f}
+.due-chips input[type=date]{min-height:38px!important;width:auto!important;border-radius:999px!important;padding:6px 12px!important;font-size:12px!important}
+.due-clock{display:grid;justify-items:center;gap:10px}
+.due-digital{display:flex;align-items:center;gap:6px}.due-digital>button{min-width:64px;padding:6px 10px;border-radius:12px;border:1px solid #2a332f;background:#0c0f0e;color:#cfd8d3;font-size:30px;font-weight:700;font-family:var(--font-manrope),sans-serif;cursor:pointer}.due-digital>button.on{border-color:#b6f26b;color:#d8ff8f;background:rgba(182,242,107,.1)}.due-digital>b{font-size:28px;color:#6b7771}
+.due-ampm{display:grid;margin-left:8px;border:1px solid #2a332f;border-radius:10px;overflow:hidden}.due-ampm button{padding:6px 11px;border:0;background:#0c0f0e;color:#8d9a94;font-weight:700;font-size:12px;cursor:pointer}.due-ampm button.on{background:rgba(182,242,107,.18);color:#d8ff8f}
+.due-dial{width:min(230px,100%);aspect-ratio:1;touch-action:none;cursor:pointer;outline:none;user-select:none}.due-dial:focus-visible{filter:drop-shadow(0 0 6px rgba(182,242,107,.6))}
+.due-face{fill:#0c0f0e;stroke:#2a332f;stroke-width:1.5}.due-hand{stroke:#b6f26b;stroke-width:2.5;stroke-linecap:round}.due-pin{fill:#b6f26b}.due-knob{fill:#b6f26b;fill-opacity:.9}
+.due-num{fill:#cfd8d3;font-size:14px;font-weight:600;pointer-events:none}.due-num.sel{fill:#0c1208;font-weight:800}
+.due-smart{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:12px;color:#8d9a94}.due-smart svg{color:#b6f26b}
+.wo-types{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.wo-types button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:14px;border:1px solid #2a332f;background:#0c0f0e;color:#aab5af;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.wo-types button.selected{background:rgba(182,242,107,.14);border-color:rgba(182,242,107,.6);color:#d8ff8f}.wo-types button:hover{border-color:#5d6d65}
+.wo-stepper{display:flex;align-items:center;gap:8px}.wo-stepper>button{display:grid;place-items:center;width:44px;height:48px;border-radius:12px;border:1px solid #2a332f;background:#0c0f0e;color:#cfd8d3;cursor:pointer}.wo-stepper>button:hover{border-color:#5d6d65}
+.wo-stepper label{position:relative;flex:1;min-width:0}.wo-stepper label input{text-align:center;padding-right:34px!important}.wo-stepper label small{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#7f8b85;font-size:11px;pointer-events:none}
+.wo-quick{display:flex;flex-wrap:wrap;gap:8px}.wo-effort{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wo-effort button{display:grid;gap:3px;text-align:left;padding:11px 12px;border-radius:14px;border:1px solid #2a332f;background:#0c0f0e;color:#cfd8d3;cursor:pointer;transition:background .15s,border-color .15s}.wo-effort button strong{font-size:13px}.wo-effort button small{font-size:11px;color:#7f8b85;line-height:1.3}
+.wo-effort button.selected[data-effort=Easy]{background:rgba(122,167,255,.14);border-color:rgba(122,167,255,.6)}.wo-effort button.selected[data-effort=Moderate]{background:rgba(246,196,83,.14);border-color:rgba(246,196,83,.6)}.wo-effort button.selected[data-effort=Hard]{background:rgba(255,93,93,.14);border-color:rgba(255,93,93,.6)}
+.wo-burn{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1px dashed #3a4540;background:rgba(255,155,82,.06)}.wo-burn svg{color:#ffa35c;flex-shrink:0}.wo-burn strong{display:block;font-size:16px}.wo-burn small{color:#8d9a94;font-size:11px}
+.wo-done{padding:12px 14px;border:1px solid #232b27;border-radius:14px;background:#0c0f0e}
+@media(max-width:640px){.wo-types{grid-template-columns:repeat(4,1fr)}.wo-types button{padding:10px 2px;font-size:11px}.wo-effort{grid-template-columns:1fr}.due-picker{padding:12px}}
