@@ -1,7 +1,7 @@
 'use client';
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {CalendarPlus,Dumbbell,Flame,Plus,Scale,Trash2,Trophy} from 'lucide-react';
+import {Zap,CalendarPlus,Dumbbell,Flame,Plus,Scale,Trash2,Trophy} from 'lucide-react';
 import {CartesianGrid,Line,LineChart,ResponsiveContainer,Tooltip,XAxis,YAxis} from 'recharts';
 import {schemas,type LedgerRecord,type Snapshot,dateLocale,formatDate,formatWeight,kgToDisplay,displayToKg,weightUnit} from '@ledger/shared';
 import {adapter} from '../lib/data';
@@ -37,7 +37,7 @@ export function FitnessPlanner({s,today,onRemove,part}:{s:Snapshot;today:string;
   </Entrance>
   <PremiumFeature s={s} title="Training programs">
    <Entrance className="panel fp-programs"><div className="panel-heading"><div><span className="eyebrow">PROGRAMS</span><h2>Start a plan in one tap</h2><p>Pick a program and its sessions are added to your checklist with the exercises, sets and reps filled in.</p></div><CalendarPlus size={22}/></div>
-    <div className="fp-program-grid">{programs.map(p=><article key={p.id}><span className="tag fp-level" data-level={p.level}>{p.level}</span><h3>{p.name}</h3><p>{p.blurb}</p><small>{p.days.length} sessions a week</small><div className="fp-days">{p.days.map(d=><span key={d.title}>{d.title}</span>)}</div><Button onClick={()=>void schedule(p.id)} disabled={!!busy} loading={busy===p.id}>Schedule from tomorrow</Button></article>)}</div></Entrance>
+    <div className="fp-program-grid">{programs.map(p=><article key={p.id}><span className="tag fp-level" data-level={p.level}>{p.level}</span><h3>{p.name}</h3><p>{p.blurb}</p><div className="fp-when"><small>Your first sessions</small><div>{scheduleProgram(p,today).map(d=><span key={d.title}><b>{new Date(d.date+'T12:00:00Z').toLocaleDateString(dateLocale(),{weekday:'short',timeZone:'UTC'})} {Number(d.date.slice(8))}</b>{d.title}</span>)}</div></div><Button variant="primary" onClick={()=>void schedule(p.id)} disabled={!!busy} loading={busy===p.id}>Start this plan tomorrow</Button><em className="fp-note">Adds {p.days.length} workouts to your checklist. Rest days are kept between them.</em></article>)}</div></Entrance>
   </PremiumFeature></>}
   {part==='progress'&&<PremiumFeature s={s} title="Personal records">
    <Entrance className="panel fp-records"><div className="panel-heading"><div><span className="eyebrow">PERSONAL RECORDS</span><h2>Your best lifts</h2><p>Estimated one-rep max from your completed sessions.</p></div><Trophy size={22}/></div>
@@ -76,11 +76,12 @@ function SessionDialog({s,today,open,onOpenChange}:{s:Snapshot;today:string;open
   </div>
   <datalist id="exercise-names">{exerciseNames.map(n=><option key={n} value={n}/>)}</datalist>
   <div className="fp-exercises">{exercises.map((e,i)=><div className="fp-exercise" key={i}>
-   <div className="fp-exercise-head"><input list="exercise-names" aria-label={`Exercise ${i+1} name`} placeholder="Exercise, for example Squat" value={e.name} onChange={ev=>patch(i,x=>({...x,name:ev.target.value}))} maxLength={80}/><button className="icon-button" aria-label={`Remove exercise ${i+1}`} onClick={()=>setExercises(l=>l.length>1?l.filter((_,n)=>n!==i):l)}><Trash2 size={14}/></button></div>
+   {!e.name&&<div className="fp-suggest" role="group" aria-label={`Quick picks for exercise ${i+1}`}>{exerciseNames.slice(0,6).map(n=><button type="button" key={n} onClick={()=>patch(i,x=>({...x,name:n}))}>{n}</button>)}</div>}<div className="fp-exercise-head"><input list="exercise-names" aria-label={`Exercise ${i+1} name`} placeholder="Exercise, for example Squat" value={e.name} onChange={ev=>patch(i,x=>({...x,name:ev.target.value}))} maxLength={80}/><button className="icon-button" aria-label={`Remove exercise ${i+1}`} onClick={()=>setExercises(l=>l.length>1?l.filter((_,n)=>n!==i):l)}><Trash2 size={14}/></button></div>
    {e.sets.map((set,n)=><div className="fp-set" key={n}><span>Set {n+1}</span><label><input type="number" min={0} max={1000} aria-label={`Exercise ${i+1} set ${n+1} reps`} value={set.reps} onChange={ev=>patch(i,x=>({...x,sets:x.sets.map((y,m)=>m===n?{...y,reps:Math.max(0,Math.floor(Number(ev.target.value)||0))}:y)}))}/><small>reps</small></label><label><input type="number" min={0} max={2000} step="0.5" aria-label={`Exercise ${i+1} set ${n+1} weight`} value={kgToDisplay(set.weight)} onChange={ev=>patch(i,x=>({...x,sets:x.sets.map((y,m)=>m===n?{...y,weight:Math.max(0,displayToKg(Number(ev.target.value)||0))}:y)}))}/><small>{weightUnit()}</small></label><button className="icon-button" aria-label={`Remove set ${n+1} of exercise ${i+1}`} onClick={()=>patch(i,x=>({...x,sets:x.sets.length>1?x.sets.filter((_,m)=>m!==n):x.sets}))}><Trash2 size={13}/></button></div>)}
    <div className="fp-exercise-foot"><button type="button" className="plain-button" onClick={()=>patch(i,x=>{const prev=x.sets.at(-1)||last(x.name)||{reps:8,weight:0};return {...x,sets:[...x.sets,{reps:prev.reps,weight:prev.weight}]};})}><Plus size={13}/> Add set</button>{e.name&&last(e.name)&&<small>Last time: {last(e.name)!.reps} × {last(e.name)!.weight} kg</small>}</div>
   </div>)}</div>
   <button type="button" className="plain-button fp-add-exercise" onClick={()=>setExercises(l=>[...l,blank()])}><Plus size={14}/> Add exercise</button>
+  <p className="fp-xp"><Zap size={14}/>About +{50+Math.min(duration,90)+10+(exercises.some(e=>e.name.trim())?20:0)+Math.min(50,Math.floor(volume/1000)*5)} XP when this session is done</p>
   <p className="muted fp-volume">Total volume: <strong>{kg(volume)}</strong>{date>today?' · dated in the future, so it is saved as planned':''}</p>
   {error&&<p className="error" role="alert">{error}</p>}
   <div className="dialog-actions"><Button onClick={()=>onOpenChange(false)} disabled={busy}>Cancel</Button><Button variant="primary" onClick={()=>void save()} disabled={busy||!title.trim()} loading={busy}>Save session</Button></div>

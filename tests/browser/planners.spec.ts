@@ -35,7 +35,7 @@ for(const [name,width] of [['phone',390],['laptop',1440]] as const){
   await dialog.getByRole('button',{name:'Save session'}).click();await expect(dialog).toHaveCount(0);
   const row=page.locator('.workout-session').filter({hasText:'Leg day test'});await expect(row).toBeVisible();await expect(row).toContainText('1 exercise ');
   await page.getByRole('tab',{name:'Progress'}).click();await expect(page.locator('.fp-records')).toContainText('Squat');
-  await page.getByRole('tab',{name:'Train'}).click();await page.getByRole('button',{name:'Schedule from tomorrow'}).first().click();await expect(page.locator('.fitness-planner').getByRole('status')).toContainText('scheduled');
+  await page.getByRole('tab',{name:'Train'}).click();await page.getByRole('button',{name:'Start this plan tomorrow'}).first().click();await expect(page.locator('.fitness-planner').getByRole('status')).toContainText('scheduled');
   await page.getByRole('tab',{name:'Progress'}).click();await page.getByLabel('Weight (kg)').fill('72.5');await page.getByRole('button',{name:'Save check-in'}).click();await expect(page.locator('.fp-body')).toContainText('72.5 kg');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:`artifacts/fitness-planner-${name}.png`,fullPage:true});
