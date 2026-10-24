@@ -14,6 +14,7 @@ import './referrals.css';
 import './growth.css';
 import './redesign.css';
 import './hold-button.css';
+import './phase7.css';
 import {Providers} from './providers';
 // Inter carries UI text and tabular figures; Manrope carries headings and large numbers. Both are variable fonts bundled locally.
 const inter=localFont({src:'./fonts/Inter-Variable.woff2',weight:'100 900',variable:'--font-inter',display:'swap'});

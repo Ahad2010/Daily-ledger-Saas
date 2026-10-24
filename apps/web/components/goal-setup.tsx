@@ -5,7 +5,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {ArrowRight,Dumbbell,Flame,ListChecks,Lock,PencilRuler,Scale,Wallet} from 'lucide-react';
 import {recordsOf,schemas,kgToDisplay,displayToKg,weightUnit,type Snapshot} from '@ledger/shared';
 import {adapter} from '../lib/data';
-import {goalTypes,type GoalType,type GoalTypeId} from '../lib/goal-types';
+import {goalTypes,goalTone,type GoalType,type GoalTypeId} from '../lib/goal-types';
 import {exerciseNames} from '../lib/fitness';
 import {Dialog} from './ui/dialog';
 import {Button} from './ui/button';
@@ -16,8 +16,8 @@ const addDays=(date:string,days:number)=>new Date(new Date(`${date}T12:00:00Z`).
 // Step one: choose what kind of goal this is. Types that follow other parts of the app are Pro; free accounts see why and where to upgrade.
 export function GoalTypePicker({s,onChoose}:{s:Snapshot;onChoose:(t:GoalType)=>void}){
  const pro=s.profile.plan!=='Free';
- return <div className="goal-types">{goalTypes.map(t=>{const locked=t.pro&&!pro;const body=<><span className="goal-type-icon">{icons[t.id]}</span><span className="goal-type-text"><strong>{t.label}{t.pro&&<em className="pro-chip">{locked?<><Lock size={10}/> Pro</>:'Auto'}</em>}</strong><small>{t.blurb}</small></span><ArrowRight size={16}/></>;
-  return locked?<Link key={t.id} className="goal-type locked" href="/plans" aria-label={`${t.label}, Pro. See plans`}>{body}</Link>:<button key={t.id} className="goal-type" onClick={()=>onChoose(t)}>{body}</button>;})}</div>;
+ return <div className="goal-types">{goalTypes.map(t=>{const locked=t.pro&&!pro;const body=<><span className="goal-type-icon">{icons[t.id]}</span><span className="goal-type-text"><strong>{t.label}{t.pro&&<em className="pro-chip">{locked?<><Lock size={10}/> Pro</>:'Auto'}</em>}</strong><small>{t.blurb}</small><small className="gt-eg">e.g. {t.example}</small></span><ArrowRight size={16}/></>;
+  const tone={'--gt':goalTone[t.id]} as React.CSSProperties;return locked?<Link key={t.id} style={tone} className="goal-type locked" href="/plans" aria-label={`${t.label}, Pro. See plans`}>{body}</Link>:<button key={t.id} style={tone} className="goal-type" onClick={()=>onChoose(t)}>{body}</button>;})}</div>;
 }
 
 // Step two: only the questions this type needs. The goal is saved with its automatic source so progress follows the data.

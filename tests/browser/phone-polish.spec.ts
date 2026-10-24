@@ -19,10 +19,15 @@ test('reports week by week becomes stacked cards on a phone with nothing cut off
  expect(await page.locator('.report-weeks tbody tr').first().evaluate(el=>el.getBoundingClientRect().right<=innerWidth)).toBe(true);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
-for(const path of ['/tasks','/goals'])test(`${path} summary cards form a 2x2 grid on a phone and tasks list comes before charts`,async({page})=>{
+for(const path of ['/tasks'])test(`${path} summary cards form a 2x2 grid on a phone and tasks list comes before charts`,async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto(path);if(path==='/tasks')await page.getByRole('tab',{name:'Insights',exact:true}).click();await page.waitForTimeout(800);
  const cards=page.locator('.feature-main .insight-grid .insight-card');expect(await cards.count()).toBe(4);
  const boxes=await cards.evaluateAll(els=>els.map(e=>{const b=e.getBoundingClientRect();return [Math.round(b.left),Math.round(b.top)];}));
  expect(boxes[0][1]).toBe(boxes[1][1]);expect(boxes[2][1]).toBe(boxes[3][1]);expect(boxes[2][1]).toBeGreaterThan(boxes[0][1]);
  
+});
+
+test('/goals hero and guide fit a phone without sideways scroll',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto('/goals');await expect(page.locator('.g-hero')).toBeVisible();await expect(page.getByRole('button',{name:'Open the guide for this page'})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

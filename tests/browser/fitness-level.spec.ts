@@ -25,7 +25,8 @@ test('completed workouts show the XP they earned and programs show their first s
 
 test('XP history lists finished sessions and a finished workout cannot be unticked',async({page})=>{
  await seed(page,'');await page.goto('/fitness');
- await expect(page.locator('.lv-history li').first()).toContainText('XP');
+ await page.getByRole('link',{name:/XP history/}).click();await expect(page).toHaveURL(/\/fitness\/history/);
+ await expect(page.locator('.lv-history li').first()).toContainText('XP');await page.goBack();
  const done=page.locator('.workout-session.session-completed [role=checkbox]').first();await expect(done).toHaveClass(/locked/);
  await done.click({force:true});await expect(done).toBeChecked();
 });
