@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test';
 import {demoSnapshot} from '../../packages/shared/src/index';
 
 test('account loading never flashes a dashboard before onboarding',async({page})=>{
+ await page.addInitScript(()=>{try{localStorage.setItem('dl-finance-setup','done');}catch{/* ignore */}});
  const snapshot=demoSnapshot();snapshot.profile.onboardingCompletedAt=null;
  let release:()=>void=()=>{};const pending=new Promise<void>(resolve=>release=resolve);
  await page.route('**/backend/auth/me',async r=>{await pending;await r.fulfill({json:{user:{name:'Fixture'},csrf:'fixture'}});});
@@ -18,6 +19,7 @@ test('account loading never flashes a dashboard before onboarding',async({page})
 });
 
 for(const width of [360,390,768,1024,1440,1920])test(`premium empty workspace ${width}px`,async({page})=>{
+ await page.addInitScript(()=>{try{localStorage.setItem('dl-finance-setup','done');}catch{/* ignore */}});
  await page.setViewportSize({width,height:900});const snapshot=demoSnapshot();snapshot.records=[];snapshot.profile.onboardingCompletedAt='2026-10-05T10:00:00Z';
  let authReads=0,documents=0;page.on('request',r=>{if(r.isNavigationRequest()&&r.frame()===page.mainFrame())documents++;});
  await page.route('**/backend/auth/me',r=>{authReads++;return r.fulfill({json:{user:{name:snapshot.profile.name},csrf:'fixture'}});});

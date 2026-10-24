@@ -40,3 +40,16 @@ test('finance pages use the dropdown instead of a back link and income rows say 
  await expect(page.getByRole('combobox',{name:'Finance page'})).toContainText('Income');
  await page.goto('/finance');await expect(page.getByRole('tab',{name:'Overview'})).toBeVisible();await expect(page.getByRole('tab',{name:'Snapshot'})).toHaveCount(0);
 });
+
+test('a brand new account sees the finance guide on its first dashboard visit',async({page})=>{
+ await emptyWorkspace(page);await page.goto('/');
+ await expect(page.getByRole('dialog').getByText('How much do you earn each month?')).toBeVisible();
+ await page.getByRole('dialog').getByRole('button',{name:'Maybe later'}).click();await page.reload();await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('finance overview amounts count up from zero to the real number',async({page})=>{
+ const s=demoSnapshot();s.profile.onboardingCompletedAt='2026-09-01T00:00:00Z';
+ await page.addInitScript((x:any)=>{if(!localStorage.getItem('daily-ledger-demo-v1'))localStorage.setItem('daily-ledger-demo-v1',JSON.stringify(x));},s);
+ await page.goto('/finance');const net=page.locator('.fh-main>strong, .fh-main strong').first();
+ await expect(net).toHaveText('$2,720',{timeout:8000});
+});
