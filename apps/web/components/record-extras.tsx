@@ -138,3 +138,12 @@ export function RepeatDays({dates,onChange,today}:{dates:string[];onChange:(d:st
   <p className="rd-count">{dates.length?`${dates.length} day${dates.length===1?'':'s'} selected. Each one is added on its own.`:'Tap the days you want.'}</p>
  </div>;
 }
+
+/** How many? Tap 1 to 4, or step further. Used for servings and grocery amounts. */
+export function QtyPicker({value,onChange,min=1,max=99,label}:{value:number;onChange:(n:number)=>void;min?:number;max?:number;label:string}){
+ const set=(n:number)=>onChange(Math.min(max,Math.max(min,Math.round(n))));
+ return <div className="qty" role="group" aria-label={label}>
+  <div className="qty-chips">{[1,2,3,4].map(n=><button type="button" key={n} aria-pressed={value===n} className={value===n?'on':''} onClick={()=>set(n)}>{n}</button>)}</div>
+  <div className="qty-step"><button type="button" aria-label="One less" onClick={()=>set(value-1)} disabled={value<=min}><Minus size={16}/></button><input inputMode="numeric" aria-label={label} value={value} onChange={e=>set(Number(e.target.value.replace(/\D/g,''))||min)}/><button type="button" aria-label="One more" onClick={()=>set(value+1)} disabled={value>=max}><Plus size={16}/></button></div>
+ </div>;
+}

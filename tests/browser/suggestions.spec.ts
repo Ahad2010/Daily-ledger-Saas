@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {demoSnapshot} from '../../packages/shared/src/index';
 test('pages suggest real next steps, dismissals last the day, and adding opens a drawer',async({page})=>{
+ await page.addInitScript(()=>{try{localStorage.setItem('dl-finance-setup','done');}catch{/* ignore */}});
  const s=demoSnapshot();s.records=[];s.profile.onboardingCompletedAt='2026-09-01T00:00:00Z';
  await page.route('**/backend/auth/me',r=>r.fulfill({json:{user:{name:'Fixture',email:'f@example.com',status:'active'},csrf:'x'}}));
  await page.route('**/backend/api/snapshot',r=>r.fulfill({json:s}));
@@ -9,10 +10,11 @@ test('pages suggest real next steps, dismissals last the day, and adding opens a
  await strip.getByRole('button',{name:'Dismiss suggestion'}).first().click();await expect(strip).not.toContainText('Nothing is planned for tomorrow');
  await page.reload();await expect(page.getByRole('region',{name:'Suggestions for you'})).not.toContainText('Nothing is planned for tomorrow');
  await page.getByRole('button',{name:'Add habit'}).click();
- const drawer=page.locator('.dialog-drawer');await expect(drawer).toBeVisible();await expect(drawer.getByRole('heading')).toContainText(/habit/i);
+ const drawer=page.locator('.dialog-drawer');await expect(drawer).toBeVisible();await expect(drawer.locator('.dialog-title')).toContainText(/habit/i);
  const box=await drawer.boundingBox();expect(box!.x+box!.width).toBeGreaterThan(1200);
 });
 test('finance and fitness suggestions point at real gaps',async({page})=>{
+ await page.addInitScript(()=>{try{localStorage.setItem('dl-finance-setup','done');}catch{/* ignore */}});
  const s=demoSnapshot();s.records=[];s.profile.onboardingCompletedAt='2026-09-01T00:00:00Z';
  await page.route('**/backend/auth/me',r=>r.fulfill({json:{user:{name:'Fixture',email:'f@example.com',status:'active'},csrf:'x'}}));
  await page.route('**/backend/api/snapshot',r=>r.fulfill({json:s}));
