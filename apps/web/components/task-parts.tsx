@@ -1,5 +1,5 @@
 'use client';
-import {useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {CalendarClock,Clock3,Pencil,Plus,Trash2,X} from 'lucide-react';
 import {localDate,schemas,type LedgerRecord,dateLocale} from '@ledger/shared';
@@ -34,6 +34,20 @@ export function TaskRow({t,tz,today,onToggle,onEdit,onTomorrow,onRemove,leaving=
 }
 
 // Type it, choose when and how important, then a big clock asks for the time before it is added.
+
+// A placeholder that fades in word by word, then moves to the next line. It disappears the moment you type.
+const phrases=['What do you need to do?','Call the dentist tomorrow','Send the invoice to Sam','Buy groceries for the week','Pay the electricity bill'];
+function TypingPlaceholder({active}:{active:boolean}){
+ const [i,setI]=useState(0),[out,setOut]=useState(false);
+ useEffect(()=>{
+  if(!active||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const hold=phrases[i].split(' ').length*170+2300;
+  const n=phrases[i].split(' ').length,a=setTimeout(()=>setOut(true),hold),b=setTimeout(()=>{setOut(false);setI(v=>(v+1)%phrases.length);},hold+n*110+420);
+  return()=>{clearTimeout(a);clearTimeout(b);};
+ },[i,active]);
+ if(!active)return null;
+ return <span key={i} className={`tc-ph${out?' out':''}`} aria-hidden="true">{phrases[i].split(' ').map((w,k)=><span key={k} style={{animationDelay:out?`${k*110}ms`:`${k*170}ms`}}>{w}</span>)}</span>;
+}
 export function TaskComposer({today}:{today:string}){
  const client=useQueryClient(),input=useRef<HTMLInputElement>(null);
  const [title,setTitle]=useState(''),[when,setWhen]=useState<When>('today'),[priority,setPriority]=useState<Priority>('medium'),[open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[added,setAdded]=useState('');
@@ -52,7 +66,7 @@ export function TaskComposer({today}:{today:string}){
  }
  return <div className="tc">
   <form className="tc-form" onSubmit={e=>{e.preventDefault();start();}} aria-label="Quick add task">
-   <div className="tc-input"><input ref={input} aria-label="Quick add task title" placeholder="What do you need to do?" maxLength={160} value={title} onChange={e=>{setTitle(e.target.value);setError('');}}/><button type="submit" className="tc-add"><Plus size={18} strokeWidth={2.6}/>Add task</button></div>
+   <div className="tc-input"><div className="tc-field"><input ref={input} aria-label="Quick add task title" placeholder="What do you need to do?" maxLength={160} value={title} onChange={e=>{setTitle(e.target.value);setError('');}}/><TypingPlaceholder active={!title}/></div><button type="submit" className="tc-add"><Plus size={18} strokeWidth={2.6}/>Add task</button></div>
    <div className="tc-opts">
     <div className="tc-group" role="radiogroup" aria-label="When">{([['today','Today'],['tomorrow','Tomorrow'],['weekend','Weekend'],['next','Next week']] as const).map(([id,label])=><button type="button" role="radio" aria-checked={when===id} key={id} className={when===id?'on':''} onClick={()=>setWhen(id)}>{label}</button>)}</div>
     <div className="tc-group" role="radiogroup" aria-label="Priority">{(['low','medium','high'] as const).map(p=><button type="button" role="radio" aria-checked={priority===p} key={p} className={`${priority===p?'on ':''}p-${p}`} onClick={()=>setPriority(p)}><i/>{priorityLabel[p]}</button>)}</div>

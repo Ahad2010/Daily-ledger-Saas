@@ -41,8 +41,10 @@ test('finance pages use the dropdown instead of a back link and income rows say 
  await page.goto('/finance');await expect(page.getByRole('tab',{name:'Overview'})).toBeVisible();await expect(page.getByRole('tab',{name:'Snapshot'})).toHaveCount(0);
 });
 
-test('a brand new account sees the finance guide on its first dashboard visit',async({page})=>{
- await emptyWorkspace(page);await page.goto('/');
+test('a brand new account sees the finance guide only when it opens Finance',async({page})=>{
+ await emptyWorkspace(page);await page.goto('/');await page.waitForTimeout(1500);
+ await expect(page.getByRole('dialog').getByText('How much do you earn each month?')).toHaveCount(0);
+ await page.goto('/finance');
  await expect(page.getByRole('dialog').getByText('How much do you earn each month?')).toBeVisible();
  await page.getByRole('dialog').getByRole('button',{name:'Maybe later'}).click();await page.reload();await expect(page.getByRole('dialog')).toHaveCount(0);
 });

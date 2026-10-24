@@ -33,7 +33,6 @@ import {MealsHub} from './meals-hub';
 import {TodayView} from './today-view';
 import {CalendarView} from './calendar-view';
 import {NotificationList} from './notification-list';
-import {FinanceSetup} from './finance-setup';
 import {TaskRow} from './task-parts';
 import {FitnessLevel,XpHistoryPage} from './fitness-level';
 import {Tick} from './today-view';
@@ -128,10 +127,9 @@ function toggle(r:LedgerRecord,key='done'){save.mutate({...r,data:{...r.data,[ke
  const notices=s?recordsOf(s.records,'announcement').filter(r=>!s.dismissed.includes(`${r.id}:${r.data.version}`)&&new Date(r.data.publishAt)<=now()&&new Date(r.data.expiresAt)>now()&&(r.data.audience==='Everyone'||r.data.audience===s.profile.plan)).sort((a,b)=>b.data.priority-a.data.priority||b.data.publishAt.localeCompare(a.data.publishAt)):[];
  const bellCount=unread.length+notices.length;
  useEffect(()=>{save.reset();deletion.reset();},[fullPath]);
- const [financeSetup,setFinanceSetup]=useState(false);
+
  // A brand new account is guided through its money setup right after the first onboarding.
  useEffect(()=>{document.body.dataset.page=path||'overview';},[path]);
- useEffect(()=>{if(!s||building||path!==''||!s.profile.onboardingCompletedAt)return;if(recordsOf(s.records,'cashPlan').length||recordsOf(s.records,'budget').length||recordsOf(s.records,'transaction').length)return;try{if(localStorage.getItem('dl-finance-setup')==='done')return;}catch{return;}setFinanceSetup(true);},[s,building,path]);
  if(access.data?.user.status==='suspended'||error instanceof ApiError&&error.status===403)return <BannedAccount/>;
  if(building)return <DashboardBuilding persona={building.persona} ready={building.ready} error={building.error} onRetry={loadBuiltDashboard} onComplete={()=>setBuilding(null)}/>;
  if(isPending)return <AccountLoading/>;
@@ -163,7 +161,7 @@ function toggle(r:LedgerRecord,key='done'){save.mutate({...r,data:{...r.data,[ke
  <footer className="page-footer"><span>Daily Ledger <span className="footer-dot">·</span> A little more clarity, every day.</span><span>{demoMode?'Demo data · stored locally':s.profile.timezone} <span className="footer-dot">·</span> {m.currency}</span></footer>
  </main></div>
  
- <FinanceSetup s={s} today={today} currency={s.profile.currency} canPlanBills={!!effectiveLimits(s).finance} open={financeSetup} onClose={()=>{setFinanceSetup(false);try{localStorage.setItem('dl-finance-setup','done');}catch{/* private mode */}}}/>
+ 
  <Dialog variant="side" open={notificationOpen} onOpenChange={setNotificationOpen} title="Notifications" description="Stay updated with all the important activities."><div className="notification-panel"><button className="mark-all" onClick={()=>void markAllRead()} disabled={!unread.length}><CheckCheck size={15}/>Mark all as read</button>{unread.length>0&&<p className="n-count"><i/>{unread.length} unread</p>}{notices.length>0&&<ul className="notification-list announcement-list" aria-label="Announcements">{notices.map(r=><li key={r.id}><div className="notification-item announcement-item"><span className="n-icon" aria-hidden="true"><Megaphone size={16}/></span><span className="n-body"><span className="n-head"><strong>{r.data.title}</strong><time>{new Date(r.data.publishAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</time></span>{r.data.description&&<span className="n-text">{r.data.description}</span>}<span className="n-actions">{r.data.ctaUrl&&<a href={r.data.ctaUrl} onClick={()=>setNotificationOpen(false)}>{r.data.ctaLabel||'Learn more'}</a>}<button type="button" onClick={()=>void dismiss(r)}>Dismiss</button></span></span></div></li>)}</ul>}<NotificationList records={recordsOf(s.records,'notification')} today={today} onToggle={r=>toggle(r,'read')}/><p className="n-end">You’ve reached the end of notifications</p></div></Dialog>
  <ProductTour ready={!building&&!isPending} onboardedAt={s.profile.onboardingCompletedAt}/><UpgradePrompt s={s} offer={upgrade} onClose={()=>setUpgrade(null)}/><Dialog open={quick} onOpenChange={setQuick} title="What would you like to add?" description="Small steps make a big difference."><div className="quick-grid">{([['transaction','Transaction','Money in or out, with category and account',Wallet,'#2dd4a3'],['task','Task','Something to get done, with a due time',SquareCheck,'#8fb8ff'],['habit','Habit','A routine to repeat on chosen days',BookOpen,'#b6f26b'],['workout','Workout','Log or plan a training session',Dumbbell,'#ffb072'],['goal','Goal','A target with a deadline to work toward',Target,'#9b8cff']] as const).map(([kind,label,hint,Icon,color])=><button key={kind} aria-label={label} className="quick-card" style={{'--qc':color} as React.CSSProperties} onClick={()=>add(kind)}><span className="quick-icon"><Icon/></span><span className="quick-text"><strong>{label}</strong><small>{hint}</small></span><Plus size={16}/></button>)}</div></Dialog>
  <Dialog variant="drawer" open={!!form} onOpenChange={open=>{if(!open&&!save.isPending)setForm(null);}} title={`${form?.record?'Edit':'New'} ${form?.kind==='cashPlan'?((form.record?.kind==='cashPlan'?form.record.data.type:form.initial?.type)==='expense'?'bill':'income source'):form?.kind==='financeCategory'?'category':form?.kind||'record'}`} description="Keep your plans up to date.">{form&&<RecordForm key={form.record?.id||form.kind} kind={form.kind} record={form.record} initial={form.initial} records={s.records} date={month===today.slice(0,7)?today:monthDates(month).at(-1)!} currency={s.profile.currency} plan={s.profile.plan} today={today} pending={save.isPending} error={save.isError?save.error.message:undefined} onSave={(data,repeatDates)=>save.mutate({id:form.record?.id,version:form.record?.version,kind:form.kind,data,repeatDates})}/>}</Dialog>

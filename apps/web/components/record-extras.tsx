@@ -80,7 +80,7 @@ const effort:[string,number,string][]=[['Easy',.8,'Light, you can chat easily'],
 const KG=70;
 export const burnEstimate=(type:string,minutes:number,intensity:string)=>{const met=types.find(t=>t[0]===type)?.[2]??5,mult=effort.find(e=>e[0]===intensity)?.[1]??1;return Math.round(met*KG*(Math.max(0,minutes)/60)*mult);};
 
-export const WORKOUT_STEPS=['What','How','When'] as const;
+export const WORKOUT_STEPS=['Start','Plan','Finish'] as const;
 export function WorkoutFields({register,watch,setValue,errors,records,smart,step,repeat,repeatErr,today,lockedDone=false}:{lockedDone?:boolean;register:any;watch:any;setValue:any;errors:any;records:LedgerRecord[];smart:boolean;step:number|null;repeat?:RepeatState;repeatErr?:string;today:string}){
  const type=String(watch('type')||'Strength'),intensity=String(watch('intensity')||'Moderate'),minutes=Number(watch('duration'))||0;
  const set=(k:string,v:unknown)=>setValue(k,v,{shouldDirty:true,shouldValidate:true});

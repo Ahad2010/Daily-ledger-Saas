@@ -164,3 +164,62 @@ body[data-page=finance]{--pg:#4ade80}body[data-page=tasks]{--pg:#f6c453}body[dat
 .tc-group{gap:8px;padding:6px}
 .tc-group button{min-height:42px;padding:0 18px}
 @media(max-width:640px){.tc-opts{gap:12px}.tc-group{width:100%;justify-content:space-between}.tc-group button{flex:1 1 auto;justify-content:center;padding:0 6px;font-size:12.5px;white-space:nowrap}.tc-group{gap:4px}}
+
+/* ---- Wizard steps in drawers: same accent as the drawer, connected, animated ---- */
+.dialog-drawer .wo-steps{position:relative;gap:10px}
+.dialog-drawer .wo-steps::before{content:'';position:absolute;left:8%;right:8%;top:50%;height:2px;background:#ffffff12;z-index:0;border-radius:2px}
+.dialog-drawer .wo-step{position:relative;z-index:1;justify-content:center;padding:10px 12px;border-radius:999px;border:1px solid #28312d;background:#0c0f0e;color:#7f8b85;transition:background .35s,border-color .35s,color .35s,box-shadow .35s,transform .35s}
+.dialog-drawer .wo-step i{width:24px;height:24px;background:#1a201d;color:#9aa7a1}
+.dialog-drawer .wo-step.now{border-color:var(--dr);background:linear-gradient(135deg,color-mix(in srgb,var(--dr) 24%,#0c0f0e),color-mix(in srgb,var(--dr) 8%,#0c0f0e));color:#fff;box-shadow:0 8px 22px -10px var(--dr);transform:translateY(-1px)}
+.dialog-drawer .wo-step.now i{background:var(--dr);color:#07140b;transform:scale(1.08)}
+.dialog-drawer .wo-step.past{border-color:color-mix(in srgb,var(--dr) 40%,#28312d);color:color-mix(in srgb,var(--dr) 70%,#fff)}
+.dialog-drawer .wo-step.past i{background:color-mix(in srgb,var(--dr) 28%,#0c0f0e);color:var(--dr)}
+.dialog-drawer .wo-intro h3{background:linear-gradient(90deg,#fff,color-mix(in srgb,var(--dr) 55%,#fff));-webkit-background-clip:text;background-clip:text;color:transparent}
+.dialog-drawer .wo-summary{border-color:color-mix(in srgb,var(--dr) 40%,transparent);background:color-mix(in srgb,var(--dr) 8%,transparent)}
+.dialog-drawer .wo-types button.selected,.dialog-drawer .tc-group button.on{border-color:var(--dr);box-shadow:inset 0 0 0 1px var(--dr)}
+/* every field slides in one after another, like the onboarding */
+@keyframes wz-slide{from{opacity:0;transform:translateX(34px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+.dialog-drawer .record-form.wz .form-grid>:not(.wz-off):not(.wo-steps){animation:wz-slide .55s cubic-bezier(.22,1,.36,1) both}
+.dialog-drawer .record-form.wz .form-grid>:not(.wz-off):nth-child(2){animation-delay:.05s}.dialog-drawer .record-form.wz .form-grid>:not(.wz-off):nth-child(3){animation-delay:.1s}.dialog-drawer .record-form.wz .form-grid>:not(.wz-off):nth-child(4){animation-delay:.15s}.dialog-drawer .record-form.wz .form-grid>:not(.wz-off):nth-child(5){animation-delay:.2s}.dialog-drawer .record-form.wz .form-grid>:not(.wz-off):nth-child(n+6){animation-delay:.25s}
+.dialog-drawer .record-form .form-footer{animation:wz-slide .6s .25s cubic-bezier(.22,1,.36,1) both}
+@media(prefers-reduced-motion:reduce){.dialog-drawer .record-form.wz .form-grid>*,.dialog-drawer .record-form .form-footer{animation:none!important}}
+.goal-start,.g-how{margin-top:18px}
+
+/* ---- Transfers: say what they do, and show them ---- */
+.tx-note{display:flex;gap:10px;align-items:flex-start;margin:0;padding:12px 14px;border-radius:14px;border:1px dashed #3b5a8a;background:rgba(96,165,250,.08);color:#c9dcf7;font-size:13px;line-height:1.55}
+.tx-note svg{flex-shrink:0;margin-top:2px;color:#60a5fa}.tx-note b{color:#fff}
+.fin-transfers{display:flex;align-items:center;gap:14px;padding:14px 18px;margin:0 0 14px;border-radius:18px;border:1px solid #2d4468;background:linear-gradient(160deg,rgba(96,165,250,.12),#0c0e0d)}
+.fin-transfers .ft-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:rgba(96,165,250,.18);color:#60a5fa;flex-shrink:0}
+.fin-transfers div{flex:1;min-width:0}.fin-transfers strong{display:block;font-size:15px}.fin-transfers small{display:block;color:#9fb0c8;font-size:12.5px;margin-top:2px}
+.fin-transfers>b{font-family:var(--font-manrope),sans-serif;font-size:20px;color:#9cc4ff}
+
+/* ---- "Unlock with Pro" cards ---- */
+.premium-feature{position:relative;overflow:hidden;display:grid;justify-items:start;gap:14px;max-width:720px;padding:32px 34px!important;border-radius:26px!important;border:1px solid color-mix(in srgb,var(--pg) 30%,#2a332f)!important;background:radial-gradient(90% 90% at 100% 0%,color-mix(in srgb,var(--pg) 18%,transparent),transparent 60%),radial-gradient(70% 70% at 0% 100%,rgba(167,139,250,.10),transparent 60%),linear-gradient(165deg,#151a18,#0a0c0b)!important}
+.premium-feature::after{content:'';position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:conic-gradient(from 0deg,transparent,color-mix(in srgb,var(--pg) 30%,transparent),transparent 60%);filter:blur(24px);opacity:.55;animation:pf-spin 14s linear infinite;pointer-events:none}
+@keyframes pf-spin{to{transform:rotate(360deg)}}
+.pf-lock{position:relative;display:grid;place-items:center;width:62px;height:62px;border-radius:20px;background:linear-gradient(145deg,color-mix(in srgb,var(--pg) 30%,#0c0f0e),#0c0f0e);color:var(--pg);border:1px solid color-mix(in srgb,var(--pg) 45%,transparent);box-shadow:0 14px 34px -14px var(--pg),inset 0 1px 0 #ffffff1a;animation:pf-float 3.4s ease-in-out infinite}
+@keyframes pf-float{50%{transform:translateY(-4px)}}
+.pf-eyebrow{display:inline-flex;padding:5px 12px;border-radius:999px;background:color-mix(in srgb,var(--pg) 14%,#0d100f);border:1px solid color-mix(in srgb,var(--pg) 40%,transparent);color:color-mix(in srgb,var(--pg) 75%,#fff)!important;letter-spacing:.1em;font-size:11px}
+.premium-feature h2{margin:0;font-family:var(--font-manrope),sans-serif;font-size:clamp(22px,3vw,30px);letter-spacing:-.02em;line-height:1.2}
+.premium-feature>p{margin:0;color:#b4c0ba;font-size:15px;line-height:1.65;max-width:56ch}
+.ai-locked-list{list-style:none;margin:2px 0 4px;padding:0;display:grid;gap:10px;width:100%}
+.ai-locked-list li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid #28312d;background:#0c0f0e;color:#e3ebe7;font-size:14px;transition:transform .2s,border-color .2s}
+.ai-locked-list li:hover{transform:translateX(4px);border-color:color-mix(in srgb,var(--pg) 50%,#28312d)}
+.ai-locked-list li svg{flex-shrink:0;width:24px;height:24px;padding:5px;border-radius:50%;background:color-mix(in srgb,var(--pg) 20%,transparent);color:var(--pg)}
+.pf-cta{min-height:50px;padding:0 24px;border-radius:14px;font-size:15px;font-weight:700;background:linear-gradient(135deg,var(--pg),color-mix(in srgb,var(--pg) 55%,#2dd4a3))!important;color:#07140b!important;border:0!important;box-shadow:0 14px 30px -12px var(--pg);transition:transform .15s,box-shadow .2s}
+.pf-cta:hover{transform:translateY(-2px);box-shadow:0 18px 36px -12px var(--pg)}.pf-cta svg{transition:transform .2s}.pf-cta:hover svg{transform:translateX(4px)}
+.premium-feature>small{color:#8d9a94}
+@media(max-width:640px){.premium-feature{padding:24px 20px!important}.pf-cta{width:100%;justify-content:center}}
+@media(prefers-reduced-motion:reduce){.premium-feature::after,.pf-lock{animation:none}}
+
+/* ---- Task title: words fade in one by one, then the next idea slides up ---- */
+.tc-field{position:relative;flex:1;min-width:0;display:flex}.tc-field input{width:100%}
+.tc-field input::placeholder{color:transparent}
+.tc-ph{position:absolute;left:19px;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-wrap:wrap;gap:0 .32em;pointer-events:none;color:#8b9892;font-size:18px;font-weight:600;white-space:nowrap;overflow:hidden;transition:opacity .35s,transform .35s}
+.tc-ph>span{opacity:0;transform:translateY(8px);filter:blur(3px);animation:tc-word .5s cubic-bezier(.22,1,.36,1) forwards}
+.tc-ph.out>span{animation:tc-word-out .4s cubic-bezier(.4,0,1,1) forwards}
+@keyframes tc-word{to{opacity:1;transform:none;filter:none}}
+@keyframes tc-word-out{from{opacity:1;transform:none;filter:none}to{opacity:0;transform:translateY(-8px);filter:blur(3px)}}
+.tc-field input:focus-visible~.tc-ph{color:#a4b2ab}
+@media(prefers-reduced-motion:reduce){.tc-ph>span{animation:none;opacity:1;transform:none;filter:none}}
+.dialog-drawer .form-footer{background:transparent!important}
