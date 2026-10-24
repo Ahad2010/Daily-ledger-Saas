@@ -539,3 +539,6 @@ button.plan-empty{width:100%;padding:14px;border-radius:14px;border:1px dashed #
 .dark-tooltip{border-radius:14px!important;border:1px solid #34403a!important;background:rgba(12,15,14,.96)!important;backdrop-filter:blur(8px);box-shadow:0 12px 32px rgba(0,0,0,.5)!important;padding:12px 14px!important}.dark-tooltip strong{font-size:14px!important}.dark-tooltip b{font-size:14px}
 .trend-highlight strong,.trend-highlight>*:first-child{font-size:34px!important;font-family:var(--font-manrope),sans-serif}
 .xp-chip{white-space:nowrap}.workout-session .session-title{flex-wrap:nowrap!important}.workout-session .session-title strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.fitness-session-panel .workout-log-rows{grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr))!important}
+.workout-session .session-title{flex-wrap:wrap!important}.workout-session .session-title strong{white-space:normal}
+.workout-session .row-actions{align-self:flex-start}
