@@ -12,7 +12,7 @@ for(const [name,width] of [['phone',390],['laptop',1440]] as const){
   await page.setViewportSize({width,height:900});await page.goto('/calendar');
   await expect(page.getByRole('heading',{name:'September 2026'})).toBeVisible();
   await expect(page.locator('.cal-day.today')).toHaveCount(1);
-  await page.getByRole('gridcell',{name:/^2026-09-30/}).click();await expect(page.locator('.cal-detail')).toContainText('September 30');
+  await page.getByRole('gridcell',{name:/^2026-09-30/}).click({position:{x:6,y:6}});await expect(page.locator('.cal-detail')).toContainText('September 30');
   await page.getByRole('button',{name:'Task',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await page.keyboard.press('Escape');
   await page.getByRole('button',{name:'Next month'}).click();await expect(page.getByRole('heading',{name:'October 2026'})).toBeVisible();
   await page.getByRole('button',{name:'Today',exact:true}).click();await expect(page.getByRole('heading',{name:'September 2026'})).toBeVisible();

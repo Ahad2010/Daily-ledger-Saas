@@ -14,7 +14,7 @@ const clock=(iso:string,timezone:string)=>new Date(iso).toLocaleTimeString(dateL
 
 
 /** A tick that responds instantly: it flips locally, then follows the saved value (and rolls back if the write never lands). */
-function Tick({checked,label,onChange}:{checked:boolean;label:string;onChange:()=>void}){
+export function Tick({checked,label,onChange}:{checked:boolean;label:string;onChange:()=>void}){
  const [local,setLocal]=useState<boolean|null>(null);const shown=local??checked;
  useEffect(()=>{if(local===null)return;if(local===checked){setLocal(null);return;}const id=setTimeout(()=>setLocal(null),6000);return()=>clearTimeout(id);},[checked,local]);
  return <button type="button" role="checkbox" aria-checked={shown} aria-label={label} className={`tick${shown?' on':''}`} onClick={()=>{setLocal(!shown);onChange();}}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5l4.2 4.2L18.5 7.8"/></svg><i className="tick-burst" aria-hidden="true"/></button>;
