@@ -28,7 +28,6 @@ const defs:Def[]=[
 // "How this page works" guides, opened from the ? button in the top bar. They are plain cards with no spotlight.
 const q=(sel:string)=>()=>document.querySelector(sel);
 const tab=(label:string)=>()=>{const b=Array.from(document.querySelectorAll<HTMLElement>('.meals-tabs button,[role=tab]')).find(x=>x.textContent?.trim().startsWith(label)&&x.getAttribute('aria-selected')!=='true');b?.click();};
-const after=(sel:string)=>()=>document.querySelector(sel);
 const guides:Record<string,Def[]>={
  '':[{find:q('.page-heading'),title:'Your overview',text:'The whole month in one calm view.',tips:['Pick the month at the top to look back.']},{find:q('.page-controls .button.primary'),title:'Quick add',text:'One button logs a transaction, task, habit, workout or goal.'},{find:q('.sidebar'),sheet:true,title:'Move around',text:'Finance, Tasks, Fitness, Meals and Goals each have their own page. Open any of them from the menu.'},{title:'Suggestions',text:'Near the bottom you will see a gentle next step. Tap it to do it, or dismiss it.'}],
  today:[{find:q('.today-hero'),title:'Your day at a glance',text:'The ring shows how much of today is done. It fills as you tick things off.'},{find:q('.today-list'),title:'Tick as you go',text:'Tasks, habits, meals and workouts due today are in one list.',tips:['A finished workout stays finished, so your XP is safe.']},{find:q('.add-fab'),title:'Add something',text:'Use + to add something just for today.'},{find:q('.today-review'),title:'Weekly review',text:'See what went well and what to watch next week.'}],

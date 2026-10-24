@@ -18,7 +18,6 @@ function Hex({level,color}:{level:number;color:string}){
 export function FitnessLevel({s,today}:{s:Snapshot;today:string}){
  const st=fitnessStats(s,today),next=TIERS.find(t=>t.min>st.level);
  const [up,setUp]=useState<number|null>(null),[gain,setGain]=useState(0),prevXp=useRef<number|null>(null);
- const hist=xpHistory(s,today);
  // Points fly up the moment a workout is finished.
  useEffect(()=>{if(prevXp.current!==null&&st.xp>prevXp.current){setGain(st.xp-prevXp.current);clockTick();const id=setTimeout(()=>setGain(0),2600);prevXp.current=st.xp;return()=>clearTimeout(id);}prevXp.current=st.xp;},[st.xp]);
  useEffect(()=>{
