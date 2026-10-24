@@ -2,8 +2,8 @@
 import Link from 'next/link';
 import {useRef,useState,type KeyboardEvent,type PointerEvent} from 'react';
 import {CountUp} from './animation';
-import {Bike,CalendarDays,Clock3,Dumbbell,Flame,Flower2,Footprints,Lock,Minus,Plus,Shapes,Sparkles,Waves,Zap} from 'lucide-react';
-import type {LedgerRecord} from '@ledger/shared';
+import {Bike,CalendarDays,ChevronLeft,ChevronRight,Clock3,Dumbbell,Flame,Flower2,Footprints,Lock,Minus,Plus,Shapes,Sparkles,Waves,Zap} from 'lucide-react';
+import {calendarWeeks,getDisplay,type LedgerRecord} from '@ledger/shared';
 
 const pad=(n:number)=>String(n).padStart(2,'0');
 const toLocal=(d:Date)=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -23,7 +23,7 @@ export function taskTimePicks(records:LedgerRecord[],now=new Date()):TimePick[]{
  return picks;
 }
 
-export function DueDateTimePicker({reg,value,picks,smart}:{reg:any;value:unknown;picks:TimePick[];smart:boolean}){
+export function DueDateTimePicker({reg,value,picks,smart,timeOnly=false}:{reg:any;value:unknown;picks:TimePick[];smart:boolean;timeOnly?:boolean}){
  const el=useRef<HTMLInputElement|null>(null);const [mode,setMode]=useState<'hour'|'minute'>('hour');
  const d=parse(value),pm=d.getHours()>=12,h12=d.getHours()%12||12,minute=d.getMinutes();
  // The hidden native input stays the source of truth so validation and saving behave exactly as before.
@@ -44,8 +44,8 @@ export function DueDateTimePicker({reg,value,picks,smart}:{reg:any;value:unknown
  const key=(e:KeyboardEvent)=>{const step=e.key==='ArrowUp'||e.key==='ArrowRight'?1:e.key==='ArrowDown'||e.key==='ArrowLeft'?-1:0;if(!step)return;e.preventDefault();if(mode==='hour')setHour(((h12-1+step+12)%12)+1);else setMinute((minute+step*5+60)%60);};
  return <div className="due-picker">
   <input type="datetime-local" className="due-native" tabIndex={-1} aria-hidden="true" {...reg} ref={(node:HTMLInputElement|null)=>{reg.ref(node);el.current=node;}}/>
-  <div className="due-summary" aria-live="polite"><span><CalendarDays size={16}/>{d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})}</span><span><Clock3 size={16}/>{clock(d)}</span></div>
-  <div className="due-chips" role="group" aria-label="Pick a day">{days.map(([label,day])=><button type="button" key={label} className={toDay(day)===toDay(d)?'selected':''} onClick={()=>setDay(day)}>{label}</button>)}<input type="date" aria-label="Choose another date" value={toDay(d)} onChange={e=>{if(e.target.value){const [y,m,dd]=e.target.value.split('-').map(Number);setDay(new Date(y,m-1,dd));}}}/></div>
+  <div className="due-summary" aria-live="polite">{!timeOnly&&<span><CalendarDays size={16}/>{d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})}</span>}<span><Clock3 size={16}/>{clock(d)}</span></div>
+  {!timeOnly&&<div className="due-chips" role="group" aria-label="Pick a day">{days.map(([label,day])=><button type="button" key={label} className={toDay(day)===toDay(d)?'selected':''} onClick={()=>setDay(day)}>{label}</button>)}<input type="date" aria-label="Choose another date" value={toDay(d)} onChange={e=>{if(e.target.value){const [y,m,dd]=e.target.value.split('-').map(Number);setDay(new Date(y,m-1,dd));}}}/></div>}
   <div className="due-clock">
    <div className="due-digital"><button type="button" className={mode==='hour'?'on':''} onClick={()=>setMode('hour')} aria-label={`Hour ${h12}`}><span key={h12} className="digit">{pad(h12)}</span></button><b>:</b><button type="button" className={mode==='minute'?'on':''} onClick={()=>setMode('minute')} aria-label={`Minute ${pad(minute)}`}><span key={minute} className="digit">{pad(minute)}</span></button><div className="due-ampm" role="group" aria-label="AM or PM"><button type="button" className={!pm?'on':''} onClick={()=>edit(x=>x.setHours(x.getHours()%12))}>AM</button><button type="button" className={pm?'on':''} onClick={()=>edit(x=>x.setHours((x.getHours()%12)+12))}>PM</button></div></div>
    <svg className="due-dial" viewBox="0 0 220 220" role="slider" tabIndex={0} aria-label={mode==='hour'?'Hour':'Minute'} aria-valuemin={mode==='hour'?1:0} aria-valuemax={mode==='hour'?12:55} aria-valuenow={mode==='hour'?h12:minute} onKeyDown={key} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);pick(e);}} onPointerMove={pick} onPointerUp={()=>{if(mode==='hour')setMode('minute');}}>
@@ -64,7 +64,7 @@ const KG=70;
 export const burnEstimate=(type:string,minutes:number,intensity:string)=>{const met=types.find(t=>t[0]===type)?.[2]??5,mult=effort.find(e=>e[0]===intensity)?.[1]??1;return Math.round(met*KG*(Math.max(0,minutes)/60)*mult);};
 
 export const WORKOUT_STEPS=['What','How','When'] as const;
-export function WorkoutFields({register,watch,setValue,errors,records,smart,step}:{register:any;watch:any;setValue:any;errors:any;records:LedgerRecord[];smart:boolean;step:number|null}){
+export function WorkoutFields({register,watch,setValue,errors,records,smart,step,repeat,repeatErr,today}:{register:any;watch:any;setValue:any;errors:any;records:LedgerRecord[];smart:boolean;step:number|null;repeat?:RepeatState;repeatErr?:string;today:string}){
  const type=String(watch('type')||'Strength'),intensity=String(watch('intensity')||'Moderate'),minutes=Number(watch('duration'))||0;
  const set=(k:string,v:unknown)=>setValue(k,v,{shouldDirty:true,shouldValidate:true});
  const recent=(()=>{const seen=new Set<string>(),out:LedgerRecord<'workout'>[]=[];for(const r of records.filter((x):x is LedgerRecord<'workout'>=>x.kind==='workout').sort((a,b)=>b.data.date.localeCompare(a.data.date))){const k=`${r.data.title}|${r.data.type}`;if(!seen.has(k)){seen.add(k);out.push(r);}if(out.length===3)break;}return out;})();
@@ -89,9 +89,35 @@ export function WorkoutFields({register,watch,setValue,errors,records,smart,step
   {show(2)&&<div className="wide wo-pane" key="p2">
    {step===2&&<div className="wo-intro"><h3>Last details</h3><p>Check the summary, then save.</p></div>}
    {step===2&&<div className="wo-summary"><strong>{String(watch('title')||'Workout')}</strong><span>{type} · {minutes} min · {intensity} · ≈{kcal} kcal</span></div>}
-   <label><span>Date</span><input aria-label="Date" type="date" {...register('date')}/></label>
+   {repeat?<div><span className="field-label">When</span><WhenChooser modes={['once','days']} mode={repeat.on?'days':'once'} onMode={m=>repeat.setOn(m==='days')}/>{repeat.on?<><RepeatDays today={today} dates={repeat.dates} onChange={repeat.setDates}/>{repeatErr&&<small className="error">{repeatErr}</small>}</>:<label className="cp-when"><span>Date</span><input aria-label="Date" type="date" {...register('date')}/></label>}</div>:<label><span>Date</span><input aria-label="Date" type="date" {...register('date')}/></label>}
    <label><span>Notes</span><textarea placeholder="Sets, reps, weights, how it felt… (optional)" {...register('notes')}/></label>
    <label className="check-label wo-done"><input type="checkbox" {...register('done')}/><span>Mark as completed</span></label>
   </div>}
  </>;
+}
+
+export type RepeatState={on:boolean;dates:string[];setOn:(v:boolean)=>void;setDates:(d:string[])=>void};
+export type WhenMode='once'|'days'|'weekly'|'monthly';
+/** One time / pick days (/ every week / every month): a simple switch that decides how the item repeats. */
+export function WhenChooser({mode,onMode,modes}:{mode:WhenMode;onMode:(m:WhenMode)=>void;modes:WhenMode[]}){
+ const names:Record<WhenMode,string>={once:'One time',days:'Pick days',weekly:'Every week',monthly:'Every month'};
+ return <div className="when-chooser" role="radiogroup" aria-label="Repeat" style={{gridTemplateColumns:`repeat(${modes.length},1fr)`}}>{modes.map(m=><button type="button" role="radio" aria-checked={mode===m} key={m} className={mode===m?'selected':''} onClick={()=>onMode(m)}>{names[m]}</button>)}</div>;
+}
+/** Tap any days you like, across months. Each tapped day becomes its own entry. */
+export function RepeatDays({dates,onChange,today}:{dates:string[];onChange:(d:string[])=>void;today:string}){
+ const [month,setMonth]=useState(today.slice(0,7));
+ const weeks=calendarWeeks(month),inMonth=weeks.flat().filter(d=>d.startsWith(month)&&d>=today);
+ const shiftM=(by:number)=>{const [y,m]=month.split('-').map(Number);setMonth(new Date(Date.UTC(y,m-1+by,1)).toISOString().slice(0,7));};
+ const set=(list:string[])=>onChange(Array.from(new Set(list)).sort());
+ const toggle=(d:string)=>set(dates.includes(d)?dates.filter(x=>x!==d):[...dates,d]);
+ const dow=(d:string)=>new Date(`${d}T12:00:00Z`).getUTCDay();
+ const next7=Array.from({length:7},(_,i)=>new Date(new Date(`${today}T12:00:00Z`).getTime()+i*864e5).toISOString().slice(0,10));
+ const chips:[string,string[]][]=[['Next 7 days',next7],['Weekdays',inMonth.filter(d=>dow(d)>0&&dow(d)<6)],['Weekends',inMonth.filter(d=>dow(d)===0||dow(d)===6)],...(dates[0]?[[`Every ${new Date(`${dates[0]}T12:00:00Z`).toLocaleDateString([], {weekday:'short',timeZone:'UTC'})}`,inMonth.filter(d=>dow(d)===dow(dates[0]))] as [string,string[]]]:[])];
+ const label=new Date(`${month}-01T12:00:00Z`).toLocaleDateString([], {month:'long',year:'numeric',timeZone:'UTC'});
+ return <div className="repeat-days">
+  <div className="rd-head"><button type="button" aria-label="Previous month" onClick={()=>shiftM(-1)}><ChevronLeft size={16}/></button><strong>{label}</strong><button type="button" aria-label="Next month" onClick={()=>shiftM(1)}><ChevronRight size={16}/></button></div>
+  <div className="rd-grid" role="group" aria-label="Pick days">{['S','M','T','W','T','F','S'].map((_,i,all)=>all[(getDisplay().weekStart+i)%7]).map((x,i)=><span key={i} className="rd-dow">{x}</span>)}{weeks.flat().map(d=>{const out=!d.startsWith(month),past=d<today;if(out)return <span key={d}/>;return <button type="button" key={d} disabled={out||past} aria-pressed={dates.includes(d)} aria-label={d} className={`rd-day${dates.includes(d)?' on':''}${d===today?' today':''}`} onClick={()=>toggle(d)}>{out?'':Number(d.slice(8))}</button>;})}</div>
+  <div className="rd-chips">{chips.map(([name,list])=><button type="button" key={name} onClick={()=>set([...dates,...list])}>{name}</button>)}{dates.length>0&&<button type="button" className="clear" onClick={()=>onChange([])}>Clear</button>}</div>
+  <p className="rd-count">{dates.length?`${dates.length} day${dates.length===1?'':'s'} selected. Each one is added on its own.`:'Tap the days you want.'}</p>
+ </div>;
 }

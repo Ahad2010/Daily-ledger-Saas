@@ -27,11 +27,11 @@ test('pick a task, then a day: it is rescheduled and keeps its time',async({page
 });
 
 test('dragging a chip onto another day reschedules it, week view lists everything',async({page})=>{
- const s=await seed(page);await page.goto('/calendar');
+ const s=await seed(page);await page.goto('/calendar');await expect(page.locator('.cal-detail')).toBeVisible();await page.waitForTimeout(1200);
  const workout=recordsOf(s.records,'workout').find(w=>w.data.date==='2026-09-30'||w.data.date==='2026-09-26')!;
  const chip=page.locator(`.cal-day[data-date="${workout.data.date}"] .cal-chips em`).filter({hasText:workout.data.title});
  await chip.dragTo(page.locator('.cal-day[data-date="2026-09-28"]'),{targetPosition:{x:6,y:6}});
- expect((await stored(page)).records.find((r:any)=>r.id===workout.id).data.date).toBe('2026-09-28');
+ await expect.poll(async()=>(await stored(page)).records.find((r:any)=>r.id===workout.id).data.date).toBe('2026-09-28');
  await page.getByRole('button',{name:'Week',exact:true}).click();await expect(page.locator('.cal-grid.is-week .cal-day')).toHaveCount(7);
 });
 
@@ -55,4 +55,25 @@ test('a habit added from a day repeats only on that weekday; a bill added from a
  await expect(form.getByLabel('Date',{exact:true})).toHaveValue('2026-10-31');await form.getByRole('button',{name:'Save plan'}).click();await expect(form).toHaveCount(0);
  await expect(page.locator('.cal-day[data-date="2026-10-31"]')).toContainText('Internet');
  await page.getByRole('button',{name:'Next month'}).click();await expect(page.locator('.cal-day[data-date="2026-11-30"]')).not.toContainText('Internet');
+});
+
+test('a task can repeat on days picked from a calendar, each day becomes its own task',async({page})=>{
+ await seed(page);await page.goto('/');await page.getByRole('button',{name:'Quick add',exact:true}).click();await page.getByRole('button',{name:'Task',exact:true}).click();
+ const form=page.getByRole('dialog');await form.getByLabel('Task title',{exact:true}).fill('Take vitamins');await form.getByRole('button',{name:'Next',exact:true}).click();
+ await form.getByRole('radio',{name:'Pick days'}).click();await expect(form.getByText('Tap the days you want.')).toBeVisible();
+ await form.getByRole('button',{name:'Next',exact:true}).click();await form.getByRole('button',{name:'Create task'}).click();await expect(form.getByText('Pick at least one day.')).toBeVisible();
+ await form.getByRole('button',{name:'Next month'}).click();for(const d of ['2026-10-02','2026-10-05','2026-10-07'])await form.getByRole('button',{name:d,exact:true}).click();
+ await expect(form.getByText('3 days selected')).toBeVisible();
+ await form.getByRole('button',{name:'Next',exact:true}).click();await form.getByRole('button',{name:'Create task'}).click();await expect(form).toHaveCount(0);
+ const tasks=(await stored(page)).records.filter((r:any)=>r.data.title==='Take vitamins');
+ expect(tasks).toHaveLength(3);expect(new Set(tasks.map((t:any)=>t.data.due.slice(11,16))).size).toBe(1);
+ expect(tasks.map((t:any)=>new Date(t.data.due).getDate()).sort()).toEqual([2,5,7]);
+});
+
+test('a workout and a meal can be planned on several chosen days',async({page})=>{
+ await seed(page);await page.goto('/');await page.getByRole('button',{name:'Quick add',exact:true}).click();await page.getByRole('button',{name:'Workout',exact:true}).click();
+ const form=page.getByRole('dialog');await form.getByLabel('Workout name',{exact:true}).fill('Leg day');await form.getByRole('button',{name:'Next',exact:true}).click();await form.getByRole('button',{name:'Next',exact:true}).click();
+ await form.getByRole('radio',{name:'Pick days'}).click();await form.getByRole('button',{name:'Next month'}).click();for(const d of ['2026-10-03','2026-10-10'])await form.getByRole('button',{name:d,exact:true}).click();
+ await form.getByRole('button',{name:'Create workout'}).click();await expect(form).toHaveCount(0);
+ expect((await stored(page)).records.filter((r:any)=>r.data.title==='Leg day').map((r:any)=>r.data.date).sort()).toEqual(['2026-10-03','2026-10-10']);
 });
