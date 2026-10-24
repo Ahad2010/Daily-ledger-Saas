@@ -53,7 +53,7 @@ export function FinanceSetup({s,today,currency,canPlanBills,open,onClose}:{s:Sna
     made.current.add(key);if(r.done&&saved?.id)await adapter.settle(saved,month,today);
    }
    if(canPlanBills&&Number(budget)>0&&!made.current.has('budget')){await adapter.save({kind:'budget',data:{title:'Monthly spending budget',month,amount:Number(budget)*100,currency,category:'',repeats:true}});made.current.add('budget');}
-   if(goalOk&&!made.current.has('goal')){await adapter.save({kind:'goal',data:{title:goalName.trim(),description:'',current:0,target:Number(goalTarget),unit:currency,deadline,active:true,linkedCategory:'Savings'}});made.current.add('goal');}
+   if(goalOk&&!made.current.has('goal')){await adapter.save({kind:'goal',data:{title:goalName.trim(),description:'',current:0,target:Number(goalTarget),unit:currency,deadline,active:true,...(canPlanBills?{linkedCategory:'Savings'}:{})}});made.current.add('goal');}
    await client.invalidateQueries({queryKey:['snapshot']});
    if(sources.some(valid))done.push(`${sources.filter(valid).length} income source${sources.filter(valid).length===1?'':'s'}`);if(canPlanBills&&bills.some(valid))done.push(`${bills.filter(valid).length} bill${bills.filter(valid).length===1?'':'s'}`);if(canPlanBills&&Number(budget)>0)done.push('a monthly budget');if(goalOk)done.push(`a "${goalName.trim()}" goal`);
    setCreated(done);setStep(5);

@@ -55,3 +55,13 @@ test('finance overview amounts count up from zero to the real number',async({pag
  await page.goto('/finance');const net=page.locator('.fh-main>strong, .fh-main strong').first();
  await expect(net).toHaveText('$2,720',{timeout:8000});
 });
+
+test('a free account saves its saving goal without the paid-only Finance link',async({page})=>{
+ const s=demoSnapshot();s.profile.onboardingCompletedAt='2026-09-01T00:00:00Z';(s.profile as any).plan='Free';s.records=s.records.filter((r:any)=>r.kind==='bodyMetric');
+ await page.addInitScript((x:any)=>{try{if(!localStorage.getItem('daily-ledger-demo-v1')){localStorage.setItem('daily-ledger-demo-v1',JSON.stringify(x));localStorage.removeItem('dl-finance-setup');}}catch{/* ignore */}},s);
+ await page.goto('/finance');await page.getByText('Upgrade your Daily Ledger').waitFor({timeout:8000}).then(()=>page.getByText('Continue with Free').click()).catch(()=>{});await page.waitForTimeout(600);const dialog=page.getByRole('dialog');await expect(dialog.getByText('How much do you earn each month?')).toBeVisible();
+ await dialog.getByLabel('Amount for Salary').fill('1000');await dialog.getByRole('button',{name:'Next',exact:true}).click();
+ await dialog.getByRole('button',{name:'Home',exact:true}).click();await dialog.getByLabel('Goal target').fill('10000');await dialog.getByRole('button',{name:'Next',exact:true}).click();
+ await expect(dialog.getByText('Here is your plan')).toBeVisible();await dialog.getByRole('button',{name:'Create my finance plan'}).click();await expect(dialog.getByText('Your finance is ready')).toBeVisible();
+ const data=await stored(page);const goal=data.records.find((r:any)=>r.kind==='goal'&&r.data.title.includes('Home'));expect(goal).toBeTruthy();expect(goal.data.linkedCategory).toBeUndefined();
+});
