@@ -37,7 +37,7 @@ export function TodayView({s,today,asOf,tools,completeHabit}:{s:Snapshot;today:s
  const meals=recordsOf(s.records,'meal').filter(m=>m.data.date===today);
  const day=dayNutrition(s,today),target=nutritionTarget(s);
  const dayOfMonth=Number(today.slice(8));const lastDay=(month:string)=>new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),0)).getUTCDate();
- const bills=recordsOf(s.records,'cashPlan').filter(p=>p.data.active&&p.data.type==='expense').map(p=>{const upcoming=Array.from({length:8},(_,i)=>shift(today,i)).find(d=>Math.min(p.data.day,lastDay(d.slice(0,7)))===Number(d.slice(8)));return upcoming?{plan:p,date:upcoming}:null;}).filter((x):x is {plan:LedgerRecord<'cashPlan'>;date:string}=>!!x).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,4);
+ const bills=recordsOf(s.records,'cashPlan').filter(p=>p.data.active&&p.data.type==='expense').map(p=>{const upcoming=Array.from({length:8},(_,i)=>shift(today,i)).find(d=>p.data.once?d===p.data.once:Math.min(p.data.day,lastDay(d.slice(0,7)))===Number(d.slice(8)));return upcoming?{plan:p,date:upcoming}:null;}).filter((x):x is {plan:LedgerRecord<'cashPlan'>;date:string}=>!!x).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,4);
  const goals=recordsOf(s.records,'goal').filter(g=>g.data.active).map(g=>({g,p:goalProgress(g,s.records)})).filter(x=>!x.p.done).sort((a,b)=>a.g.data.deadline.localeCompare(b.g.data.deadline)).slice(0,2);
  const review=weeklyReview(s.records,{currency,timezone:tz,asOf});
  const total=tasks.length+habits.length+workouts.length+meals.length;

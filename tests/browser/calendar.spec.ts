@@ -40,3 +40,19 @@ test('calendar fits a phone without sideways scroll',async({page})=>{
  await expect(page.locator('.cal-grid')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.locator('.cal-day[data-date="2026-09-12"]').click();await expect(page.locator('.cal-detail h2')).toContainText('September 12');
 });
+
+test('a habit added from a day repeats only on that weekday; a bill added from a day is one time',async({page})=>{
+ await seed(page);await page.goto('/calendar');await page.getByRole('button',{name:'Next month'}).click();
+ await page.locator('.cal-day[data-date="2026-10-31"]').click({position:{x:6,y:6}});
+ const panel=page.locator('.cal-detail');await panel.getByRole('button',{name:'Habit',exact:true}).click();
+ const form=page.getByRole('dialog');await form.getByLabel('Habit name',{exact:true}).fill('Drink water');await form.getByRole('button',{name:'Next',exact:true}).click();
+ await expect(form.getByRole('button',{name:'Sat',exact:true})).toHaveClass(/selected/);await expect(form.getByRole('button',{name:'Mon',exact:true})).not.toHaveClass(/selected/);
+ await form.getByRole('button',{name:'Create habit'}).click();await expect(form).toHaveCount(0);
+ await expect(panel.getByText('Drink water')).toBeVisible();
+ await expect(panel.getByRole('checkbox',{name:'Complete Drink water'})).toHaveCount(0);
+ await panel.getByRole('button',{name:'Bill',exact:true}).click();
+ await form.getByLabel('Name',{exact:true}).fill('Internet');await form.getByLabel('Amount',{exact:true}).fill('3000');await form.getByRole('button',{name:'Next',exact:true}).click();
+ await expect(form.getByLabel('Date',{exact:true})).toHaveValue('2026-10-31');await form.getByRole('button',{name:'Save plan'}).click();await expect(form).toHaveCount(0);
+ await expect(page.locator('.cal-day[data-date="2026-10-31"]')).toContainText('Internet');
+ await page.getByRole('button',{name:'Next month'}).click();await expect(page.locator('.cal-day[data-date="2026-11-30"]')).not.toContainText('Internet');
+});

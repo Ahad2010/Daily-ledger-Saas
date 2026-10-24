@@ -27,7 +27,7 @@ const note = z.string().max(2000).default('');
 export const schemas = {
   transaction: z.object({title, date, amount:cents, currency:currencySchema, type:z.enum(['income','expense','transfer']),category:title,account:title,notes:note,sourceId:z.string().optional(),sourceMonth:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional()}),
   budget: z.object({title, month:z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),amount:cents,currency:currencySchema,category:z.string().trim().max(160).optional(),repeats:z.boolean().optional()}),
-  cashPlan:z.object({title,amount:cents.refine(v=>v>0,'Enter an amount above zero'),currency:currencySchema,type:z.enum(['income','expense']),category:title,account:title,day:z.number().int().min(1).max(31),active:z.boolean().default(true),notes:note}),
+  cashPlan:z.object({title,amount:cents.refine(v=>v>0,'Enter an amount above zero'),currency:currencySchema,type:z.enum(['income','expense']),category:title,account:title,day:z.number().int().min(1).max(31),once:date.optional(),active:z.boolean().default(true),notes:note}),
   financeCategory:z.object({title,type:z.enum(['income','expense'])}),
   recurring: z.object({title, amount:cents, currency:currencySchema,type:z.enum(['income','expense']),category:title,account:title,nextDate:date,frequency:z.enum(['weekly','monthly']),enabled:z.boolean().default(true),notes:note}),
   task: z.object({title,description:note,due:z.string().datetime({offset:true}).transform(v=>new Date(v).toISOString()),priority:z.enum(['low','medium','high']),done:z.boolean().default(false),completedAt:z.string().datetime().nullable().optional(),reminder:z.boolean().default(true),recurrence:z.enum(['none','weekly','monthly']).default('none')}),
