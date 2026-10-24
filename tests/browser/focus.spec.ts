@@ -3,7 +3,7 @@ test('Tasks focus tab shows today, adds a task and ticks it off',async({page})=>
  await page.goto('/tasks');
  await expect(page.getByText("TODAY'S FOCUS")).toBeVisible();
  await expect(page.getByRole('heading',{name:'Needs your attention'})).toBeVisible();
- await page.getByLabel('Quick add task title').fill('Call the bank');await page.getByRole('button',{name:'Add',exact:true}).click();
+ await page.getByLabel('Quick add task title').fill('Call the bank');await page.getByRole('form',{name:'Quick add task'}).getByRole('button',{name:'Add task'}).click();await page.getByRole('dialog').getByRole('button',{name:'Add task',exact:true}).click();
  await expect(page.getByText('Call the bank').first()).toBeVisible();
  await page.getByRole('tab',{name:'Habits',exact:true}).click();await expect(page.getByRole('heading',{name:'Weekly habit checklist'})).toBeVisible();
 });

@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import {useRef,useState,type KeyboardEvent,type PointerEvent} from 'react';
 import {CountUp} from './animation';
-import {Bike,CalendarDays,ChevronLeft,ChevronRight,Clock3,Dumbbell,Flame,Flower2,Footprints,Lock,Minus,Plus,Shapes,Sparkles,Waves,Zap} from 'lucide-react';
+import {Bike,CalendarDays,ChevronLeft,ChevronRight,Clock3,Volume2,VolumeX,Dumbbell,Flame,Flower2,Footprints,Lock,Minus,Plus,Shapes,Sparkles,Waves,Zap} from 'lucide-react';
 import {calendarWeeks,getDisplay,type LedgerRecord} from '@ledger/shared';
 
 const pad=(n:number)=>String(n).padStart(2,'0');
@@ -23,18 +23,20 @@ export function taskTimePicks(records:LedgerRecord[],now=new Date()):TimePick[]{
  return picks;
 }
 
-export function DueDateTimePicker({reg,value,picks,smart,timeOnly=false}:{reg:any;value:unknown;picks:TimePick[];smart:boolean;timeOnly?:boolean}){
- const el=useRef<HTMLInputElement|null>(null);const [mode,setMode]=useState<'hour'|'minute'>('hour');
- const d=parse(value),pm=d.getHours()>=12,h12=d.getHours()%12||12,minute=d.getMinutes();
- // The hidden native input stays the source of truth so validation and saving behave exactly as before.
- const commit=(next:Date)=>{const input=el.current;if(!input)return;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,toLocal(next));input.dispatchEvent(new Event('input',{bubbles:true}));};
- const edit=(fn:(x:Date)=>void)=>{const x=new Date(d);fn(x);commit(x);};
- const setHour=(h:number)=>edit(x=>x.setHours((h%12)+(pm?12:0)));const setMinute=(m:number)=>edit(x=>x.setMinutes(m));
- const setDay=(day:Date)=>edit(x=>{x.setFullYear(day.getFullYear(),day.getMonth(),day.getDate());});
- const today=new Date(),tomorrow=new Date(today);tomorrow.setDate(today.getDate()+1);
- const saturday=new Date(today);saturday.setDate(today.getDate()+((6-today.getDay()+7)%7||7));
- const monday=new Date(today);monday.setDate(today.getDate()+((8-today.getDay())%7||7));
- const days:[string,Date][]=[['Today',today],['Tomorrow',tomorrow],['Weekend',saturday],['Next week',monday]];
+// A soft click while the clock moves. Quiet, and the person can mute it (remembered on this device).
+let audio:AudioContext|null=null;
+const soundOn=()=>{try{return localStorage.getItem('dl-sound')!=='off';}catch{return true;}};
+export function clockTick(){
+ try{if(typeof window==='undefined'||!soundOn())return;const A=window.AudioContext||(window as any).webkitAudioContext;if(!A)return;audio=audio||new A();if(audio.state==='suspended')void audio.resume();
+  const o=audio.createOscillator(),g=audio.createGain(),now=audio.currentTime;o.type='triangle';o.frequency.setValueAtTime(1900,now);o.frequency.exponentialRampToValueAtTime(900,now+.04);g.gain.setValueAtTime(.05,now);g.gain.exponentialRampToValueAtTime(.0001,now+.05);o.connect(g);g.connect(audio.destination);o.start(now);o.stop(now+.055);}catch{/* sound is optional */}
+}
+
+/** The big analog clock: tap or drag the hand, flip AM and PM, or jump to a time of day. Used by every form that needs a time. */
+export function ClockFace({date:d,onChange,big=false}:{date:Date;onChange:(d:Date)=>void;big?:boolean}){
+ const [mode,setMode]=useState<'hour'|'minute'>('hour');const [sound,setSound]=useState(soundOn());
+ const pm=d.getHours()>=12,h12=d.getHours()%12||12,minute=d.getMinutes();
+ const edit=(fn:(x:Date)=>void)=>{const x=new Date(d);fn(x);onChange(x);clockTick();};
+ const setHour=(h:number)=>{if(h!==h12)edit(x=>x.setHours((h%12)+(pm?12:0)));};const setMinute=(m:number)=>{if(m!==minute)edit(x=>x.setMinutes(m));};
  const times:[string,number][]=[['Morning',9],['Noon',12],['Afternoon',14],['Evening',18],['Night',21]];
  const target=mode==='hour'?(h12%12)*30:minute*6,R=74,turn=useRef(target);
  // Rotate the hand by the shortest way round so 11 to 1 never spins the long way.
@@ -42,18 +44,33 @@ export function DueDateTimePicker({reg,value,picks,smart,timeOnly=false}:{reg:an
  const labels=mode==='hour'?Array.from({length:12},(_,i)=>i+1):Array.from({length:12},(_,i)=>i*5);
  const pick=(e:PointerEvent<SVGSVGElement>)=>{if(e.type==='pointermove'&&e.buttons!==1)return;const r=e.currentTarget.getBoundingClientRect();let a=Math.atan2(e.clientY-r.top-r.height/2,e.clientX-r.left-r.width/2)*180/Math.PI+90;if(a<0)a+=360;if(mode==='hour')setHour(Math.round(a/30)%12||12);else setMinute((Math.round(a/30)*5)%60);};
  const key=(e:KeyboardEvent)=>{const step=e.key==='ArrowUp'||e.key==='ArrowRight'?1:e.key==='ArrowDown'||e.key==='ArrowLeft'?-1:0;if(!step)return;e.preventDefault();if(mode==='hour')setHour(((h12-1+step+12)%12)+1);else setMinute((minute+step*5+60)%60);};
- return <div className="due-picker">
-  <input type="datetime-local" className="due-native" tabIndex={-1} aria-hidden="true" {...reg} ref={(node:HTMLInputElement|null)=>{reg.ref(node);el.current=node;}}/>
-  <div className="due-summary" aria-live="polite">{!timeOnly&&<span><CalendarDays size={16}/>{d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})}</span>}<span><Clock3 size={16}/>{clock(d)}</span></div>
-  {!timeOnly&&<div className="due-chips" role="group" aria-label="Pick a day">{days.map(([label,day])=><button type="button" key={label} className={toDay(day)===toDay(d)?'selected':''} onClick={()=>setDay(day)}>{label}</button>)}<input type="date" aria-label="Choose another date" value={toDay(d)} onChange={e=>{if(e.target.value){const [y,m,dd]=e.target.value.split('-').map(Number);setDay(new Date(y,m-1,dd));}}}/></div>}
-  <div className="due-clock">
-   <div className="due-digital"><button type="button" className={mode==='hour'?'on':''} onClick={()=>setMode('hour')} aria-label={`Hour ${h12}`}><span key={h12} className="digit">{pad(h12)}</span></button><b>:</b><button type="button" className={mode==='minute'?'on':''} onClick={()=>setMode('minute')} aria-label={`Minute ${pad(minute)}`}><span key={minute} className="digit">{pad(minute)}</span></button><div className="due-ampm" role="group" aria-label="AM or PM"><button type="button" className={!pm?'on':''} onClick={()=>edit(x=>x.setHours(x.getHours()%12))}>AM</button><button type="button" className={pm?'on':''} onClick={()=>edit(x=>x.setHours((x.getHours()%12)+12))}>PM</button></div></div>
+ return <>
+  <div className={`due-clock${big?' big':''}`}>
+   <div className="due-digital"><button type="button" className={mode==='hour'?'on':''} onClick={()=>setMode('hour')} aria-label={`Hour ${h12}`}><span key={h12} className="digit">{pad(h12)}</span></button><b>:</b><button type="button" className={mode==='minute'?'on':''} onClick={()=>setMode('minute')} aria-label={`Minute ${pad(minute)}`}><span key={minute} className="digit">{pad(minute)}</span></button><div className="due-ampm" role="group" aria-label="AM or PM"><button type="button" className={!pm?'on':''} onClick={()=>edit(x=>x.setHours(x.getHours()%12))}>AM</button><button type="button" className={pm?'on':''} onClick={()=>edit(x=>x.setHours((x.getHours()%12)+12))}>PM</button></div><button type="button" className="due-sound" aria-pressed={sound} aria-label={sound?'Mute clock sound':'Turn clock sound on'} title={sound?'Sound on':'Sound off'} onClick={()=>{const next=!sound;setSound(next);try{localStorage.setItem('dl-sound',next?'on':'off');}catch{/* private mode */}if(next)clockTick();}}>{sound?<Volume2 size={16}/>:<VolumeX size={16}/>}</button></div>
    <svg className="due-dial" viewBox="0 0 220 220" role="slider" tabIndex={0} aria-label={mode==='hour'?'Hour':'Minute'} aria-valuemin={mode==='hour'?1:0} aria-valuemax={mode==='hour'?12:55} aria-valuenow={mode==='hour'?h12:minute} onKeyDown={key} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);pick(e);}} onPointerMove={pick} onPointerUp={()=>{if(mode==='hour')setMode('minute');}}>
     <circle cx="110" cy="110" r="104" className="due-face"/><g className="due-hand-wrap" style={{transform:`rotate(${angle}deg)`}}><line x1="110" y1="110" x2="110" y2={110-R} className="due-hand"/><circle cx="110" cy={110-R} r="17" className="due-knob"/></g><circle cx="110" cy="110" r="4" className="due-pin"/>
     <g key={mode} className="due-nums">{labels.map((n,i)=>{const a=(mode==='hour'?i+1:i)*30*Math.PI/180,x=110+Math.sin(a)*R,y=110-Math.cos(a)*R,sel=mode==='hour'?n===h12:n===(Math.round(minute/5)*5)%60;return <text key={n} x={x} y={y} textAnchor="middle" dominantBaseline="central" className={sel?'due-num sel':'due-num'}>{mode==='hour'?n:pad(n)}</text>;})}</g>
    </svg>
   </div>
   <div className="due-chips" role="group" aria-label="Quick times">{times.map(([label,h])=><button type="button" key={label} className={d.getHours()===h&&minute===0?'selected':''} onClick={()=>edit(x=>x.setHours(h,0,0,0))}>{label}<small>{clock(new Date(2000,0,1,h))}</small></button>)}</div>
+ </>;
+}
+
+export function DueDateTimePicker({reg,value,picks,smart,timeOnly=false}:{reg:any;value:unknown;picks:TimePick[];smart:boolean;timeOnly?:boolean}){
+ const el=useRef<HTMLInputElement|null>(null);
+ const d=parse(value);
+ // The hidden native input stays the source of truth so validation and saving behave exactly as before.
+ const commit=(next:Date)=>{const input=el.current;if(!input)return;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,toLocal(next));input.dispatchEvent(new Event('input',{bubbles:true}));};
+ const setDay=(day:Date)=>{const x=new Date(d);x.setFullYear(day.getFullYear(),day.getMonth(),day.getDate());commit(x);};
+ const today=new Date(),tomorrow=new Date(today);tomorrow.setDate(today.getDate()+1);
+ const saturday=new Date(today);saturday.setDate(today.getDate()+((6-today.getDay()+7)%7||7));
+ const monday=new Date(today);monday.setDate(today.getDate()+((8-today.getDay())%7||7));
+ const days:[string,Date][]=[['Today',today],['Tomorrow',tomorrow],['Weekend',saturday],['Next week',monday]];
+ return <div className="due-picker">
+  <input type="datetime-local" className="due-native" tabIndex={-1} aria-hidden="true" {...reg} ref={(node:HTMLInputElement|null)=>{reg.ref(node);el.current=node;}}/>
+  <div className="due-summary" aria-live="polite">{!timeOnly&&<span><CalendarDays size={16}/>{d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'})}</span>}<span><Clock3 size={16}/>{clock(d)}</span></div>
+  {!timeOnly&&<div className="due-chips" role="group" aria-label="Pick a day">{days.map(([label,day])=><button type="button" key={label} className={toDay(day)===toDay(d)?'selected':''} onClick={()=>setDay(day)}>{label}</button>)}<input type="date" aria-label="Choose another date" value={toDay(d)} onChange={e=>{if(e.target.value){const [y,m,dd]=e.target.value.split('-').map(Number);setDay(new Date(y,m-1,dd));}}}/></div>}
+  <ClockFace date={d} onChange={commit}/>
   {smart?(picks.length>0&&<div className="due-smart" role="group" aria-label="Smart picks"><Sparkles size={14}/><span>Smart picks</span>{picks.map(p=><button type="button" key={p.label} className="suggest-chip" onClick={()=>commit(p.date)}>{p.label}</button>)}</div>):<SmartNote what="Smart time picks"/>}
  </div>;
 }
