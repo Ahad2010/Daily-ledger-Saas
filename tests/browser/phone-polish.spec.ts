@@ -31,3 +31,12 @@ test('/goals hero and guide fit a phone without sideways scroll',async({page})=>
  await page.setViewportSize({width:390,height:844});await page.goto('/goals');await expect(page.locator('.g-hero')).toBeVisible();await expect(page.getByRole('button',{name:'Open the guide for this page'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
+
+test('meal plan slots stack in one column on a phone and nothing spills sideways',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto('/meals');await page.getByRole('tab',{name:'Plan'}).click();
+ const slots=page.locator('.plan-slots .plan-slot');await expect(slots.first()).toBeVisible();
+ const boxes=await slots.evaluateAll(els=>els.map(e=>{const b=e.getBoundingClientRect();return [Math.round(b.left),Math.round(b.right)];}));
+ for(const b of boxes){expect(b[0]).toBe(boxes[0][0]);expect(b[1]).toBeLessThanOrEqual(390);}
+ expect(await page.evaluate(()=>[...document.querySelectorAll('.plan-slots *')].every(e=>e.getBoundingClientRect().right<=innerWidth+1))).toBe(true);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});

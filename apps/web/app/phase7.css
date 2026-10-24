@@ -223,3 +223,12 @@ body[data-page=finance]{--pg:#4ade80}body[data-page=tasks]{--pg:#f6c453}body[dat
 .tc-field input:focus-visible~.tc-ph{color:#a4b2ab}
 @media(prefers-reduced-motion:reduce){.tc-ph>span{animation:none;opacity:1;transform:none;filter:none}}
 .dialog-drawer .form-footer{background:transparent!important}
+
+/* ---- Meals Plan on phones: one column, never two squeezed cards ---- */
+@media(max-width:800px){.feature-main .meal-grid.plan-slots,.meal-grid.plan-slots{grid-template-columns:minmax(0,1fr)!important}}
+.plan-slot-head{flex-wrap:wrap}.plan-slot-head .meal-plan-action{white-space:nowrap}
+@media(max-width:420px){.plan-slot-head .meal-plan-action{min-height:38px;padding:0 13px;font-size:13px}}
+.plan-slots .plan-slot{min-width:0;max-width:100%;overflow:hidden}.plan-slots .plan-slot *{min-width:0}
+.plan-slots .np-meal-row{max-width:100%;flex-wrap:wrap;gap:8px 10px}.plan-slots .np-meal-row strong,.plan-slots .np-meal-row span:not(.tick){overflow-wrap:anywhere;white-space:normal}
+.plan-slots .np-meal-row>.row-actions{flex-shrink:0}
+.plan-slots .np-meal-row>a{flex:1 1 110px;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere}
