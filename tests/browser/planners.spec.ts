@@ -5,7 +5,7 @@ for(const [name,width] of [['phone',390],['laptop',1440]] as const){
   const tabs=page.getByRole('tablist',{name:'Meals sections'});for(const n of ['Today','Plan','Groceries','Insights'])await expect(tabs.getByRole('tab',{name:n})).toBeVisible();
   const log=page.locator('.np-log-card');await expect(log.getByRole('heading',{name:'Log food'})).toBeVisible();
   await log.getByLabel('Search foods').fill('roti');await log.getByRole('button',{name:'Add Roti (whole wheat)'}).click();
-  await log.getByLabel('Grams of Roti (whole wheat)').fill('80');await expect(log.locator('.np-total')).toContainText('238 kcal');
+  await log.getByLabel('Quantity of Roti (whole wheat)').fill('2');await expect(log.locator('.np-total')).toContainText('238 kcal');
   await log.getByRole('button',{name:'Log as eaten'}).click();await expect(log.getByRole('status')).toContainText('logged');
   await expect(page.locator('.np-today-log')).toContainText('Roti (whole wheat)');
   await expect(page.locator('.cal-ring')).toHaveAttribute('aria-label',/238 calories eaten/);

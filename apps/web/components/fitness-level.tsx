@@ -1,8 +1,8 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {Award,Check,Dumbbell,Flame,Lock,Sparkles,Target,Timer,Trophy,Zap} from 'lucide-react';
 import type {Snapshot} from '@ledger/shared';
-import {fitnessStats,TIERS,tierAt} from '../lib/fitness-xp';
+import {fitnessStats,TIERS,tierAt,xpHistory} from '../lib/fitness-xp';
 import {Entrance,CountUp} from './animation';
 import {clockTick} from './record-extras';
 
@@ -16,7 +16,10 @@ function Hex({level,color}:{level:number;color:string}){
 // A level, a rank, weekly goals and badges: every finished workout visibly moves the player forward.
 export function FitnessLevel({s,today}:{s:Snapshot;today:string}){
  const st=fitnessStats(s,today),next=TIERS.find(t=>t.min>st.level);
- const [up,setUp]=useState<number|null>(null);
+ const [up,setUp]=useState<number|null>(null),[gain,setGain]=useState(0),prevXp=useRef<number|null>(null);
+ const hist=xpHistory(s,today);
+ // Points fly up the moment a workout is finished.
+ useEffect(()=>{if(prevXp.current!==null&&st.xp>prevXp.current){setGain(st.xp-prevXp.current);clockTick();const id=setTimeout(()=>setGain(0),2600);prevXp.current=st.xp;return()=>clearTimeout(id);}prevXp.current=st.xp;},[st.xp]);
  useEffect(()=>{
   try{const seen=Number(localStorage.getItem('dl-fit-level')||0);if(seen&&st.level>seen){setUp(st.level);clockTick();setTimeout(clockTick,140);setTimeout(clockTick,280);}localStorage.setItem('dl-fit-level',String(Math.max(seen,st.level)));}catch{/* private mode */}
  },[st.level]);
@@ -26,7 +29,7 @@ export function FitnessLevel({s,today}:{s:Snapshot;today:string}){
   <Entrance className="panel lv-hero" style={{'--lv':st.tier.color} as React.CSSProperties}>
    <div className="lv-main"><Hex level={st.level} color={st.tier.color}/>
     <div className="lv-info">
-     <span className="eyebrow">YOUR RANK</span><h2><b style={{color:st.tier.color}}>{st.tier.name}</b></h2>
+     {gain>0&&<span className="xp-gain" role="status">+{gain} XP</span>}<span className="eyebrow">YOUR RANK</span><h2><b style={{color:st.tier.color}}>{st.tier.name}</b></h2>
      <div className="lv-bar" role="progressbar" aria-valuemin={0} aria-valuemax={st.span} aria-valuenow={st.into} aria-label={`${st.into} of ${st.span} XP to level ${st.level+1}`}><i style={{width:`${st.span?Math.min(100,st.into/st.span*100):0}%`}}/></div>
      <p><strong><CountUp intro value={st.into} format={v=>`${v}`}/></strong> / {st.span} XP · <span>{st.span-st.into} XP to level {st.level+1}</span></p>
      <div className="lv-chips"><span className="streak"><Flame size={15}/>{st.streak} day streak</span><span><Zap size={15}/>{st.weekXp} XP this week</span>{next&&<span>Next rank: {next.name} at level {next.min}</span>}</div>
@@ -36,6 +39,9 @@ export function FitnessLevel({s,today}:{s:Snapshot;today:string}){
   </Entrance>
   <Entrance className="panel lv-badges"><div className="panel-heading"><div><h2>Badges</h2><p>{st.badges.filter(b=>b.done).length} of {st.badges.length} unlocked. Each one is earned by training.</p></div><Award size={22}/></div>
    <ul>{st.badges.map(b=>{const Icon=badgeIcon[b.id]||Award;return <li key={b.id} className={b.done?'on':''}><span>{b.done?<Icon size={22}/>:<Lock size={18}/>}</span><strong>{b.name}</strong><small>{b.done?'Unlocked':b.hint}</small></li>;})}</ul>
+  </Entrance>
+  <Entrance className="panel lv-history"><div className="panel-heading"><div><h2>XP history</h2><p>Every finished workout adds points. Finished sessions stay finished, so your points are safe.</p></div><Zap size={22}/></div>
+   {hist.length?<ol>{hist.slice(0,10).map(h=><li key={h.id}><span className="lh-dot"><Dumbbell size={16}/></span><div><strong>{h.title}</strong><small>{new Date(`${h.date}T12:00:00Z`).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC'})} · {h.type} · {h.minutes} min</small>{h.note&&<em className="lh-note">{h.note}</em>}{h.leveledUp&&<em className="lh-level"><Trophy size={13}/>Reached level {h.level}</em>}</div><b className={`xp-chip${h.xp?' got':''}`}><Zap size={12}/>{h.xp?`+${h.xp} XP`:'0 XP'}</b><small className="lh-total">{h.total} XP</small></li>)}</ol>:<p className="muted lh-empty">Finish a workout and your first points appear here.</p>}
   </Entrance>
   {up&&<div className="lv-up" role="status" aria-label={`Level up. You reached level ${up}`}><div className="lv-up-card" style={{'--lv':tier.color} as React.CSSProperties}>{Array.from({length:14},(_,i)=><i key={i} className="spark" style={{'--a':`${i*25.7}deg`,'--d':`${i%3*.08}s`} as React.CSSProperties}/>)}<Hex level={up} color={tier.color}/><h3>Level up!</h3><p>You are now a <b style={{color:tier.color}}>{tier.name}</b>. Keep going.</p><button type="button" className="fs-primary" onClick={()=>setUp(null)}>Nice</button></div></div>}
  </>;

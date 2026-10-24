@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import {useRef,useState,type KeyboardEvent,type PointerEvent} from 'react';
 import {CountUp} from './animation';
-import {Bike,CalendarDays,ChevronLeft,ChevronRight,Clock3,Volume2,VolumeX,Dumbbell,Flame,Flower2,Footprints,Lock,Minus,Plus,Shapes,Sparkles,Waves,Zap} from 'lucide-react';
+import {Bike,Check,CalendarDays,ChevronLeft,ChevronRight,Clock3,Volume2,VolumeX,Dumbbell,Flame,Flower2,Footprints,Lock,Minus,Plus,Shapes,Sparkles,Waves,Zap} from 'lucide-react';
 import {calendarWeeks,getDisplay,type LedgerRecord} from '@ledger/shared';
 
 const pad=(n:number)=>String(n).padStart(2,'0');
@@ -81,7 +81,7 @@ const KG=70;
 export const burnEstimate=(type:string,minutes:number,intensity:string)=>{const met=types.find(t=>t[0]===type)?.[2]??5,mult=effort.find(e=>e[0]===intensity)?.[1]??1;return Math.round(met*KG*(Math.max(0,minutes)/60)*mult);};
 
 export const WORKOUT_STEPS=['What','How','When'] as const;
-export function WorkoutFields({register,watch,setValue,errors,records,smart,step,repeat,repeatErr,today}:{register:any;watch:any;setValue:any;errors:any;records:LedgerRecord[];smart:boolean;step:number|null;repeat?:RepeatState;repeatErr?:string;today:string}){
+export function WorkoutFields({register,watch,setValue,errors,records,smart,step,repeat,repeatErr,today,lockedDone=false}:{lockedDone?:boolean;register:any;watch:any;setValue:any;errors:any;records:LedgerRecord[];smart:boolean;step:number|null;repeat?:RepeatState;repeatErr?:string;today:string}){
  const type=String(watch('type')||'Strength'),intensity=String(watch('intensity')||'Moderate'),minutes=Number(watch('duration'))||0;
  const set=(k:string,v:unknown)=>setValue(k,v,{shouldDirty:true,shouldValidate:true});
  const recent=(()=>{const seen=new Set<string>(),out:LedgerRecord<'workout'>[]=[];for(const r of records.filter((x):x is LedgerRecord<'workout'>=>x.kind==='workout').sort((a,b)=>b.data.date.localeCompare(a.data.date))){const k=`${r.data.title}|${r.data.type}`;if(!seen.has(k)){seen.add(k);out.push(r);}if(out.length===3)break;}return out;})();
@@ -108,7 +108,7 @@ export function WorkoutFields({register,watch,setValue,errors,records,smart,step
    {step===2&&<div className="wo-summary"><strong>{String(watch('title')||'Workout')}</strong><span>{type} · {minutes} min · {intensity} · ≈{kcal} kcal</span></div>}
    {repeat?<div><span className="field-label">When</span><WhenChooser modes={['once','days']} mode={repeat.on?'days':'once'} onMode={m=>repeat.setOn(m==='days')}/>{repeat.on?<><RepeatDays today={today} dates={repeat.dates} onChange={repeat.setDates}/>{repeatErr&&<small className="error">{repeatErr}</small>}</>:<label className="cp-when"><span>Date</span><input aria-label="Date" type="date" {...register('date')}/></label>}</div>:<label><span>Date</span><input aria-label="Date" type="date" {...register('date')}/></label>}
    <label><span>Notes</span><textarea placeholder="Sets, reps, weights, how it felt… (optional)" {...register('notes')}/></label>
-   <label className="check-label wo-done"><input type="checkbox" {...register('done')}/><span>Mark as completed</span></label>
+   {lockedDone?<p className="wo-locked"><Check size={16}/>Completed. Your XP is locked in, so this cannot be undone.</p>:<label className="check-label wo-done"><input type="checkbox" {...register('done')}/><span>Mark as completed</span></label>}
   </div>}
  </>;
 }
