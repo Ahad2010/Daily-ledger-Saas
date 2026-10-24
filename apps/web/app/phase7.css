@@ -156,3 +156,11 @@ body[data-page=finance]{--pg:#4ade80}body[data-page=tasks]{--pg:#f6c453}body[dat
 .lv-hist-link{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;border:1px solid #b6f26b66;background:#b6f26b14;color:#d8ff8f;font-size:13px;font-weight:600;text-decoration:none;transition:transform .15s,background .2s}
 .lv-hist-link:hover{background:#b6f26b26;transform:translateY(-1px)}
 .xp-page{display:grid;gap:16px}.xp-summary{display:flex;align-items:center;gap:20px;flex-wrap:wrap;border-radius:24px!important}.xp-summary>div{flex:1;min-width:200px}.xp-summary h2{margin:4px 0;font-size:24px;font-family:var(--font-manrope),sans-serif}.xp-summary p{margin:0;color:#a9b5af}
+
+/* ---- Task composer: breathing room between the title box and the option rows ---- */
+.tc-form{display:grid;gap:18px}
+.tc-input{margin-bottom:2px}
+.tc-opts{margin-top:6px;gap:14px 16px;align-items:center}
+.tc-group{gap:8px;padding:6px}
+.tc-group button{min-height:42px;padding:0 18px}
+@media(max-width:640px){.tc-opts{gap:12px}.tc-group{width:100%;justify-content:space-between}.tc-group button{flex:1 1 auto;justify-content:center;padding:0 6px;font-size:12.5px;white-space:nowrap}.tc-group{gap:4px}}
