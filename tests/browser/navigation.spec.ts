@@ -53,10 +53,10 @@ test('saved progress interpolates from its current value and reduced motion sett
  const fill=goal.locator('.progress>div');await expect(fill).toHaveCSS('width',/px$/);
  await expect.poll(()=>fill.evaluate(el=>parseFloat((el as HTMLElement).style.width))).toBe(60);
  await fill.evaluate(el=>{(window as any).__widths=[];new MutationObserver(()=>{(window as any).__widths.push(parseFloat((el as HTMLElement).style.width));}).observe(el,{attributes:true,attributeFilter:['style']});});
- await goal.getByRole('button',{name:'Edit Emergency fund',exact:true}).click();const dialog=page.getByRole('dialog');await dialog.getByLabel('Current value',{exact:true}).fill('4000');await dialog.getByRole('button',{name:'Save changes',exact:true}).click();
+ await goal.getByRole('button',{name:'Edit Emergency fund',exact:true}).click();const dialog=page.getByRole('dialog');await dialog.getByLabel('Current saving',{exact:true}).fill('4000');await dialog.getByRole('button',{name:'Save changes',exact:true}).click();
  await expect(dialog).toHaveCount(0);await expect.poll(()=>fill.evaluate(el=>parseFloat((el as HTMLElement).style.width))).toBe(80);
  const widths=await page.evaluate(()=>(window as any).__widths as number[]);expect(widths.length).toBeGreaterThan(2);expect(Math.min(...widths)).toBeGreaterThanOrEqual(59.9);expect(widths.some(v=>v>60&&v<80)).toBe(true);
- await page.emulateMedia({reducedMotion:'reduce'});await goal.getByRole('button',{name:'Edit Emergency fund',exact:true}).click();await dialog.getByLabel('Current value',{exact:true}).fill('3500');await dialog.getByRole('button',{name:'Save changes',exact:true}).click();await expect(dialog).toHaveCount(0);await expect.poll(()=>fill.evaluate(el=>parseFloat((el as HTMLElement).style.width))).toBe(70);
+ await page.emulateMedia({reducedMotion:'reduce'});await goal.getByRole('button',{name:'Edit Emergency fund',exact:true}).click();await dialog.getByLabel('Current saving',{exact:true}).fill('3500');await dialog.getByRole('button',{name:'Save changes',exact:true}).click();await expect(dialog).toHaveCount(0);await expect.poll(()=>fill.evaluate(el=>parseFloat((el as HTMLElement).style.width))).toBe(70);
  await page.screenshot({path:'artifacts/animated-goals.png',fullPage:true});
 });
 

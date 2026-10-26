@@ -257,3 +257,6 @@ body[data-page=finance]{--pg:#4ade80}body[data-page=tasks]{--pg:#f6c453}body[dat
 .wo-dist{display:flex;align-items:center;gap:10px}.wo-dist input{flex:1;min-height:52px;font-size:20px;font-weight:700}.wo-dist b{color:#9aa7a1;font-size:14px}
 .wo-dist.wide-input input{font-size:16px;font-weight:600}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Today ring: the percentage sits exactly in the middle of the circle */
+@media(min-width:641px){.today-ring>strong{top:calc(50% - 12px);transform:translate(-50%,-50%)}}
