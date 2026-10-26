@@ -37,3 +37,10 @@ test('overview shortens amounts from 100,000 and overview rows can be edited',as
  await page.goto('/');await expect(page.locator('.metric-card').first()).toContainText('$154K');
  await page.goto('/finance');await expect(page.getByRole('button',{name:'Edit Bonus'})).toBeVisible();
 });
+
+test('Save preferences stays off until something is changed',async({page})=>{
+ const s=demoSnapshot();s.profile.onboardingCompletedAt='2026-09-01T00:00:00Z';
+ await page.addInitScript((x:any)=>{if(!localStorage.getItem('daily-ledger-demo-v1'))localStorage.setItem('daily-ledger-demo-v1',JSON.stringify(x));},s);
+ await page.goto('/settings?tab=notifications');const save=page.getByRole('button',{name:'Save preferences'});await expect(save).toBeDisabled();await expect(page.getByText('Preferences saved.')).toHaveCount(0);
+ await page.locator('.toggle,input[type=checkbox]').first().evaluate((e:any)=>e.click());await expect(save).toBeEnabled();
+});
