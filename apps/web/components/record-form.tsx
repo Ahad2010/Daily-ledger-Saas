@@ -2,6 +2,8 @@
 import { cloneElement, Fragment, useState, type ReactElement } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import {group,ungroup,groupAsTyped} from '../lib/number-format';
+import {ComboInput} from './combo-input';
 import { schemas,parseMoneyInput,recordsOf,money, type Kind, type LedgerRecord } from '@ledger/shared';
 import {CurrencyPicker} from './currency-picker';
 import { Button } from './ui/button';
@@ -43,7 +45,7 @@ export function RecordForm({kind,record,initial,records=[],date,currency,plan='F
  defaults.currency=currency;if(kind==='meal')defaults.notes=defaults.notes??'';if(kind==='cashPlan'||kind==='recurring'){defaults.account='Checking';defaults.notes='';if(kind==='cashPlan')defaults.active=true;else defaults.enabled=true;}if(kind==='transaction'){defaults.account='Checking';defaults.notes='';if(!record&&!initial?.category&&initial?.type==='income')defaults.category='Salary';}
  if(kind==='goal'&&!record&&!initial?.deadline)defaults.deadline=new Date(new Date(`${date}T12:00:00Z`).getTime()+90*864e5).toISOString().slice(0,10);
  Object.assign(defaults,initial,record?.data);
- for(const f of config)if(f.type==='money'){const cents=Number(defaults[f.key]);defaults[f.key]=cents>0?String(Math.round(cents/100)):'';}
+ for(const f of config)if(f.type==='money'){const cents=Number(defaults[f.key]);defaults[f.key]=cents>0?group(String(Math.round(cents/100))):'';}
  if(record?.kind==='task'){const d=new Date(record.data.due);defaults.due=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}
  const {register,handleSubmit,trigger,formState:{errors},setValue,watch}=useForm<any>({defaultValues:defaults,resolver:zodResolver(schemas[kind] as any) as any});
  const [repeatOn,setRepeatOn]=useState(false),[repeatDates,setRepeatDates]=useState<string[]>([]),[repeatErr,setRepeatErr]=useState('');
@@ -73,7 +75,8 @@ export function RecordForm({kind,record,initial,records=[],date,currency,plan='F
     :f.options?<Select label={f.label} value={String(watch(f.key)??f.options[0])} onChange={v=>setValue(f.key,v,{shouldDirty:true})} options={f.options.map(o=>({value:o,label:f.key==='tracking'?(o==='steps'?'Completed steps':'Amount or number'):o.charAt(0).toUpperCase()+o.slice(1)}))}/>
     :f.type==='textarea'?<textarea placeholder={kind==='goal'?'Why it matters, or how you will get there (optional)':'Notes (optional)'} {...register(f.key)}/>
     :f.type==='days'?<div className="weekday-picker">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d,i)=><Button key={d} type="button" aria-pressed={(watch('days')||[]).includes(i)} className={(watch('days')||[]).includes(i)?'selected':''} onClick={()=>{const days=watch('days')||[];setValue('days',days.includes(i)?days.filter((v:number)=>v!==i):[...days,i],{shouldValidate:true});}}>{d}</Button>)}</div>
-    :f.type==='money'?<div className="money-input"><input aria-label={f.label} type="text" inputMode="numeric" autoComplete="off" placeholder="0" {...(()=>{const field=register(f.key,{setValueAs:v=>parseMoneyInput(String(v))});return {...field,onChange:(e:React.ChangeEvent<HTMLInputElement>)=>{e.target.value=e.target.value.replace(/[.,].*$/,'').replace(/\D/g,'');return field.onChange(e);},onKeyDown:(e:React.KeyboardEvent)=>{if(e.key==='.'||e.key===',')e.preventDefault();}};})()}/><span aria-hidden="true">{watch('currency')||currency}</span></div>
+    :f.type==='money'?<div className="money-input"><input aria-label={f.label} type="text" inputMode="numeric" autoComplete="off" placeholder="0" {...(()=>{const field=register(f.key,{setValueAs:v=>parseMoneyInput(ungroup(String(v)))});return {...field,onChange:(e:React.ChangeEvent<HTMLInputElement>)=>{groupAsTyped(e);return field.onChange(e);},onKeyDown:(e:React.KeyboardEvent)=>{if(e.key==='.'||e.key===',')e.preventDefault();}};})()}/><span aria-hidden="true">{watch('currency')||currency}</span></div>
+    :f.key==='category'?<ComboInput label={f.label} value={String(watch('category')??'')} onChange={v=>setValue('category',v,{shouldDirty:true,shouldValidate:!!errors.category})} options={Array.from(new Set([...recordsOf(records,'financeCategory').map(r=>r.data.title),...recordsOf(records,'transaction').map(r=>r.data.category),'Salary','Business','Essentials','Housing','Utilities','Food','Transport','Other'].filter(Boolean)))}/>
     :<><input aria-label={f.label} placeholder={f.key==='title'?({transaction:'For example: Salary or Groceries',task:'What needs doing?',goal:'For example: Run a 10K',milestone:'A small step towards the goal',automation:'For example: Nudge me about overdue tasks'} as Record<string,string>)[kind]:undefined} list={f.key==='category'?'finance-categories':undefined} type={f.type||'text'} {...register(f.key,{...(f.type==='number'?{valueAsNumber:true}:{}),...(f.type==='datetime-local'?{setValueAs:(v:string)=>v?new Date(v).toISOString():''}:{})})}/>{f.key==='category'&&<datalist id="finance-categories">{Array.from(new Set([...recordsOf(records,'financeCategory').map(r=>r.data.title),...recordsOf(records,'transaction').map(r=>r.data.category),'Salary','Business','Essentials','Housing','Utilities','Food','Transport','Other'])).map(name=><option key={name} value={name}/>)}</datalist>}</>}
    {errors[f.key]&&<small className="error">{f.type==='money'?'Enter a whole amount, for example 1500.':String(errors[f.key]?.message||'Invalid value')}</small>}
   </label>;

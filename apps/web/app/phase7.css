@@ -232,3 +232,14 @@ body[data-page=finance]{--pg:#4ade80}body[data-page=tasks]{--pg:#f6c453}body[dat
 .plan-slots .np-meal-row{max-width:100%;flex-wrap:wrap;gap:8px 10px}.plan-slots .np-meal-row strong,.plan-slots .np-meal-row span:not(.tick){overflow-wrap:anywhere;white-space:normal}
 .plan-slots .np-meal-row>.row-actions{flex-shrink:0}
 .plan-slots .np-meal-row>a{flex:1 1 110px;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere}
+
+/* ---- Drop-down that always lists every choice ---- */
+.combo{position:relative;display:flex;width:100%}.combo>input{width:100%;padding-right:40px!important}
+.combo-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:32px;height:32px;border-radius:10px;border:0;background:transparent;color:#9aa7a1;cursor:pointer;transition:background .15s,color .15s}
+.combo-toggle:hover{background:#ffffff10;color:#fff}
+.combo-list{position:absolute;z-index:60;left:0;right:0;top:calc(100% + 6px);margin:0;padding:6px;list-style:none;max-height:260px;overflow-y:auto;border-radius:16px;border:1px solid color-mix(in srgb,var(--pg) 35%,#2b3431);background:linear-gradient(180deg,#171c1a,#0e1110);box-shadow:0 24px 50px -16px #000;animation:combo-in .16s ease-out;scrollbar-width:thin}
+@keyframes combo-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.combo-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;color:#dfe8e3;font-size:14px;cursor:pointer;transition:background .12s}
+.combo-list li:hover,.combo-list li.hot{background:color-mix(in srgb,var(--pg) 16%,#0e1110)}
+.combo-list li.on{color:var(--pg);font-weight:700}
+.combo-list.up{top:auto;bottom:calc(100% + 6px)}

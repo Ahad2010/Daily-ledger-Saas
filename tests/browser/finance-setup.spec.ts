@@ -11,7 +11,7 @@ test('a new customer answers a few questions and finance fills itself',async({pa
  await page.screenshot({path:'artifacts/phase4/setup-2-income.png'});await dialog.getByRole('button',{name:'Next',exact:true}).click();
  await dialog.getByRole('button',{name:'Rent',exact:true}).click();await dialog.getByLabel('Amount for Rent').fill('15000');await dialog.getByRole('button',{name:'Internet',exact:true}).click();await dialog.getByLabel('Amount for Internet').fill('3000');
  await page.screenshot({path:'artifacts/phase4/setup-3-bills.png'});await dialog.getByRole('button',{name:'Next',exact:true}).click();
- await dialog.getByRole('button',{name:/^70% of income/}).click();await expect(dialog.getByLabel('Monthly budget')).toHaveValue('35000');
+ await dialog.getByRole('button',{name:/^70% of income/}).click();await expect(dialog.getByLabel('Monthly budget')).toHaveValue('35,000');
  await page.screenshot({path:'artifacts/phase4/setup-4-budget.png'});await dialog.getByRole('button',{name:'Next',exact:true}).click();
  await dialog.getByRole('button',{name:'Vacation',exact:true}).click();await dialog.getByLabel('Goal target').fill('100000');
  await page.screenshot({path:'artifacts/phase4/setup-5-goal.png'});await dialog.getByRole('button',{name:'Next',exact:true}).click();

@@ -7,6 +7,7 @@ import {recordsOf,schemas,kgToDisplay,displayToKg,weightUnit,type Snapshot} from
 import {adapter} from '../lib/data';
 import {goalTypes,goalTone,type GoalType,type GoalTypeId} from '../lib/goal-types';
 import {exerciseNames} from '../lib/fitness';
+import {group,ungroup,groupAsTyped} from '../lib/number-format';
 import {Dialog} from './ui/dialog';
 import {Button} from './ui/button';
 
@@ -51,7 +52,7 @@ export function GoalSetupDialog({s,today,type,emergency,onOpenChange}:{s:Snapsho
    {type.id==='weight'&&<div className="goal-setup-row"><label><span>Current weight ({weightUnit()})</span><input type="number" step="0.1" inputMode="decimal" value={startWeight} onChange={e=>setStartWeight(e.target.value)}/></label><label><span>Goal weight ({weightUnit()})</span><input type="number" step="0.1" inputMode="decimal" value={goalWeight} onChange={e=>setGoalWeight(e.target.value)}/></label></div>}
    {type.id==='lift'&&<label><span>Exercise</span><input list="goal-lifts" value={exercise} maxLength={80} onChange={e=>setExercise(e.target.value)}/><datalist id="goal-lifts">{lifts.map(l=><option key={l} value={l}/>)}</datalist></label>}
    {type.id==='habit'&&<label><span>Habit</span><select value={habitId} onChange={e=>setHabitId(e.target.value)}>{habits.length?habits.map(h=><option key={h.id} value={h.id}>{h.data.title}</option>):<option value="">No active habits yet</option>}</select></label>}
-   {type.id!=='weight'&&<div className="goal-setup-row"><label><span>{type.id==='workouts'?'Sessions to complete':type.id==='habit'?'Days to complete':type.id==='lift'?`Target weight (${weightUnit()})`:'Target amount'}</span><input type="number" min={1} inputMode="decimal" value={target} onChange={e=>setTarget(e.target.value)}/></label>{(type.id==='money'||type.id==='custom')&&<label><span>Unit</span><input value={unit} maxLength={30} onChange={e=>setUnit(e.target.value)}/></label>}</div>}
+   {type.id!=='weight'&&<div className="goal-setup-row"><label><span>{type.id==='workouts'?'Sessions to complete':type.id==='habit'?'Days to complete':type.id==='lift'?`Target weight (${weightUnit()})`:'Target amount'}</span><input inputMode="decimal" value={group(target)} onChange={e=>{groupAsTyped(e,true);setTarget(ungroup(e.target.value));}}/></label>{(type.id==='money'||type.id==='custom')&&<label><span>Unit</span><input value={unit} maxLength={30} onChange={e=>setUnit(e.target.value)}/></label>}</div>}
    <label><span>Target date</span><input type="date" min={today} value={deadline} onChange={e=>setDeadline(e.target.value)}/></label>
    {type.id==='money'&&<>{emergency>0&&<button type="button" className="goal-chip" onClick={()=>{setTitle('Emergency fund');setTarget(String(emergency));}}>Use emergency fund: {emergency.toLocaleString()} {currency} (3 months of your spending)</button>}
     {pro?<label className="goal-follow"><input type="checkbox" checked={follow} onChange={e=>setFollow(e.target.checked)}/><span>Follow a Finance category automatically</span></label>:<p className="muted goal-note">Pro can fill this goal from a Finance category such as Savings. <Link href="/plans">See Pro</Link></p>}

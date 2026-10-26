@@ -123,8 +123,8 @@ The code for checkout, the signed webhook, plan activation, refunds and cancella
 ```dotenv
 WHOP_ENABLED=true
 WHOP_API_KEY=your-company-api-key
-WHOP_PRO_PLAN_ID=plan_...        # recurring monthly plan, $20
-WHOP_LIFETIME_PLAN_ID=plan_...   # one-time plan, $100
+WHOP_PRO_PLAN_ID=plan_...        # recurring monthly plan, $19.99
+WHOP_LIFETIME_PLAN_ID=plan_...   # one-time plan, $99.99
 WHOP_WEBHOOK_SECRET=ws_...       # signing secret shown when you create the webhook
 WHOP_SANDBOX=true                # remove or set false for live payments
 ```
