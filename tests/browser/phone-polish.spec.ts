@@ -40,3 +40,7 @@ test('meal plan slots stack in one column on a phone and nothing spills sideways
  expect(await page.evaluate(()=>[...document.querySelectorAll('.plan-slots *')].every(e=>e.getBoundingClientRect().right<=innerWidth+1))).toBe(true);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
+
+test('the Home link on login and signup goes to the public website',async({page})=>{
+ for(const path of ['/login','/signup']){await page.goto(path);await expect(page.locator('a.auth-home')).toHaveAttribute('href','https://dailyledger.store');}
+});
