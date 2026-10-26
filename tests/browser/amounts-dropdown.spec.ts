@@ -18,3 +18,26 @@ test('amounts show thousands commas while typing and category always lists every
  const data=await page.evaluate(()=>JSON.parse(localStorage.getItem('daily-ledger-demo-v1')!));
  const tx=data.records.find((r:any)=>r.kind==='transaction'&&r.data.title==='Laptop');expect(tx.data.amount).toBe(1000000);expect(tx.data.category).toBe('Housing');
 });
+
+test('an amount stops at ten digits and a huge total still fits its dashboard card',async({page})=>{
+ const s=demoSnapshot();s.profile.onboardingCompletedAt='2026-09-01T00:00:00Z';
+ await page.addInitScript((x:any)=>{if(!localStorage.getItem('daily-ledger-demo-v1')){localStorage.setItem('daily-ledger-demo-v1',JSON.stringify(x));localStorage.setItem('dl-finance-setup','done');}},s);
+ await page.setViewportSize({width:1200,height:900});await page.goto('/finance');
+ await page.locator('.fq.in').click();const dialog=page.getByRole('dialog');await dialog.getByLabel('Name').fill('Windfall');
+ const amount=dialog.getByLabel('Amount');await amount.click();await page.keyboard.type('123456789012345');await expect(amount).toHaveValue('1,234,567,890');
+ await dialog.getByRole('button',{name:/Create transaction|Save/}).click();await expect(dialog).toHaveCount(0);
+ await page.goto('/');await page.waitForTimeout(1500);
+ const cards=page.locator('.metric-card');for(const i of [0,1,2]){const c=cards.nth(i);const box=await c.boundingBox();const text=await c.locator('.metric-content strong, .metric-content > span:nth-of-type(2)').first().boundingBox();if(box&&text)expect(text.x+text.width).toBeLessThanOrEqual(box.x+box.width+1);}
+});
+
+test('overview shortens amounts from 100,000 and finance data can be reset',async({page})=>{
+ const s=demoSnapshot();s.profile.onboardingCompletedAt='2026-09-01T00:00:00Z';
+ s.records.push({id:'big',kind:'transaction',version:1,data:{title:'Bonus',date:'2026-09-29',amount:15000000,currency:'USD',type:'income',category:'Salary',account:'Main',notes:''}} as any);
+ await page.addInitScript((x:any)=>{if(!localStorage.getItem('daily-ledger-demo-v1')){localStorage.setItem('daily-ledger-demo-v1',JSON.stringify(x));localStorage.setItem('dl-finance-setup','done');}},s);
+ await page.goto('/');await expect(page.locator('.metric-card').first()).toContainText('$154K');
+ await page.goto('/finance');await expect(page.getByRole('button',{name:'Edit Bonus'})).toBeVisible();
+ await page.getByRole('button',{name:'Reset finance data'}).click();const dialog=page.getByRole('dialog');await expect(dialog).toContainText('permanently deletes');
+ await dialog.getByRole('button',{name:'Delete everything'}).click();await expect(page.getByText('Reset finance data?')).toHaveCount(0);
+ const data=await page.evaluate(()=>JSON.parse(localStorage.getItem('daily-ledger-demo-v1')!));
+ expect(data.records.filter((r:any)=>['transaction','cashPlan','budget','recurring'].includes(r.kind))).toHaveLength(0);expect(data.records.some((r:any)=>r.kind==='task')).toBe(true);
+});

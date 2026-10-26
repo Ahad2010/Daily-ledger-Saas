@@ -12,7 +12,7 @@ type Row={id:string;name:string;amount:string;day:string;done:boolean};
 const incomeSources:Preset[]=[{id:'salary',name:'Salary',cat:'Salary',day:'1',Icon:Wallet},{id:'freelance',name:'Freelance',cat:'Business',day:'15',Icon:Laptop},{id:'business',name:'Business',cat:'Business',day:'30',Icon:Store},{id:'rental',name:'Rental income',cat:'Business',day:'5',Icon:Home},{id:'other-in',name:'Other income',cat:'Salary',day:'1',Icon:Plus}];
 const billTypes:Preset[]=[{id:'rent',name:'Rent',cat:'Housing',day:'1',Icon:Home},{id:'electricity',name:'Electricity',cat:'Utilities',day:'10',Icon:Zap},{id:'gas',name:'Gas',cat:'Utilities',day:'10',Icon:Flame},{id:'water',name:'Water',cat:'Utilities',day:'10',Icon:Droplets},{id:'internet',name:'Internet',cat:'Utilities',day:'5',Icon:Wifi},{id:'phone',name:'Phone',cat:'Utilities',day:'5',Icon:Smartphone},{id:'school',name:'School fees',cat:'Essentials',day:'5',Icon:GraduationCap},{id:'loan',name:'Loan / EMI',cat:'Other',day:'1',Icon:Landmark},{id:'insurance',name:'Insurance',cat:'Other',day:'1',Icon:ShieldCheck},{id:'subs',name:'Subscriptions',cat:'Other',day:'1',Icon:Tv},{id:'other-bill',name:'Other bill',cat:'Other',day:'1',Icon:Plus}];
 const goalIdeas=['Emergency fund','Vacation','New phone','Home','Wedding','Education'];
-const whole=(v:string)=>v.replace(/,/g,'').replace(/\..*$/,'').replace(/\D/g,'').slice(0,12);
+const whole=(v:string)=>v.replace(/,/g,'').replace(/\..*$/,'').replace(/\D/g,'').slice(0,10);
 const dayOf=(v:string)=>Math.min(31,Math.max(1,Number(v)||1));
 const valid=(r:Row)=>r.name.trim().length>0&&Number(r.amount)>0;
 const STEPS=['Income','Bills','Budget','Goal','Review'];

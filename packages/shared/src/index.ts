@@ -95,6 +95,8 @@ export function goalProgress(goal:LedgerRecord<'goal'>,records:LedgerRecord[]){c
 export function localDate(instant:Date|string,timezone:string):string { const parts=new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(instant)); return ['year','month','day'].map(k=>parts.find(p=>p.type===k)!.value).join('-'); }
 export function monthDates(month:string){const [y,m]=month.split('-').map(Number);return Array.from({length:new Date(Date.UTC(y,m,0)).getUTCDate()},(_,i)=>`${month}-${String(i+1).padStart(2,'0')}`);}
 // Amounts are shown as whole units everywhere; cents stay in storage so older records and totals are not rewritten.
+/** Like money(), but very large amounts shorten (PKR 1.2B) so they always fit inside a card. */
+export function moneyFit(cents:number,currency='USD',from=100_000){const units=Math.round(cents/100);if(Math.abs(units)<from)return money(cents,currency);return new Intl.NumberFormat(numberLocale(),{style:'currency',currency,notation:'compact',maximumFractionDigits:units>=10_000_000||units<=-10_000_000?2:1}).format(units);}
 export function money(cents:number,currency='USD'){return new Intl.NumberFormat(numberLocale(),{style:'currency',currency,minimumFractionDigits:0,maximumFractionDigits:0}).format(Math.round(cents/100));}
 export function metrics(records:LedgerRecord[],month:string,currency:string,timezone:string,asOf=new Date()) {
   const dates=monthDates(month); const today=localDate(asOf,timezone); const end=month===today.slice(0,7)?today:dates.at(-1)!;
@@ -150,7 +152,7 @@ export function demoSnapshot():Snapshot {
 }
 
 export function passwordChecks(value:string){return {length:value.length>=12&&value.length<=128,mix:/[A-Za-z]/.test(value)&&/[0-9]/.test(value)&&/[^A-Za-z0-9\s]/.test(value)};}
-export function parseMoneyInput(value:string):number {const text=value.trim();if(!/^\d{1,12}$/.test(text))return NaN;return Number(text)*100;}
+export function parseMoneyInput(value:string):number {const text=value.trim();if(!/^\d{1,10}$/.test(text))return NaN;return Number(text)*100;}
 export function calendarWeeks(month:string):string[][] {const first=new Date(`${month}-01T12:00:00Z`);const offset=(first.getUTCDay()-getDisplay().weekStart+7)%7;const total=monthDates(month).length;first.setUTCDate(1-offset);return Array.from({length:Math.ceil((total+offset)/7)},(_,week)=>Array.from({length:7},(_,day)=>{const date=new Date(first);date.setUTCDate(first.getUTCDate()+week*7+day);return date.toISOString().slice(0,10);}));}
 
 

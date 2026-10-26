@@ -275,3 +275,7 @@ body[data-page=finance]{--pg:#4ade80}body[data-page=tasks]{--pg:#f6c453}body[dat
 .wo-exlist button.on{border-color:var(--dr,var(--pg));background:color-mix(in srgb,var(--dr,var(--pg)) 12%,#0c0f0e)}
 .wo-exlist button.on .wo-tick{background:var(--dr,var(--pg));border-color:var(--dr,var(--pg))}
 @media(max-width:420px){.wo-groups{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.fin-reset{display:flex;justify-content:flex-end;margin:-6px 0 12px}.fin-reset button{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 14px;border-radius:12px;border:1px solid #4a2a2a;background:#140c0c;color:#ff9a9a;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s,border-color .2s}
+.fin-reset button:hover:not(:disabled){background:#241010;border-color:#ff5d5d}.fin-reset button:disabled{opacity:.4;cursor:not-allowed}
+.fin-reset-body{display:grid;gap:12px;padding:4px 0}.fin-reset-body p{margin:0;line-height:1.6}.button.danger{background:linear-gradient(135deg,#ff6b6b,#e5484d)!important;color:#fff!important;border:0!important}
+.fin-flow-list li .row-actions{display:inline-flex;gap:2px;margin-left:8px}

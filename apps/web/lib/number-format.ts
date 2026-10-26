@@ -6,7 +6,7 @@ export const ungroup=(value:string)=>value.replace(/,/g,'');
 export function groupAsTyped(e:ChangeEvent<HTMLInputElement>,decimals=false){
  const el=e.target,raw=el.value,caret=el.selectionStart??raw.length;
  const before=raw.slice(0,caret).replace(decimals?/[^\d.]/g:/\D/g,'').length;
- const next=group(decimals?raw:raw.replace(/\..*$/,'')).slice(0,decimals?16:16);
+ const next=group(decimals?raw:raw.replace(/\..*$/,'').replace(/\D/g,'').slice(0,10)).slice(0,decimals?18:13);
  el.value=next;
  let pos=0,seen=0;while(pos<next.length&&seen<before){if(/[\d.]/.test(next[pos]))seen++;pos++;}
  try{el.setSelectionRange(pos,pos);}catch{/* some input types have no cursor */}
