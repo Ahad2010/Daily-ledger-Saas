@@ -22,7 +22,7 @@ export function TaskRow({t,tz,today,onToggle,onEdit,onTomorrow,onRemove,leaving=
  const when=day===today?'Today':day===shift(today,1)?'Tomorrow':new Date(`${day}T12:00:00Z`).toLocaleDateString(dateLocale(),{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'});
  const time=new Date(t.data.due).toLocaleTimeString(dateLocale(),{timeZone:tz,hour:'numeric',minute:'2-digit'});
  return <div className={`task-row ${t.data.done?'is-done':''} ${late?'is-late':''} ${leaving?'leaving':''}`} data-priority={t.data.priority} data-record-id={`task-row-${t.id}`} data-motion-state={String(t.version)}>
-  <Tick checked={t.data.done||leaving} label={`Complete ${t.data.title}`} onChange={onToggle}/>
+  <Tick checked={t.data.done||leaving} locked={!t.data.done&&day>today} hint={`You can tick this on ${when}, the day it is due.`} label={`Complete ${t.data.title}`} onChange={onToggle}/>
   <button type="button" className="task-main" onClick={onEdit}><strong>{t.data.title}</strong><small><Clock3 size={13}/>{when} · {time}{late&&<b className="task-late">Overdue</b>}</small></button>
   <PriorityChip value={t.data.priority}/>
   <div className="task-actions">

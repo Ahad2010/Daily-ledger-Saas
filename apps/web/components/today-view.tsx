@@ -14,10 +14,10 @@ const clock=(iso:string,timezone:string)=>new Date(iso).toLocaleTimeString(dateL
 
 
 /** A tick that responds instantly: it flips locally, then follows the saved value (and rolls back if the write never lands). */
-export function Tick({checked,label,onChange,locked=false}:{checked:boolean;label:string;onChange:()=>void;locked?:boolean}){
+export function Tick({checked,label,onChange,locked=false,hint}:{checked:boolean;label:string;onChange:()=>void;locked?:boolean;hint?:string}){
  const [local,setLocal]=useState<boolean|null>(null);const shown=local??checked;
  useEffect(()=>{if(local===null)return;if(local===checked){setLocal(null);return;}const id=setTimeout(()=>setLocal(null),6000);return()=>clearTimeout(id);},[checked,local]);
- return <button type="button" role="checkbox" aria-checked={shown} aria-label={label} className={`tick${shown?' on':''}${locked?' locked':''}`} aria-disabled={locked||undefined} title={locked?'Completed. Your XP is locked in.':undefined} onClick={()=>{if(locked)return;setLocal(!shown);onChange();}}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5l4.2 4.2L18.5 7.8"/></svg><i className="tick-burst" aria-hidden="true"/></button>;
+ return <button type="button" role="checkbox" aria-checked={shown} aria-label={label} className={`tick${shown?' on':''}${locked?' locked':''}${locked&&hint?' future':''}`} aria-disabled={locked||undefined} title={locked?(hint||'Completed. Your XP is locked in.'):undefined} onClick={()=>{if(locked)return;setLocal(!shown);onChange();}}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5l4.2 4.2L18.5 7.8"/></svg><i className="tick-burst" aria-hidden="true"/></button>;
 }
 const AddButton=({label,onClick}:{label:string;onClick:()=>void})=><button type="button" className="add-fab" aria-label={label} title={label} onClick={onClick}><Plus size={16} strokeWidth={2.6}/></button>;
 function CardHead({icon,title,count,href,linkLabel,add,addLabel,tone}:{icon:ReactNode;title:string;count?:string;href:string;linkLabel:string;add:()=>void;addLabel:string;tone:string}){

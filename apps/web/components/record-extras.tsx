@@ -81,27 +81,28 @@ const effort:[string,number,string][]=[['Easy',.8,'Light, you can chat easily'],
 const KG=70;
 export const burnEstimate=(type:string,minutes:number,intensity:string)=>{const met=types.find(t=>t[0]===type)?.[2]??5,mult=effort.find(e=>e[0]===intensity)?.[1]??1;return Math.round(met*KG*(Math.max(0,minutes)/60)*mult);};
 
-const BODY_PARTS=['Chest','Back','Shoulders','Biceps','Triceps','Core','Glutes','Quads','Hamstrings','Calves'];
+const STRENGTH_GROUPS:Record<string,string[]>={Chest:['Chest'],Back:['Back'],Shoulders:['Shoulders'],Arms:['Biceps','Triceps','Forearms'],Core:['Core'],Legs:['Quads','Hamstrings','Glutes','Calves']};
+const STYLES:Record<string,string[]>={Running:['Easy run','Tempo','Intervals','Long run','Hills'],Cycling:['Road','Indoor','Mountain','Commute'],Swimming:['Freestyle','Breaststroke','Backstroke','Butterfly'],Yoga:['Flow','Stretch','Power','Calm']};
 export const WORKOUT_STEPS=['Start','Plan','Finish'] as const;
 export function WorkoutFields({register,watch,setValue,errors,records,smart,step,repeat,repeatErr,today,lockedDone=false}:{lockedDone?:boolean;register:any;watch:any;setValue:any;errors:any;records:LedgerRecord[];smart:boolean;step:number|null;repeat?:RepeatState;repeatErr?:string;today:string}){
  const type=String(watch('type')||'Strength'),intensity=String(watch('intensity')||'Moderate'),minutes=Number(watch('duration'))||0;
  const set=(k:string,v:unknown)=>setValue(k,v,{shouldDirty:true,shouldValidate:true});
  const BUILDER_TYPES=['Strength','Running','Cycling','Yoga','Swimming','Other'];
- const [chosen,setChosen]=useState<string[]>(['Strength']),[picks,setPicks]=useState<string[]>([]),[body,setBody]=useState<string>('Chest'),[dist,setDist]=useState<Record<string,string>>({}),[yoga,setYoga]=useState(''),[other,setOther]=useState('');
- const toggleType=(name:string)=>setChosen(list=>list.includes(name)?(list.length>1?list.filter(x=>x!==name):list):[...list,name]);
+ const [chosen,setChosen]=useState<string[]>(['Strength']),[picks,setPicks]=useState<string[]>([]),[body,setBody]=useState<string>('Chest'),[dist,setDist]=useState<Record<string,string>>({}),[style,setStyle]=useState(''),[other,setOther]=useState('');
+ const toggleType=(name:string)=>{setChosen([name]);setStyle('');};
  // The name and length are worked out from what was picked, so nobody has to type a title or guess minutes.
  useEffect(()=>{
   if(step===null)return;
   const parts:string[]=[];let mins=0;
   for(const t of chosen){
    if(t==='Strength'){parts.push(picks.length?`Strength: ${picks.join(', ')}`:'Strength');mins+=picks.length?Math.max(20,picks.length*8):30;}
-   else if(t==='Running'||t==='Cycling'){const km=Number(dist[t])||0;parts.push(km?`${t} ${km} km`:t);mins+=km?Math.round(km*(t==='Running'?6:3)):30;}
-   else if(t==='Swimming'){const laps=Number(dist[t])||0;parts.push(laps?`Swimming ${laps} laps`:'Swimming');mins+=laps?laps*2:30;}
-   else if(t==='Yoga'){parts.push(yoga?`Yoga (${yoga})`:'Yoga');mins+=30;}
+   else if(t==='Running'||t==='Cycling'){const km=Number(dist[t])||0,base=style?`${t} (${style})`:t;parts.push(km?`${base} ${km} km`:base);mins+=km?Math.round(km*(t==='Running'?6:3)):30;}
+   else if(t==='Swimming'){const laps=Number(dist[t])||0,base=style?`Swimming (${style})`:'Swimming';parts.push(laps?`${base} ${laps} laps`:base);mins+=laps?laps*2:30;}
+   else if(t==='Yoga'){parts.push(style?`Yoga (${style})`:'Yoga');mins+=30;}
    else{parts.push(other.trim()||'Workout');mins+=30;}
   }
   setValue('title',parts.join(' + ').slice(0,160),{shouldDirty:true});setValue('type',chosen[0],{shouldDirty:true});setValue('duration',Math.min(600,Math.max(10,mins)),{shouldDirty:true});
- },[step===null,chosen.join('|'),picks.join('|'),JSON.stringify(dist),yoga,other]);
+ },[step===null,chosen.join('|'),picks.join('|'),JSON.stringify(dist),style,other]);
 
  const recent=(()=>{const seen=new Set<string>(),out:LedgerRecord<'workout'>[]=[];for(const r of records.filter((x):x is LedgerRecord<'workout'>=>x.kind==='workout').sort((a,b)=>b.data.date.localeCompare(a.data.date))){const k=`${r.data.title}|${r.data.type}`;if(!seen.has(k)){seen.add(k);out.push(r);}if(out.length===3)break;}return out;})();
  const show=(n:number)=>step===null||step===n;
@@ -110,16 +111,16 @@ export function WorkoutFields({register,watch,setValue,errors,records,smart,step
   {step!==null&&<div className="wide wo-steps" role="list" aria-label="Workout steps">{WORKOUT_STEPS.map((label,i)=><div role="listitem" key={label} className={`wo-step${i===step?' now':i<step?' past':''}`} aria-current={i===step?'step':undefined}><i>{i<step?'✓':i+1}</i><span>{label}</span></div>)}</div>}
   {step!==null&&<>
   {step===0&&<div className="wide wo-pane" key="n0">
-   <div className="wo-intro"><h3>What are you training?</h3><p>Tap one or more. Then choose what you did.</p></div>
-   <div className="wo-types" role="group" aria-label="Workout type">{types.filter(t=>BUILDER_TYPES.includes(t[0])).map(([name,Icon])=><button type="button" role="checkbox" aria-checked={chosen.includes(name)} key={name} className={chosen.includes(name)?'selected':''} onClick={()=>toggleType(name)}><Icon size={20}/>{name}</button>)}</div>
-   {chosen.map(name=><div className="wo-block" key={name}><div className="wo-block-head"><strong>{name}</strong><small>{name==='Strength'?'Pick a body part, then one or more exercises':name==='Yoga'?'Pick a style (optional)':name==='Other'?'Say what you did':name==='Swimming'?'How many laps? (optional)':'How many km did you do? (optional)'}</small></div>
+   <div className="wo-intro"><h3>What are you training?</h3><p>Pick one. Then choose what you did.</p></div>
+   <div className="wo-types" role="radiogroup" aria-label="Workout type">{types.filter(t=>BUILDER_TYPES.includes(t[0])).map(([name,Icon])=><button type="button" role="radio" aria-checked={chosen.includes(name)} key={name} className={chosen.includes(name)?'selected':''} onClick={()=>toggleType(name)}><Icon size={20}/>{name}</button>)}</div>
+   {chosen.map(name=><div className="wo-block" key={name}><div className="wo-block-head"><strong>{name}</strong><small>{name==='Strength'?'Pick a body part, then one or more exercises':name==='Other'?'Say what you did':name==='Yoga'?'Pick a style (optional)':name==='Swimming'?'Pick a stroke, then laps (optional)':'Pick a type of session, then how many km (optional)'}</small></div>
     {name==='Strength'&&<>
-     <div className="wo-chips" role="group" aria-label="Body part">{BODY_PARTS.map(b=>{const n=exerciseGuides.filter(e=>e.muscle===b&&picks.includes(e.name)).length;return <button type="button" key={b} aria-pressed={body===b} className={body===b?'on':''} onClick={()=>setBody(b)}>{b}{n>0&&<i>{n}</i>}</button>;})}</div>
-     <div className="wo-chips ex" role="group" aria-label={`${body} exercises`}>{exerciseGuides.filter(e=>e.muscle===body).map(e=><button type="button" key={e.name} role="checkbox" aria-checked={picks.includes(e.name)} className={picks.includes(e.name)?'on':''} onClick={()=>setPicks(p=>p.includes(e.name)?p.filter(x=>x!==e.name):[...p,e.name])}>{picks.includes(e.name)&&<Check size={13}/>}{e.name}</button>)}</div>
+     <div className="wo-groups" role="group" aria-label="Body part">{Object.keys(STRENGTH_GROUPS).map(g=>{const n=exerciseGuides.filter(e=>STRENGTH_GROUPS[g].includes(e.muscle)&&picks.includes(e.name)).length;return <button type="button" key={g} aria-pressed={body===g} className={body===g?'on':''} onClick={()=>setBody(g)}><span>{g}</span><small>{STRENGTH_GROUPS[g].join(' · ')}</small>{n>0&&<i>{n}</i>}</button>;})}</div>
+     <div className="wo-exlist" role="group" aria-label={`${body} exercises`}>{exerciseGuides.filter(e=>STRENGTH_GROUPS[body].includes(e.muscle)).map(e=><button type="button" key={e.name} role="checkbox" aria-checked={picks.includes(e.name)} className={picks.includes(e.name)?'on':''} onClick={()=>setPicks(p=>p.includes(e.name)?p.filter(x=>x!==e.name):[...p,e.name])}><span className="wo-tick">{picks.includes(e.name)&&<Check size={13} strokeWidth={3}/>}</span><b>{e.name}</b><small>{e.equipment} · {e.muscle}</small></button>)}</div>
      {picks.length>0&&<p className="wo-picked">{picks.length} selected: {picks.join(', ')}</p>}
     </>}
+    {STYLES[name]&&<div className="wo-chips" role="group" aria-label={`${name} style`}>{STYLES[name].map(y=><button type="button" key={y} aria-pressed={style===y} className={style===y?'on':''} onClick={()=>setStyle(v=>v===y?'':y)}>{y}</button>)}</div>}
     {(name==='Running'||name==='Cycling'||name==='Swimming')&&<label className="wo-dist"><span className="sr-only">{name==='Swimming'?'Laps':'Distance in km'}</span><input aria-label={name==='Swimming'?'Laps':`${name} distance in km`} inputMode="decimal" placeholder={name==='Swimming'?'0':'0.0'} value={dist[name]||''} onChange={e=>setDist(d=>({...d,[name]:e.target.value.replace(/[^\d.]/g,'').slice(0,6)}))}/><b>{name==='Swimming'?'laps':'km'}</b></label>}
-    {name==='Yoga'&&<div className="wo-chips" role="group" aria-label="Yoga style">{['Flow','Stretch','Power','Calm'].map(y=><button type="button" key={y} aria-pressed={yoga===y} className={yoga===y?'on':''} onClick={()=>setYoga(v=>v===y?'':y)}>{y}</button>)}</div>}
     {name==='Other'&&<label className="wo-dist wide-input"><span className="sr-only">What did you do</span><input aria-label="What did you do" maxLength={60} placeholder="For example: Football with friends" value={other} onChange={e=>setOther(e.target.value)}/></label>}
    </div>)}
    {errors.title&&<small className="error">Pick at least one type.</small>}
