@@ -279,3 +279,5 @@ body[data-page=finance]{--pg:#4ade80}body[data-page=tasks]{--pg:#f6c453}body[dat
 .fin-reset button:hover:not(:disabled){background:#241010;border-color:#ff5d5d}.fin-reset button:disabled{opacity:.4;cursor:not-allowed}
 .fin-reset-body{display:grid;gap:12px;padding:4px 0}.fin-reset-body p{margin:0;line-height:1.6}.button.danger{background:linear-gradient(135deg,#ff6b6b,#e5484d)!important;color:#fff!important;border:0!important}
 .fin-flow-list li .row-actions{display:inline-flex;gap:2px;margin-left:8px}
+/* "Preferences saved." sits on one line with its tick */
+.settings-content p.mint[role=status]{display:flex;align-items:center;gap:8px;margin:12px 0 0}.settings-content p.mint[role=status] svg{flex-shrink:0}

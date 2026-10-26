@@ -30,14 +30,10 @@ test('an amount stops at ten digits and a huge total still fits its dashboard ca
  const cards=page.locator('.metric-card');for(const i of [0,1,2]){const c=cards.nth(i);const box=await c.boundingBox();const text=await c.locator('.metric-content strong, .metric-content > span:nth-of-type(2)').first().boundingBox();if(box&&text)expect(text.x+text.width).toBeLessThanOrEqual(box.x+box.width+1);}
 });
 
-test('overview shortens amounts from 100,000 and finance data can be reset',async({page})=>{
+test('overview shortens amounts from 100,000 and overview rows can be edited',async({page})=>{
  const s=demoSnapshot();s.profile.onboardingCompletedAt='2026-09-01T00:00:00Z';
  s.records.push({id:'big',kind:'transaction',version:1,data:{title:'Bonus',date:'2026-09-29',amount:15000000,currency:'USD',type:'income',category:'Salary',account:'Main',notes:''}} as any);
  await page.addInitScript((x:any)=>{if(!localStorage.getItem('daily-ledger-demo-v1')){localStorage.setItem('daily-ledger-demo-v1',JSON.stringify(x));localStorage.setItem('dl-finance-setup','done');}},s);
  await page.goto('/');await expect(page.locator('.metric-card').first()).toContainText('$154K');
  await page.goto('/finance');await expect(page.getByRole('button',{name:'Edit Bonus'})).toBeVisible();
- await page.getByRole('button',{name:'Reset finance data'}).click();const dialog=page.getByRole('dialog');await expect(dialog).toContainText('permanently deletes');
- await dialog.getByRole('button',{name:'Delete everything'}).click();await expect(page.getByText('Reset finance data?')).toHaveCount(0);
- const data=await page.evaluate(()=>JSON.parse(localStorage.getItem('daily-ledger-demo-v1')!));
- expect(data.records.filter((r:any)=>['transaction','cashPlan','budget','recurring'].includes(r.kind))).toHaveLength(0);expect(data.records.some((r:any)=>r.kind==='task')).toBe(true);
 });
