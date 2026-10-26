@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
-import {useRef,useState,type KeyboardEvent,type PointerEvent} from 'react';
+import {useEffect,useRef,useState,type KeyboardEvent,type PointerEvent} from 'react';
+import {exerciseGuides} from '../lib/exercise-guides';
 import {CountUp} from './animation';
 import {Bike,Check,CalendarDays,ChevronLeft,ChevronRight,Clock3,Volume2,VolumeX,Dumbbell,Flame,Flower2,Footprints,Lock,Minus,Plus,Shapes,Sparkles,Waves,Zap} from 'lucide-react';
 import {calendarWeeks,getDisplay,type LedgerRecord} from '@ledger/shared';
@@ -80,22 +81,69 @@ const effort:[string,number,string][]=[['Easy',.8,'Light, you can chat easily'],
 const KG=70;
 export const burnEstimate=(type:string,minutes:number,intensity:string)=>{const met=types.find(t=>t[0]===type)?.[2]??5,mult=effort.find(e=>e[0]===intensity)?.[1]??1;return Math.round(met*KG*(Math.max(0,minutes)/60)*mult);};
 
+const BODY_PARTS=['Chest','Back','Shoulders','Biceps','Triceps','Core','Glutes','Quads','Hamstrings','Calves'];
 export const WORKOUT_STEPS=['Start','Plan','Finish'] as const;
 export function WorkoutFields({register,watch,setValue,errors,records,smart,step,repeat,repeatErr,today,lockedDone=false}:{lockedDone?:boolean;register:any;watch:any;setValue:any;errors:any;records:LedgerRecord[];smart:boolean;step:number|null;repeat?:RepeatState;repeatErr?:string;today:string}){
  const type=String(watch('type')||'Strength'),intensity=String(watch('intensity')||'Moderate'),minutes=Number(watch('duration'))||0;
  const set=(k:string,v:unknown)=>setValue(k,v,{shouldDirty:true,shouldValidate:true});
+ const BUILDER_TYPES=['Strength','Running','Cycling','Yoga','Swimming','Other'];
+ const [chosen,setChosen]=useState<string[]>(['Strength']),[picks,setPicks]=useState<string[]>([]),[body,setBody]=useState<string>('Chest'),[dist,setDist]=useState<Record<string,string>>({}),[yoga,setYoga]=useState(''),[other,setOther]=useState('');
+ const toggleType=(name:string)=>setChosen(list=>list.includes(name)?(list.length>1?list.filter(x=>x!==name):list):[...list,name]);
+ // The name and length are worked out from what was picked, so nobody has to type a title or guess minutes.
+ useEffect(()=>{
+  if(step===null)return;
+  const parts:string[]=[];let mins=0;
+  for(const t of chosen){
+   if(t==='Strength'){parts.push(picks.length?`Strength: ${picks.join(', ')}`:'Strength');mins+=picks.length?Math.max(20,picks.length*8):30;}
+   else if(t==='Running'||t==='Cycling'){const km=Number(dist[t])||0;parts.push(km?`${t} ${km} km`:t);mins+=km?Math.round(km*(t==='Running'?6:3)):30;}
+   else if(t==='Swimming'){const laps=Number(dist[t])||0;parts.push(laps?`Swimming ${laps} laps`:'Swimming');mins+=laps?laps*2:30;}
+   else if(t==='Yoga'){parts.push(yoga?`Yoga (${yoga})`:'Yoga');mins+=30;}
+   else{parts.push(other.trim()||'Workout');mins+=30;}
+  }
+  setValue('title',parts.join(' + ').slice(0,160),{shouldDirty:true});setValue('type',chosen[0],{shouldDirty:true});setValue('duration',Math.min(600,Math.max(10,mins)),{shouldDirty:true});
+ },[step===null,chosen.join('|'),picks.join('|'),JSON.stringify(dist),yoga,other]);
+
  const recent=(()=>{const seen=new Set<string>(),out:LedgerRecord<'workout'>[]=[];for(const r of records.filter((x):x is LedgerRecord<'workout'>=>x.kind==='workout').sort((a,b)=>b.data.date.localeCompare(a.data.date))){const k=`${r.data.title}|${r.data.type}`;if(!seen.has(k)){seen.add(k);out.push(r);}if(out.length===3)break;}return out;})();
  const show=(n:number)=>step===null||step===n;
  const kcal=burnEstimate(type,minutes,intensity);
  return <>
   {step!==null&&<div className="wide wo-steps" role="list" aria-label="Workout steps">{WORKOUT_STEPS.map((label,i)=><div role="listitem" key={label} className={`wo-step${i===step?' now':i<step?' past':''}`} aria-current={i===step?'step':undefined}><i>{i<step?'✓':i+1}</i><span>{label}</span></div>)}</div>}
+  {step!==null&&<>
+  {step===0&&<div className="wide wo-pane" key="n0">
+   <div className="wo-intro"><h3>What are you training?</h3><p>Tap one or more. Then choose what you did.</p></div>
+   <div className="wo-types" role="group" aria-label="Workout type">{types.filter(t=>BUILDER_TYPES.includes(t[0])).map(([name,Icon])=><button type="button" role="checkbox" aria-checked={chosen.includes(name)} key={name} className={chosen.includes(name)?'selected':''} onClick={()=>toggleType(name)}><Icon size={20}/>{name}</button>)}</div>
+   {chosen.map(name=><div className="wo-block" key={name}><div className="wo-block-head"><strong>{name}</strong><small>{name==='Strength'?'Pick a body part, then one or more exercises':name==='Yoga'?'Pick a style (optional)':name==='Other'?'Say what you did':name==='Swimming'?'How many laps? (optional)':'How many km did you do? (optional)'}</small></div>
+    {name==='Strength'&&<>
+     <div className="wo-chips" role="group" aria-label="Body part">{BODY_PARTS.map(b=>{const n=exerciseGuides.filter(e=>e.muscle===b&&picks.includes(e.name)).length;return <button type="button" key={b} aria-pressed={body===b} className={body===b?'on':''} onClick={()=>setBody(b)}>{b}{n>0&&<i>{n}</i>}</button>;})}</div>
+     <div className="wo-chips ex" role="group" aria-label={`${body} exercises`}>{exerciseGuides.filter(e=>e.muscle===body).map(e=><button type="button" key={e.name} role="checkbox" aria-checked={picks.includes(e.name)} className={picks.includes(e.name)?'on':''} onClick={()=>setPicks(p=>p.includes(e.name)?p.filter(x=>x!==e.name):[...p,e.name])}>{picks.includes(e.name)&&<Check size={13}/>}{e.name}</button>)}</div>
+     {picks.length>0&&<p className="wo-picked">{picks.length} selected: {picks.join(', ')}</p>}
+    </>}
+    {(name==='Running'||name==='Cycling'||name==='Swimming')&&<label className="wo-dist"><span className="sr-only">{name==='Swimming'?'Laps':'Distance in km'}</span><input aria-label={name==='Swimming'?'Laps':`${name} distance in km`} inputMode="decimal" placeholder={name==='Swimming'?'0':'0.0'} value={dist[name]||''} onChange={e=>setDist(d=>({...d,[name]:e.target.value.replace(/[^\d.]/g,'').slice(0,6)}))}/><b>{name==='Swimming'?'laps':'km'}</b></label>}
+    {name==='Yoga'&&<div className="wo-chips" role="group" aria-label="Yoga style">{['Flow','Stretch','Power','Calm'].map(y=><button type="button" key={y} aria-pressed={yoga===y} className={yoga===y?'on':''} onClick={()=>setYoga(v=>v===y?'':y)}>{y}</button>)}</div>}
+    {name==='Other'&&<label className="wo-dist wide-input"><span className="sr-only">What did you do</span><input aria-label="What did you do" maxLength={60} placeholder="For example: Football with friends" value={other} onChange={e=>setOther(e.target.value)}/></label>}
+   </div>)}
+   {errors.title&&<small className="error">Pick at least one type.</small>}
+  </div>}
+  {step===1&&<div className="wide wo-pane" key="n1">
+   <div className="wo-intro"><h3>How hard, and when?</h3><p>Choose the effort, then the day.</p></div>
+   <div><span className="field-label">Effort</span><div className="wo-effort" role="radiogroup" aria-label="Effort">{effort.map(([name,,hint])=><button type="button" role="radio" aria-checked={intensity===name} data-effort={name} key={name} className={intensity===name?'selected':''} onClick={()=>set('intensity',name)}><strong>{name}</strong><small>{hint}</small></button>)}</div></div>
+   {repeat?<div><span className="field-label">When</span><WhenChooser modes={['once','days']} mode={repeat.on?'days':'once'} onMode={m=>repeat.setOn(m==='days')}/>{repeat.on?<><RepeatDays today={today} dates={repeat.dates} onChange={repeat.setDates}/>{repeatErr&&<small className="error">{repeatErr}</small>}</>:<label className="cp-when"><span>Date</span><input aria-label="Date" type="date" {...register('date')}/></label>}</div>:<label><span>Date</span><input aria-label="Date" type="date" {...register('date')}/></label>}
+  </div>}
+  {step===2&&<div className="wide wo-pane" key="n2">
+   <div className="wo-intro"><h3>All set</h3><p>Check it, add a note if you like, then save.</p></div>
+   <div className="wo-summary"><strong>{String(watch('title')||'Workout')}</strong><span>{chosen.join(' + ')} · {intensity} effort · {String(watch('date')||'')}</span></div>
+   <label><span>Notes</span><textarea placeholder="Sets, reps, weights, how it felt… (optional)" {...register('notes')}/></label>
+   {lockedDone?<p className="wo-locked"><Check size={16}/>Completed. Your XP is locked in, so this cannot be undone.</p>:<label className="check-label wo-done"><input type="checkbox" {...register('done')}/><span>Mark as completed</span></label>}
+  </div>}
+  </>}
+  <input type="hidden" {...register('type')}/><input type="hidden" {...register('intensity')}/>{step!==null&&<input type="hidden" {...register('title')}/>}
+  {step===null&&<>
   {show(0)&&<div className="wide wo-pane" key="p0">
    {step===0&&<div className="wo-intro"><h3>What are you training?</h3><p>Pick a type, then give it a name.</p></div>}
    {smart?(recent.length>0&&<div className="form-suggest" role="group" aria-label="Smart suggestions"><Sparkles size={14}/><span>Repeat a recent one</span>{recent.map(r=><button type="button" key={r.id} className="suggest-chip" onClick={()=>{set('title',r.data.title);set('type',r.data.type);set('duration',r.data.duration);if(r.data.intensity)set('intensity',r.data.intensity);}}>{r.data.title} · {r.data.duration} min</button>)}</div>):<SmartNote what="Smart workout suggestions"/>}
    <div><span className="field-label">Type</span><div className="wo-types" role="radiogroup" aria-label="Workout type">{types.map(([name,Icon])=><button type="button" role="radio" aria-checked={type===name} key={name} className={type===name?'selected':''} onClick={()=>set('type',name)}><Icon size={20}/>{name}</button>)}</div></div>
    <label><span>Workout name</span><input aria-label="Workout name" placeholder={`For example: ${type==='Strength'?'Upper body strength':type==='Running'?'Easy 5K':'Morning session'}`} {...register('title')}/>{errors.title&&<small className="error">{String(errors.title.message||'Enter a name')}</small>}</label>
   </div>}
-  <input type="hidden" {...register('type')}/><input type="hidden" {...register('intensity')}/>
   {show(1)&&<div className="wide wo-pane" key="p1">
    {step===1&&<div className="wo-intro"><h3>How long and how hard?</h3><p>We estimate the calories for you.</p></div>}
    <div><span className="field-label">Duration</span><div className="wo-stepper"><button type="button" aria-label="5 minutes less" onClick={()=>set('duration',Math.max(5,minutes-5))}><Minus size={16}/></button><label><input aria-label="Duration (minutes)" type="number" min="1" max="1440" inputMode="numeric" {...register('duration',{valueAsNumber:true})}/><small>min</small></label><button type="button" aria-label="5 minutes more" onClick={()=>set('duration',Math.min(1440,minutes+5))}><Plus size={16}/></button></div></div>
@@ -110,6 +158,7 @@ export function WorkoutFields({register,watch,setValue,errors,records,smart,step
    <label><span>Notes</span><textarea placeholder="Sets, reps, weights, how it felt… (optional)" {...register('notes')}/></label>
    {lockedDone?<p className="wo-locked"><Check size={16}/>Completed. Your XP is locked in, so this cannot be undone.</p>:<label className="check-label wo-done"><input type="checkbox" {...register('done')}/><span>Mark as completed</span></label>}
   </div>}
+  </>}
  </>;
 }
 

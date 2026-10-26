@@ -243,3 +243,17 @@ body[data-page=finance]{--pg:#4ade80}body[data-page=tasks]{--pg:#f6c453}body[dat
 .combo-list li:hover,.combo-list li.hot{background:color-mix(in srgb,var(--pg) 16%,#0e1110)}
 .combo-list li.on{color:var(--pg);font-weight:700}
 .combo-list.up{top:auto;bottom:calc(100% + 6px)}
+
+/* ---- Workout builder: pick types, then what you did ---- */
+.wo-block{display:grid;gap:12px;padding:16px;border-radius:18px;border:1px solid color-mix(in srgb,var(--dr,var(--pg)) 28%,#262d29);background:linear-gradient(165deg,#131715,#0b0d0c);animation:wz-slide .45s cubic-bezier(.22,1,.36,1) both}
+.wo-block-head{display:grid;gap:2px}.wo-block-head strong{font-family:var(--font-manrope),sans-serif;font-size:16px}.wo-block-head small{color:#9aa7a1;font-size:12.5px}
+.wo-chips{display:flex;flex-wrap:wrap;gap:8px}
+.wo-chips button{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #2a332f;background:#0c0f0e;color:#cfd8d3;font-weight:600;font-size:13.5px;cursor:pointer;transition:transform .15s,background .2s,border-color .2s,color .2s}
+.wo-chips button:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--dr,var(--pg)) 55%,#2a332f)}
+.wo-chips button.on{background:color-mix(in srgb,var(--dr,var(--pg)) 20%,#0c0f0e);border-color:var(--dr,var(--pg));color:#fff}
+.wo-chips button i{display:grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--dr,var(--pg));color:#07140b;font-style:normal;font-size:11px;font-weight:800}
+.wo-chips.ex button{border-radius:14px}
+.wo-picked{margin:0;color:#b9c5bf;font-size:12.5px}
+.wo-dist{display:flex;align-items:center;gap:10px}.wo-dist input{flex:1;min-height:52px;font-size:20px;font-weight:700}.wo-dist b{color:#9aa7a1;font-size:14px}
+.wo-dist.wide-input input{font-size:16px;font-weight:600}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

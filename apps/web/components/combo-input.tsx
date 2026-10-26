@@ -5,8 +5,8 @@ import {Check,ChevronDown} from 'lucide-react';
 // so once a field held "Essentials" the other choices vanished. Here the full list stays, the typed text only highlights.
 export function ComboInput({label,value,options,onChange,placeholder}:{label:string;value:string;options:string[];onChange:(value:string)=>void;placeholder?:string}){
  const [open,setOpen]=useState(false),[active,setActive]=useState(-1),[fit,setFit]=useState({up:false,max:260}),box=useRef<HTMLDivElement>(null),id=useId();
- // Open towards whichever side has more room inside the surrounding panel, so the list is never cut off.
- useLayoutEffect(()=>{if(!open||!box.current)return;const field=box.current.getBoundingClientRect(),area=(box.current.closest('.dialog-body')||document.documentElement).getBoundingClientRect();const below=Math.min(area.bottom,window.innerHeight)-field.bottom-14,above=field.top-Math.max(area.top,0)-14;const up=below<Math.min(240,options.length*42+12)&&above>below;setFit({up,max:Math.max(140,Math.min(260,up?above:below))});},[open,options.length]);
+ // Opens upwards when there is room, so it never drops over the buttons below; falls back to downwards.
+ useLayoutEffect(()=>{if(!open||!box.current)return;const field=box.current.getBoundingClientRect(),area=(box.current.closest('.dialog-body')||document.documentElement).getBoundingClientRect();const below=Math.min(area.bottom,window.innerHeight)-field.bottom-14,above=field.top-Math.max(area.top,0)-14;const up=above>=Math.min(200,options.length*42+12)||above>below;setFit({up,max:Math.max(140,Math.min(260,up?above:below))});},[open,options.length]);
  useEffect(()=>{if(!open)return;const away=(e:MouseEvent)=>{if(!box.current?.contains(e.target as Node))setOpen(false);};document.addEventListener('mousedown',away);return()=>document.removeEventListener('mousedown',away);},[open]);
  const pick=(name:string)=>{onChange(name);setOpen(false);setActive(-1);};
  return <div className="combo" ref={box}>

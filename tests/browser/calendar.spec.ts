@@ -72,8 +72,8 @@ test('a task can repeat on days picked from a calendar, each day becomes its own
 
 test('a workout and a meal can be planned on several chosen days',async({page})=>{
  await seed(page);await page.goto('/');await page.getByRole('button',{name:'Quick add',exact:true}).click();await page.getByRole('button',{name:'Workout',exact:true}).click();
- const form=page.getByRole('dialog');await form.getByLabel('Workout name',{exact:true}).fill('Leg day');await form.getByRole('button',{name:'Next',exact:true}).click();await form.getByRole('button',{name:'Next',exact:true}).click();
- await form.getByRole('radio',{name:'Pick days'}).click();await form.getByRole('button',{name:'Next month'}).click();for(const d of ['2026-10-03','2026-10-10'])await form.getByRole('button',{name:d,exact:true}).click();
+ const form=page.getByRole('dialog');await form.getByRole('checkbox',{name:'Other',exact:true}).click();await form.getByRole('checkbox',{name:'Strength',exact:true}).click();await form.getByLabel('What did you do').fill('Leg day');await form.getByRole('button',{name:'Next',exact:true}).click();
+ await form.getByRole('radio',{name:'Pick days'}).click();await form.getByRole('button',{name:'Next month'}).click();for(const d of ['2026-10-03','2026-10-10'])await form.getByRole('button',{name:d,exact:true}).click();await form.getByRole('button',{name:'Next',exact:true}).click();
  await form.getByRole('button',{name:'Create workout'}).click();await expect(form).toHaveCount(0);
  expect((await stored(page)).records.filter((r:any)=>r.data.title==='Leg day').map((r:any)=>r.data.date).sort()).toEqual(['2026-10-03','2026-10-10']);
 });
