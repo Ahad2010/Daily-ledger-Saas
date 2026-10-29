@@ -25,9 +25,9 @@ async function summary(user:User,rankingPage=false){
   return tx.user.update({where:{id:user.id},data:{referralCode:`${name}-${randomBytes(6).toString('hex')}`}});
  });
  const total=await db.referral.count({where:{referrerId:owner.id,invitee:{status:'active'}}});
- const paid=(await policy(owner)).plan!=='Free',rankingActive=paid&&total>0;
- if(rankingPage&&!rankingActive)throw new HttpError(403,paid?'Your ranking opens after your first verified referral.':'Referral ranking requires Pro or Lifetime.',paid?undefined:'UPGRADE_REQUIRED');
- let leaders:{name:string;total:number;rank:number;you:boolean}[]=[];
+ const paid=(await policy(owner)).plan!=='Free',rankingActive=paid;
+ if(rankingPage&&!rankingActive)throw new HttpError(403,'Referral ranking requires Pro, a Pro trial or Lifetime.','UPGRADE_REQUIRED');
+ let leaders:{name:string;total:number;rank:number|null;you:boolean}[]=[];
  if(rankingActive){
   const rows=await db.$queryRaw<{id:string;name:string;total:bigint;rank:bigint}[]>`
    WITH counts AS (
@@ -41,6 +41,8 @@ async function summary(user:User,rankingPage=false){
     SELECT id,name,total,ROW_NUMBER() OVER (ORDER BY total DESC,"createdAt" ASC,id ASC) AS rank FROM counts
    ) SELECT * FROM ranked WHERE rank<=50 OR id=${owner.id} ORDER BY rank`;
   leaders=rows.map(row=>({name:row.id===owner.id?row.name:displayName(row.name),total:Number(row.total),rank:Number(row.rank),you:row.id===owner.id}));
+  // A paid member with no verified friends yet is shown on the page but has no place until the first one joins.
+  if(!leaders.some(row=>row.you))leaders.push({name:owner.name,total:0,rank:null,you:true});
  }
  return {code:owner.referralCode,link:`${process.env.FRONTEND_ORIGIN||'http://localhost:3000'}/signup?ref=${encodeURIComponent(owner.referralCode!)}`,total,paid,rankingActive,rank:leaders.find(row=>row.you)?.rank??null,leaders};
 }
