@@ -19,3 +19,44 @@ test('a flood of sign-ins from one network never stops a normal person from sign
   const busy=await attempt(api.base,{email:'x@example.com',password:'x',ip:'203.0.113.9'});await busy.text();
  }finally{await api.stop();}
 });
+
+test('shared network: other people typing wrong passwords does not stop a normal person on the same network',{skip,timeout:180000},async()=>{
+ const api=await startApi(4093);
+ try{
+  const email=`shared-${Date.now()}@example.com`;await passwordUser(api,email,strong);
+  for(let i=0;i<30;i++){const r=await attempt(api.base,{email:`typo-${i}-${Date.now()}@example.com`,password:'wrong-password-1!',ip:'192.0.2.44'});assert.equal(r.status,401);await r.text();}
+  assert.equal((await attempt(api.base,{email,password:strong,ip:'192.0.2.44'})).status,200,'the 31st person on that network still signs in');
+ }finally{await api.stop();}
+});
+
+test('five wrong tries stop only that network and account pair',{skip,timeout:180000},async()=>{
+ const api=await startApi(4094);
+ try{
+  const mine=`pair-${Date.now()}@example.com`,other=`pair2-${Date.now()}@example.com`;await passwordUser(api,mine,strong);await passwordUser(api,other,strong);
+  for(let i=0;i<5;i++){const r=await attempt(api.base,{email:mine,password:'wrong-password-1!',ip:'192.0.2.60'});assert.equal(r.status,401);await r.text();}
+  const sixth=await attempt(api.base,{email:mine,password:'wrong-password-1!',ip:'192.0.2.60'});assert.equal(sixth.status,429);assert.ok(Number(sixth.headers.get('retry-after'))>0,'says how long to wait');await sixth.text();
+  assert.equal((await attempt(api.base,{email:other,password:strong,ip:'192.0.2.60'})).status,200,'another account from the same network is fine');
+  assert.equal((await attempt(api.base,{email:mine,password:strong,ip:'192.0.2.61'})).status,200,'the same account from another network is fine');
+ }finally{await api.stop();}
+});
+
+test('three API replicas share one set of counters',{skip,timeout:240000},async()=>{
+ const replicas=[await startApi(4095),await startApi(4096),await startApi(4097)];
+ try{
+  const email=`replicas-${Date.now()}@example.com`;await passwordUser(replicas[0],email,strong);
+  const statuses:number[]=[];
+  for(let i=0;i<6;i++){const r=await attempt(replicas[i%3].base,{email,password:'wrong-password-1!',ip:'192.0.2.70'});statuses.push(r.status);await r.text();}
+  assert.deepEqual(statuses,[401,401,401,401,401,429],'the sixth wrong try is stopped no matter which replica receives it');
+ }finally{for(const r of replicas)await r.stop();}
+});
+
+// Known gap, fixed by the trusted-device work: anyone can fill another person's account counter from several networks,
+// and then the real owner is stopped too. Marked todo so it documents the gap without failing the suite.
+test('an attacker spreading wrong tries over many networks cannot stop the real owner',{skip,todo:'account lockout is fixed in a later commit',timeout:240000},async()=>{
+ const api=await startApi(4098);
+ try{
+  const email=`victim-${Date.now()}@example.com`;await passwordUser(api,email,strong);
+  for(let n=0;n<5;n++)for(let i=0;i<4;i++){const r=await attempt(api.base,{email,password:'wrong-password-1!',ip:`203.0.113.${100+n}`});await r.text();}
+  assert.equal((await attempt(api.base,{email,password:strong,ip:'198.51.100.200'})).status,200,'the owner, from a new network with the right password, still signs in');
+ }finally{await api.stop();}
+});
