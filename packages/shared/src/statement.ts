@@ -1,4 +1,4 @@
-import {money,recordsOf,metrics,type Snapshot} from './index';
+import {money,moneyFit,recordsOf,metrics,type Snapshot} from './index';
 import {monthReport} from './report';
 
 // The slice of PDFKit's document API the statement uses, so the same layout renders on the server (pdfkit) and in the browser (pdfkit standalone).
@@ -39,7 +39,7 @@ export function drawStatement(doc:PdfLike,s:Snapshot,month:string,now=new Date()
  doc.y=196;
 
  // Summary boxes
- const boxes:[string,string,string][]=[['Money in',money(c.income,currency),IN],['Money out',money(c.expenses,currency),OUT],['Net movement',money(c.net,currency),c.net<0?OUT:IN],['Savings rate',m.savingsRate===null?'n/a':`${Math.round(m.savingsRate)}%`,INK]];
+ const boxes:[string,string,string][]=[['Money in',moneyFit(c.income,currency,10_000_000),IN],['Money out',moneyFit(c.expenses,currency,10_000_000),OUT],['Net movement',moneyFit(c.net,currency,10_000_000),c.net<0?OUT:IN],['Savings rate',m.savingsRate===null?'n/a':`${Math.round(m.savingsRate)}%`,INK]];
  const bw=(W-3*10)/4;
  boxes.forEach(([k,v,col],i)=>{const x=L+i*(bw+10);doc.roundedRect(x,196,bw,58,8).fillColor(SOFT).fill();doc.font('Helvetica').fontSize(8.5).fillColor(MUTED).text(k.toUpperCase(),x+12,208,{lineBreak:false});doc.font('Helvetica-Bold').fontSize(13).fillColor(col).text(fit(v,bw-20,13),x+12,226,{lineBreak:false});});
  doc.y=272;
@@ -59,7 +59,7 @@ export function drawStatement(doc:PdfLike,s:Snapshot,month:string,now=new Date()
    doc.fillColor(INK).text(fit(r.data.title,descW,9),cols.desc,y+1,{lineBreak:false});doc.fillColor(MUTED).text(fit(r.data.category,catW,9),cols.cat,y+1,{lineBreak:false});
    if(!isIn){doc.fillColor(OUT);right(money(r.data.amount,currency),cols.out+70,y+1,70);}else{doc.fillColor(IN);right(money(r.data.amount,currency),cols.inn+70,y+1,70);}
    doc.fillColor(running<0?OUT:INK);right(money(running,currency),cols.bal,y+1,70);doc.y=y+20;});
-  const y=doc.y+2;doc.moveTo(L,y).lineTo(L+W,y).strokeColor(INK).lineWidth(.8).stroke();doc.font('Helvetica-Bold').fontSize(9.5).fillColor(INK).text('Totals',cols.desc,y+8,{lineBreak:false});doc.fillColor(OUT);right(money(c.expenses,currency),cols.out+70,y+8,70);doc.fillColor(IN);right(money(c.income,currency),cols.inn+70,y+8,70);doc.fillColor(c.net<0?OUT:INK);right(money(c.net,currency),cols.bal,y+8,70);doc.y=y+30;
+  const y=doc.y+2;doc.moveTo(L,y).lineTo(L+W,y).strokeColor(INK).lineWidth(.8).stroke();doc.font('Helvetica-Bold').fontSize(9.5).fillColor(INK).text('Totals',cols.desc,y+8,{lineBreak:false});doc.fillColor(OUT);right(moneyFit(c.expenses,currency,10_000_000),cols.out+70,y+8,70);doc.fillColor(IN);right(moneyFit(c.income,currency,10_000_000),cols.inn+70,y+8,70);doc.fillColor(c.net<0?OUT:INK);right(moneyFit(c.net,currency,10_000_000),cols.bal,y+8,70);doc.y=y+30;
  }else{doc.font('Helvetica').fontSize(10).fillColor(MUTED).text('No transactions were recorded in this period.',L,doc.y,{lineBreak:false});doc.y+=26;}
 
  // Categories
@@ -73,7 +73,7 @@ export function drawStatement(doc:PdfLike,s:Snapshot,month:string,now=new Date()
  const wx=[L+8,L+138,L+228,L+318,L+390,L+450];
  const weekHead=()=>{const y=doc.y;doc.rect(L,y,W,20).fillColor(BRAND).fill();doc.font('Helvetica-Bold').fontSize(8).fillColor('#ffffff');['WEEK','MONEY IN','MONEY OUT','NET','TASKS','HABITS'].forEach((h,i)=>doc.text(h,wx[i],y+6,{lineBreak:false}));doc.y=y+24;};
  weekHead();
- report.weeks.forEach((w,i)=>{ensure(22,weekHead);const y=doc.y;if(i%2===0)doc.rect(L,y-3,W,20).fillColor(SOFT).fill();doc.font('Helvetica').fontSize(9).fillColor(INK).text(w.label,wx[0],y+1,{lineBreak:false});doc.fillColor(IN).text(money(w.income,currency),wx[1],y+1,{lineBreak:false});doc.fillColor(OUT).text(money(w.expenses,currency),wx[2],y+1,{lineBreak:false});doc.fillColor(w.net<0?OUT:INK).text(money(w.net,currency),wx[3],y+1,{lineBreak:false});doc.fillColor(MUTED).text(w.tasksDue?`${w.tasksDone}/${w.tasksDue}`:'-',wx[4],y+1,{lineBreak:false});doc.text(w.habitRate===null?'-':`${Math.round(w.habitRate)}%`,wx[5],y+1,{lineBreak:false});doc.y=y+20;});
+ report.weeks.forEach((w,i)=>{ensure(22,weekHead);const y=doc.y;if(i%2===0)doc.rect(L,y-3,W,20).fillColor(SOFT).fill();doc.font('Helvetica').fontSize(9).fillColor(INK).text(w.label,wx[0],y+1,{lineBreak:false});doc.fillColor(IN).text(moneyFit(w.income,currency,10_000_000),wx[1],y+1,{lineBreak:false});doc.fillColor(OUT).text(moneyFit(w.expenses,currency,10_000_000),wx[2],y+1,{lineBreak:false});doc.fillColor(w.net<0?OUT:INK).text(moneyFit(w.net,currency,10_000_000),wx[3],y+1,{lineBreak:false});doc.fillColor(MUTED).text(w.tasksDue?`${w.tasksDone}/${w.tasksDue}`:'-',wx[4],y+1,{lineBreak:false});doc.text(w.habitRate===null?'-':`${Math.round(w.habitRate)}%`,wx[5],y+1,{lineBreak:false});doc.y=y+20;});
 
  doc.y+=14;ensure(40);
  doc.font('Helvetica').fontSize(8).fillColor(MUTED).text('Figures come from your own Daily Ledger records and are not issued by a bank. Transfers are excluded and only transactions in the statement currency are included.',L,doc.y,{width:W});
