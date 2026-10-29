@@ -10,10 +10,9 @@ export async function sendResetLink(email:string){
  if(!credential)return;
  if(await db.passwordReset.findFirst({where:{userId:credential.userId,usedAt:null,createdAt:{gt:new Date(Date.now()-cooldown)}}}))return;
  const id=randomUUID(),token=resetToken(id,credential.userId);
- await db.$transaction([
-  db.passwordReset.updateMany({where:{userId:credential.userId,usedAt:null},data:{usedAt:new Date()}}),
-  db.passwordReset.create({data:{id,userId:credential.userId,tokenHash:tokenHash(token),expiresAt:new Date(Date.now()+lifetime)}})
- ]);
+ // An older unused link stays valid: if it were cancelled here, anyone could keep invalidating the owner's link by asking for new ones.
+ // Using any one link marks all of them used (see the reset route), and each expires on its own after five minutes.
+ await db.passwordReset.create({data:{id,userId:credential.userId,tokenHash:tokenHash(token),expiresAt:new Date(Date.now()+lifetime)}});
  const url=new URL('/reset-password',process.env.FRONTEND_ORIGIN);url.searchParams.set('id',id);url.searchParams.set('token',token);
  if(!process.env.RESEND_API_KEY||!process.env.EMAIL_FROM){console.warn('[auth] Password reset requested but email delivery is not configured.');return;}
  const link=url.toString();
