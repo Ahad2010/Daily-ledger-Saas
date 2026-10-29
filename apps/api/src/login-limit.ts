@@ -7,8 +7,6 @@ export const loginPairKey=(req:{ip?:string;body?:{email?:unknown}})=>ipKeyGenera
 export const loginLimit=rateLimit({store:new PgStore('login-ip'),windowMs:15*60000,limit:5,skipSuccessfulRequests:true,keyGenerator:loginPairKey,message:{error:'Too many failed sign-in attempts. Please try again in 15 minutes.'},standardHeaders:true,legacyHeaders:false});
 
 
-// Per-account cap across all IPs, so spraying one address from many places still runs out of attempts.
-export const loginAccountLimit=rateLimit({store:new PgStore('login-account'),windowMs:60*60000,limit:20,skipSuccessfulRequests:true,keyGenerator:req=>'account:'+createHash('sha256').update(String(req.body?.email||'').trim().toLowerCase()).digest('hex'),message:{error:'Too many failed sign-in attempts for this account. Please try again later or reset your password.'},standardHeaders:true,legacyHeaders:false,validate:{keyGeneratorIpFallback:false}});
 
 // The administrator sign-in had only the per-email counter, so a spray of different emails from one network was never stopped.
 // It now shares the per-network failure cap and has its own ceiling on every request from a network.
@@ -34,3 +32,15 @@ export const recordIpFailure=(req:{ip?:string})=>failStore.increment(ipOf(req)).
 export async function recordIpSuccess(req:{ip?:string},email:string){
  try{const hash=createHash('sha256').update(email.trim().toLowerCase()).digest('hex'),first=await okPairStore.increment(ipOf(req)+':'+hash);if(first.totalHits===1)await okStore.increment(ipOf(req));}catch{/* credit is a convenience, never a reason to fail a sign-in */}
 }
+
+// Pressure on an account: how many wrong passwords it received in the last hour from anywhere. It never blocks anyone, because a block
+// is exactly what an attacker wants. Past a threshold, a device that is not remembered waits a little before its password is checked
+// (longer as the pressure grows, capped), and the owner can always get in with the right password or through a password reset.
+const accountStore=new PgStore('account-fail');accountStore.init({windowMs:60*60000} as never);
+const intEnv=(name:string,fallback:number)=>{const n=Number(process.env[name]);return process.env[name]?.trim()&&Number.isFinite(n)&&n>=0?n:fallback;};
+export const accountKey=(email:string)=>createHash('sha256').update(email.trim().toLowerCase()).digest('hex');
+export const frictionAfter=()=>intEnv('LOGIN_FRICTION_AFTER',10);
+export const accountPressure=async(email:string)=>{try{return (await accountStore.get(accountKey(email)))?.totalHits||0;}catch{return 0;}};
+export const recordAccountFailure=(email:string)=>accountStore.increment(accountKey(email)).then(()=>undefined,()=>undefined);
+export const clearAccountPressure=(email:string)=>accountStore.resetKey(accountKey(email)).then(()=>undefined,()=>undefined);
+export const frictionDelayMs=(pressure:number)=>pressure<frictionAfter()?0:Math.min(intEnv('LOGIN_MAX_DELAY_MS',5000),500*(pressure-frictionAfter()+1));

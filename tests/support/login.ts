@@ -13,8 +13,11 @@ export async function postFrom(base:string,path:string,body:unknown,ip:string,co
  const cookie=cookieIn||(first.headers.get('set-cookie')||'').split(';')[0];const {csrf}=await first.json() as {csrf:string};
  return fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json',Origin:origin,'X-CSRF-Token':csrf,Cookie:cookie,'X-Forwarded-For':ip},body:JSON.stringify(body)});
 }
-export async function attempt(base:string,input:{email:string;password:string;ip:string;path?:string;extraHeaders?:Record<string,string>}){
+export async function attempt(base:string,input:{email:string;password:string;ip:string;path?:string;cookie?:string;extraHeaders?:Record<string,string>}){
  const first=await fetch(base+'/auth/csrf',{headers:{'X-Forwarded-For':input.ip}});
  const cookie=(first.headers.get('set-cookie')||'').split(';')[0];const {csrf}=await first.json() as {csrf:string};
- return fetch(base+(input.path||'/auth/login'),{method:'POST',headers:{'Content-Type':'application/json',Origin:origin,'X-CSRF-Token':csrf,Cookie:cookie,'X-Forwarded-For':input.ip,...(input.extraHeaders||{})},body:JSON.stringify({email:input.email,password:input.password})});
+ return fetch(base+(input.path||'/auth/login'),{method:'POST',headers:{'Content-Type':'application/json',Origin:origin,'X-CSRF-Token':csrf,Cookie:input.cookie?cookie+'; '+input.cookie:cookie,'X-Forwarded-For':input.ip,...(input.extraHeaders||{})},body:JSON.stringify({email:input.email,password:input.password})});
 }
+
+/** The trusted-device cookie ("name=value") a response set, if any. */
+export const trustCookie=(response:Response)=>response.headers.getSetCookie().map(c=>c.split(';')[0]).find(c=>c.startsWith('ledger.td='));

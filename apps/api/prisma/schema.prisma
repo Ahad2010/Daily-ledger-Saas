@@ -36,6 +36,7 @@ model User {
   jobs Job[]
   dismissals AnnouncementDismissal[]
   credential PasswordCredential?
+  trustedDevices TrustedDevice[]
   passwordResets PasswordReset[]
   adminAccess AdminAccess?
   entitlementOverride EntitlementOverride?
@@ -321,4 +322,18 @@ model RateLimitHit {
   hits Int
   resetAt DateTime
   @@index([resetAt])
+}
+
+// A browser the owner signed in from successfully. While an account is under attack, a remembered browser is not slowed down.
+// The cookie holds a random secret; only its hash is stored here, and it is bound to one user. A password reset removes every row.
+model TrustedDevice {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  secretHash String
+  createdAt DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+  expiresAt DateTime
+  @@index([userId])
+  @@index([expiresAt])
 }

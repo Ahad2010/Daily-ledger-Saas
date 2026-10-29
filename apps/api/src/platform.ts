@@ -12,6 +12,6 @@ export async function policy(user:User,client:Prisma.TransactionClient|typeof db
 export async function allowed(user:User,kind:Kind,data:RecordData[Kind],records:LedgerRecord[],client:Prisma.TransactionClient|typeof db=db){const p=await policy(user,client);return quotaAllowed(p.plan,kind,data,records,user.timezone,p.limits);}
 // The built-in no-card trial. Set TRIAL_MODE=off when a card-required provider trial (e.g. Whop) replaces it.
 export const internalTrialEnabled=()=>process.env.TRIAL_MODE!=='off';
-export async function revokeSessions(userId:string,client:Prisma.TransactionClient|typeof db=db){await client.$executeRaw`DELETE FROM session WHERE sess->'passport'->>'user'=${userId}`;}
+export async function revokeSessions(userId:string,client:Prisma.TransactionClient|typeof db=db){await client.$executeRaw`DELETE FROM session WHERE sess->'passport'->>'user'=${userId}`;await client.trustedDevice.deleteMany({where:{userId}});}
 export function publicLimits(limits:typeof plans[Plan]){return Object.fromEntries(Object.entries(limits).filter(([key])=>['tasks','habits','goals','transactions','automations','emails'].includes(key)).map(([key,value])=>[key,value===Infinity?null:Number(value)]));}
 
