@@ -7,8 +7,8 @@ export async function passwordUser(api:{user:(f?:any)=>Promise<{id:string}>;pool
  await api.pool.query('INSERT INTO "PasswordCredential" (id,"userId",email,"passwordHash","updatedAt") VALUES (gen_random_uuid(),$1,$2,$3,NOW())',[user.id,email,await hashPassword(password)]);
  return user;
 }
-export async function attempt(base:string,input:{email:string;password:string;ip:string;extraHeaders?:Record<string,string>}){
+export async function attempt(base:string,input:{email:string;password:string;ip:string;path?:string;extraHeaders?:Record<string,string>}){
  const first=await fetch(base+'/auth/csrf',{headers:{'X-Forwarded-For':input.ip}});
  const cookie=(first.headers.get('set-cookie')||'').split(';')[0];const {csrf}=await first.json() as {csrf:string};
- return fetch(base+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json',Origin:origin,'X-CSRF-Token':csrf,Cookie:cookie,'X-Forwarded-For':input.ip,...(input.extraHeaders||{})},body:JSON.stringify({email:input.email,password:input.password})});
+ return fetch(base+(input.path||'/auth/login'),{method:'POST',headers:{'Content-Type':'application/json',Origin:origin,'X-CSRF-Token':csrf,Cookie:cookie,'X-Forwarded-For':input.ip,...(input.extraHeaders||{})},body:JSON.stringify({email:input.email,password:input.password})});
 }
