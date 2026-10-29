@@ -77,10 +77,25 @@ test('a success on one account does not clear the network-wide failure count',{s
  try{
   const mine=`own-${Date.now()}@example.com`;await passwordUser(api,mine,strong);
   const statuses:number[]=[];
-  for(let i=0;i<110;i++){
+  for(let i=0;i<150;i++){
    const r=await attempt(api.base,{email:`spray-${i}-${Date.now()}@example.com`,password:'wrong-password-1!',ip:'192.0.2.90'});statuses.push(r.status);await r.text();
    if(i%20===19){const ok=await attempt(api.base,{email:mine,password:strong,ip:'192.0.2.90'});await ok.text();}
   }
   assert.ok(statuses.includes(429),'interleaving a success with an account the attacker owns does not reset the network cap');
+ }finally{await api.stop();}
+});
+
+test('a busy shared network with many real sign-ins is not stopped by its own typos, but a pure spray is',{skip,timeout:420000},async()=>{
+ const api=await startApi(4103);
+ try{
+  const ip='192.0.2.120',people:{email:string}[]=[];
+  for(let i=0;i<40;i++){const email=`busy-${i}-${Date.now()}@example.com`;await passwordUser(api,email,strong);people.push({email});}
+  for(const p of people){const r=await attempt(api.base,{email:p.email,password:strong,ip});assert.equal(r.status,200);await r.text();}
+  let blocked=0;
+  for(let i=0;i<130;i++){const r=await attempt(api.base,{email:`typo-${i}-${Date.now()}@example.com`,password:'wrong-password-1!',ip});if(r.status===429)blocked++;await r.text();}
+  assert.equal(blocked,0,'40 different people signed in, so 130 typos from that network are normal');
+  const spray:number[]=[];
+  for(let i=0;i<110;i++){const r=await attempt(api.base,{email:`spray2-${i}-${Date.now()}@example.com`,password:'wrong-password-1!',ip:'192.0.2.121'});spray.push(r.status);await r.text();}
+  assert.ok(spray.includes(429),'a network with only failures and no sign-ins is stopped');
  }finally{await api.stop();}
 });
