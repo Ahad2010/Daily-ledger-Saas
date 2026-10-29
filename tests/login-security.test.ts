@@ -60,3 +60,27 @@ test('an attacker spreading wrong tries over many networks cannot stop the real 
   assert.equal((await attempt(api.base,{email,password:strong,ip:'198.51.100.200'})).status,200,'the owner, from a new network with the right password, still signs in');
  }finally{await api.stop();}
 });
+
+test('a successful sign-in clears that network and account pair, so one earlier typo is not held against the person',{skip,timeout:180000},async()=>{
+ const api=await startApi(4099);
+ try{
+  const email=`reset-count-${Date.now()}@example.com`;await passwordUser(api,email,strong);
+  for(let i=0;i<4;i++){const r=await attempt(api.base,{email,password:'wrong-password-1!',ip:'192.0.2.80'});assert.equal(r.status,401);await r.text();}
+  assert.equal((await attempt(api.base,{email,password:strong,ip:'192.0.2.80'})).status,200);
+  for(let i=0;i<5;i++){const r=await attempt(api.base,{email,password:'wrong-password-1!',ip:'192.0.2.80'});assert.equal(r.status,401,`wrong try ${i+1} after a success is a fresh count`);await r.text();}
+  assert.equal((await attempt(api.base,{email,password:'wrong-password-1!',ip:'192.0.2.80'})).status,429,'and the pair is still limited after five fresh wrong tries');
+ }finally{await api.stop();}
+});
+
+test('a success on one account does not clear the network-wide failure count',{skip,timeout:240000},async()=>{
+ const api=await startApi(4100);
+ try{
+  const mine=`own-${Date.now()}@example.com`;await passwordUser(api,mine,strong);
+  const statuses:number[]=[];
+  for(let i=0;i<110;i++){
+   const r=await attempt(api.base,{email:`spray-${i}-${Date.now()}@example.com`,password:'wrong-password-1!',ip:'192.0.2.90'});statuses.push(r.status);await r.text();
+   if(i%20===19){const ok=await attempt(api.base,{email:mine,password:strong,ip:'192.0.2.90'});await ok.text();}
+  }
+  assert.ok(statuses.includes(429),'interleaving a success with an account the attacker owns does not reset the network cap');
+ }finally{await api.stop();}
+});

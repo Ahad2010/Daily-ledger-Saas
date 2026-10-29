@@ -1,7 +1,9 @@
 import rateLimit,{ipKeyGenerator} from 'express-rate-limit';
 import {PgStore} from './pg-rate-limit.js';
 import {createHash} from 'node:crypto';
-export const loginLimit=rateLimit({store:new PgStore('login-ip'),windowMs:15*60000,limit:5,skipSuccessfulRequests:true,keyGenerator:req=>ipKeyGenerator(req.ip||'127.0.0.1')+':'+createHash('sha256').update(String(req.body?.email||'').trim().toLowerCase()).digest('hex'),message:{error:'Too many failed sign-in attempts. Please try again in 15 minutes.'},standardHeaders:true,legacyHeaders:false});
+/** The key that one network and one email share. A successful sign-in clears exactly this pair (and nothing network-wide). */
+export const loginPairKey=(req:{ip?:string;body?:{email?:unknown}})=>ipKeyGenerator(req.ip||'127.0.0.1')+':'+createHash('sha256').update(String(req.body?.email||'').trim().toLowerCase()).digest('hex');
+export const loginLimit=rateLimit({store:new PgStore('login-ip'),windowMs:15*60000,limit:5,skipSuccessfulRequests:true,keyGenerator:loginPairKey,message:{error:'Too many failed sign-in attempts. Please try again in 15 minutes.'},standardHeaders:true,legacyHeaders:false});
 
 // Per-network cap on FAILED sign-ins, so one IP cannot spray many different emails. Successful sign-ins are not counted, so a shared office or carrier IP is fine.
 export const loginIpFailLimit=rateLimit({store:new PgStore('login-ip-fail'),windowMs:15*60000,limit:100,skipSuccessfulRequests:true,keyGenerator:req=>ipKeyGenerator(req.ip||'127.0.0.1'),validate:{keyGeneratorIpFallback:false},message:{error:'Too many failed sign-in attempts from this network. Please try again in a few minutes.'},standardHeaders:true,legacyHeaders:false});
